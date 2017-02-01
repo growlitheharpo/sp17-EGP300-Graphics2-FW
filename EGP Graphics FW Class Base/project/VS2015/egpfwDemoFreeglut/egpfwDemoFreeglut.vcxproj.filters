@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Resource Files\glsl">
+      <UniqueIdentifier>{e1b585a1-8984-4012-8ad4-a7d9256874f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\410">
+      <UniqueIdentifier>{3732daa2-f39b-455c-8c20-feb4c5c4d87c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\410\vs">
+      <UniqueIdentifier>{d42b0a54-8852-42cf-95d2-f0fa9bee3bb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\410\fs">
+      <UniqueIdentifier>{fc6b44a0-0e94-4222-957d-83a95bd0733f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\410\gs">
+      <UniqueIdentifier>{94db529d-6b04-4aa4-9d0e-9e16272617cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\egpfwDemo">
+      <UniqueIdentifier>{7dec6d87-16bc-4d69-80ec-968456751b2f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\resource\glsl\410\fs\drawColor_fs410.glsl">
+      <Filter>Resource Files\glsl\410\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\fs\drawTexture_fs410.glsl">
+      <Filter>Resource Files\glsl\410\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\fs\phong_fs410.glsl">
+      <Filter>Resource Files\glsl\410\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\fs\phong_nm_fs410.glsl">
+      <Filter>Resource Files\glsl\410\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\gs\drawTangents_gs410.glsl">
+      <Filter>Resource Files\glsl\410\gs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\vs\passColor_vs410.glsl">
+      <Filter>Resource Files\glsl\410\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\vs\passTexcoord_passthruPosition_vs410.glsl">
+      <Filter>Resource Files\glsl\410\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\vs\passTexcoord_vs410.glsl">
+      <Filter>Resource Files\glsl\410\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\vs\phong_skin_vs410.glsl">
+      <Filter>Resource Files\glsl\410\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\410\vs\phong_vs410.glsl">
+      <Filter>Resource Files\glsl\410\vs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
+      <Filter>Source Files\egpfwDemo</Filter>
+    </ClCompile>
+    <ClCompile Include="egpfwDemoFreeglut\egpDemoFreeglutMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\source\egpfwDemo\egpfwDemo.h">
+      <Filter>Source Files\egpfwDemo</Filter>
+    </ClInclude>
+    <ClInclude Include="egpfwDemoFreeglut\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="egpfwDemoFreeglut\egpfwDemoFreeglut.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="egpfwDemoFreeglut\icon1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
