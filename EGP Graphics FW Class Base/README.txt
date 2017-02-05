@@ -3,13 +3,18 @@ Welcome to EGP Graphics Framework!
 By Dan Buckstein
 /////////////////////////////////////////////////
 
-How to use the EGP Graphics Framework: 
+Windows users: 
+The supported IDE is VISUAL STUDIO 2015.
 
 First-time use: 
 
 1.	Close all instances of Visual Studio.
+	
+2. 	Make sure you have DEV-SDKs on your computer 
+	and have run the install batch file therein.
+	**YOUR FW WILL NOT WORK IF YOU DON'T DO THIS!
 
-2.	The root directory of the framework is called 
+3.	The root directory of the framework is called 
 	'EGP Graphics Framework' and contains the 
 	following folder structure: 
 		-fw_helpers
@@ -28,39 +33,31 @@ First-time use:
 			-egpfw
 			-egpfwDemoFreeglut
 		-thirdparty (etc.)
-		
-	Navigate to the folder 'root/fw_helpers/win' 
-	and execute 'egpfw_win_install.bat'.
-	**YOUR FW WILL NOT WORK IF YOU DON'T DO THIS!
-	
-3. 	Make sure you have DEV-SDKs on your computer 
-	and have run the install batch file therein.
-	**YOUR FW WILL NOT WORK IF YOU DON'T DO THIS!
 	
 4.	Open the framework: 
-	To open the framework, navigate to the folder
-	'root/project/VS2015/_SLN/EGP-Graphics-FW' 
-	and open the solution file (.sln) therein.
-	**DO NOT OPEN VISUAL STUDIO .VCXPROJ FILES, 
-	ONLY OPEN THE SOLUTION FILE!
-	
-	Alternatively to steps 2 and 4, run the batch
-	file named 'LAUNCH_VS2015' in the root folder
+	To open the framework, run the batch file 
+	called 'LAUNCH_VS2015' in the root folder 
 	after closing all instances if Visual Studio.
 	
 	
 Note the following for all uses of the framework: 
 
-To open the framework, follow step 4 above (open 
-from solution directory or use the LAUNCH batch).
+To open the framework, follow step 4 above.
+
+If any Intellisense problems occur, close Visual 
+Studio and navigate to the solution directory 
+(projects/VS2015/_SLN/EGP-Graphics-FW) and delete
+the Intellisense database (.db) file. It is also 
+recommended that you run the 'uninstall' batch 
+file under 'fw_helpers/win' just to be safe.
 
 The solution contains TWO projects: 
 	-egpfw: This is your back-end library. You 
 		will need to implement functions here to 
 		make things work.
 	-egpfwDemoFreeglut: This is your front-end 
-		application. Use the 'main' file to test 
-		your back-end functions.
+		application. Use the file 'egpfwDemo.cpp'
+		to test your back-end functions.
 	
 Press F7 to build the solution or F5 to build and
 run. The front-end application will start in the 
@@ -96,13 +93,23 @@ preprocessor directives:
 
 Note the following when preparing submissions: 
 
-To properly prepare a submission, navigate to 
-'fw_helpers/win' and execute the batch file 
-'egpfw_win__PREPARE_SUBMISSION.bat'. This will 
-package up the RELEVANT files in your framework.
-You will see a new folder (named to your liking) 
-in this directory; zip it up and submit!
+To properly prepare a submission,  execute the 
+batch file 'PREPARE_SUBMISSION_<IDE>.bat'. This 
+will package up the RELEVANT files in your copy 
+of the framework. You will see a new folder 
+appear in the root, and another one in there, 
+named to your liking; zip it up and submit!
+**DO NOT ADD FILES TO THE RESULTING PACKAGE!
 **DO NOT MODIFY THE BATCH FILE!
+
+
+Mac users: 
+The supported IDE is XCODE.
+
+Directly open the Xcode workspace in the folder 
+project/Xcode/_WORKSPACE/EGP-Graphics-FW. All of 
+the above features hold true for Xcode, except 
+that the batch files will not work.
 
 
 That's the gist of it... good luck, have fun, and

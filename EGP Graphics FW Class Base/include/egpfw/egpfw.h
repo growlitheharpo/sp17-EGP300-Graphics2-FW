@@ -18,5 +18,7 @@
 #include "egpfw/egpfw/egpfwShaderProgram.h"
 #include "egpfw/egpfw/egpfwVertexBuffer.h"
 
+#include "egpfw/egpfw/egpfwOBJLoader.h"
+
 
 #endif	// __EGPFW_H

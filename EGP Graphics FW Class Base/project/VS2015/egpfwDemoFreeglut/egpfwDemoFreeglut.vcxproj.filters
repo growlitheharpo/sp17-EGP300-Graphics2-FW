@@ -13,56 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Resource Files\glsl">
-      <UniqueIdentifier>{e1b585a1-8984-4012-8ad4-a7d9256874f5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\glsl\410">
-      <UniqueIdentifier>{3732daa2-f39b-455c-8c20-feb4c5c4d87c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\glsl\410\vs">
-      <UniqueIdentifier>{d42b0a54-8852-42cf-95d2-f0fa9bee3bb1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\glsl\410\fs">
-      <UniqueIdentifier>{fc6b44a0-0e94-4222-957d-83a95bd0733f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\glsl\410\gs">
-      <UniqueIdentifier>{94db529d-6b04-4aa4-9d0e-9e16272617cb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\egpfwDemo">
       <UniqueIdentifier>{7dec6d87-16bc-4d69-80ec-968456751b2f}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\resource\glsl\410\fs\drawColor_fs410.glsl">
-      <Filter>Resource Files\glsl\410\fs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\fs\drawTexture_fs410.glsl">
-      <Filter>Resource Files\glsl\410\fs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\fs\phong_fs410.glsl">
-      <Filter>Resource Files\glsl\410\fs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\fs\phong_nm_fs410.glsl">
-      <Filter>Resource Files\glsl\410\fs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\gs\drawTangents_gs410.glsl">
-      <Filter>Resource Files\glsl\410\gs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\vs\passColor_vs410.glsl">
-      <Filter>Resource Files\glsl\410\vs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\vs\passTexcoord_passthruPosition_vs410.glsl">
-      <Filter>Resource Files\glsl\410\vs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\vs\passTexcoord_vs410.glsl">
-      <Filter>Resource Files\glsl\410\vs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\vs\phong_skin_vs410.glsl">
-      <Filter>Resource Files\glsl\410\vs</Filter>
-    </None>
-    <None Include="..\..\..\resource\glsl\410\vs\phong_vs410.glsl">
-      <Filter>Resource Files\glsl\410\vs</Filter>
-    </None>
+    <Filter Include="Resource Files\glsl">
+      <UniqueIdentifier>{8fbe023b-82b2-47c8-8c22-1d3a27315062}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\4x">
+      <UniqueIdentifier>{0ce6f8d2-84d4-4eb4-9025-864a7fdb3db1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\4x\vs">
+      <UniqueIdentifier>{b27f348d-a6cb-4985-9d54-5c6f1f2763bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\4x\fs">
+      <UniqueIdentifier>{51f71258-b8ae-4314-a540-85deecdd0494}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -89,5 +54,28 @@
     <Image Include="egpfwDemoFreeglut\icon1.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\resource\glsl\4x\fs\drawColor_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\drawTexture_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\phong_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\passColor_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\phong_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
   </ItemGroup>
 </Project>

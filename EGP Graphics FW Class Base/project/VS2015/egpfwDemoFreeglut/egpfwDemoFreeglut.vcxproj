@@ -174,7 +174,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glew32.lib;devil.lib;ilu.lib;ilut.lib;cbmath.lib;egpfwCompleteUtils.lib;egpfw.lib;freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -190,7 +190,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\Debug\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glew32.lib;devil.lib;ilu.lib;ilut.lib;cbmath.lib;egpfwCompleteUtils.lib;egpfwComplete.lib;freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -206,7 +206,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glew32.lib;devil.lib;ilu.lib;ilut.lib;cbmath.lib;egpfwCompleteUtils.lib;egpfw.lib;freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -222,7 +222,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\Debug\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glew32.lib;devil.lib;ilu.lib;ilut.lib;cbmath.lib;egpfwCompleteUtils.lib;egpfwComplete.lib;freeglutd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -240,7 +240,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>No</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -260,7 +260,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>No</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\Release\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -280,7 +280,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>No</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -300,25 +300,13 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>No</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(EGPFW_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\$(Configuration)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\;$(DEV_SDK_DIR)lib\$(PlatformTarget)\$(PlatformToolset)\Release\;$(EGPFW_DIR)thirdparty\lib\$(PlatformTarget)\$(PlatformToolset)\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glew32.lib;devil.lib;ilu.lib;ilut.lib;cbmath.lib;egpfwCompleteUtils.lib;egpfwComplete.lib;freeglut.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <None Include="..\..\..\resource\glsl\410\fs\drawColor_fs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\fs\drawTexture_fs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\fs\phong_fs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\fs\phong_nm_fs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\gs\drawTangents_gs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\vs\passColor_vs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\vs\passTexcoord_passthruPosition_vs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\vs\passTexcoord_vs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\vs\phong_skin_vs410.glsl" />
-    <None Include="..\..\..\resource\glsl\410\vs\phong_vs410.glsl" />
-  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp" />
     <ClCompile Include="egpfwDemoFreeglut\egpDemoFreeglutMain.cpp" />
@@ -332,6 +320,15 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="egpfwDemoFreeglut\icon1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\resource\glsl\4x\fs\drawColor_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\drawTexture_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\phong_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\passColor_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\phong_vs4x.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

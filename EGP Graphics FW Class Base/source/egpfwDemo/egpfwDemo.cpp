@@ -61,7 +61,7 @@ float win_aspect;
 float fovy = 1.0f, znear = 0.5f, zfar = 50.0f;
 float maxClipDist = 0.0f, minClipDist = 0.0f;
 
-									// update flag: play speed as a percentage
+// update flag: play speed as a percentage
 unsigned int playing = 1;
 unsigned int playrate = 100;
 
@@ -87,42 +87,99 @@ cbtk::cbmath::vec4 cameraPosWorld(0.0f, 0.0f, cameraDistance, 1.0f), deltaCamPos
 // graphics-related data and handles
 // good practice: default values for everything
 
-
-// test vertex buffers for built-in primitive data
-enum VAOIndex
+// test vertex buffers for built-in and loaded primitive data
+// use same model index for VAO and VBO (since VAOs only work 
+//	if the respective VBO has been created and associated)
+enum ModelIndex
 {
-	axesVAO, 
+	// built-in models
+	axesModel, 
+	skyboxModel, sphere8x6Model, sphere32x24Model,
 
-	sphere8x6VAO, sphere32x24VAO, cubeVAO, cubeWireVAO, cubeIndexedVAO, cubeWireIndexedVAO,
+	// loaded models
+	sphereLowResObjModel,
+	sphereHiResObjModel,
 
 //-----------------------------
-	vaoCount
+	modelCount
 };
-enum VBOIndex
-{
-	axesVBO, 
+egpVertexArrayObjectDescriptor vao[modelCount] = { 0 };
+egpVertexBufferObjectDescriptor vbo[modelCount] = { 0 };
 
-	sphere8x6VBO, sphere32x24VBO, cubeVBO, cubeWireVBO, cubeIndexedVBO, cubeWireIndexedVBO,
+
+// loaded textures
+enum TextureIndex
+{
+	skyboxTexHandle,
+	earthTexHandle_dm, earthTexHandle_sm,
+	moonTexHandle_dm,
+
+	//-----------------------------
+	textureCount
+};
+unsigned int tex[textureCount] = { 0 };
+
+
+// GLSL program handle objects: 
+// very convenient way to organize programs and their uniforms!
+enum GLSLProgramIndex
+{
+	testColorProgramIndex,
+	testTextureProgramIndex,
+	testTexturePassthruProgramIndex, 
+
+	phongProgramIndex,
 
 //-----------------------------
-	vboCount
+	GLSLProgramCount
 };
-enum IBOIndex
+enum GLSLCommonUniformIndex
 {
-	cubeIndexedIBO, cubeWireIndexedIBO,
+	unif_mvp,
+
+	unif_lightPos,
+	unif_eyePos,
+
+	unif_dm,
+	unif_sm,
 
 //-----------------------------
-	iboCount
+	GLSLCommonUniformCount
 };
-
-egpVertexArrayObjectDescriptor vao[vaoCount] = { 0 };
-egpVertexBufferObjectDescriptor vbo[vboCount] = { 0 };
-egpIndexBufferObjectDescriptor ibo[iboCount] = { 0 };
+egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
+int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
+int currentProgramIndex = 0;
+int testUseTextureProgram = 0;
 
 
 
 //-----------------------------------------------------------------------------
 // our game objects
+
+// transformation matrices
+cbmath::mat4 skyboxModelViewMatrix, skyboxModelViewProjectionMatrix;
+cbmath::mat4 earthModelMatrix, earthModelViewProjectionMatrix, earthModelInverseMatrix;
+cbmath::mat4 moonModelMatrix, moonModelViewProjectionMatrix, moonModelInverseMatrix;
+
+
+// light and camera for shading
+cbmath::vec4 lightPos_world(10.0f, 10.0f, 20.0f, 1.0f), lightPos_object, eyePos_object;
+
+
+// raw animation values: 
+float earthDaytime = 0.0f;
+float earthOrbit = 0.0f;
+const float earthAnimateRate = 100.0f;
+const float earthDaytimePeriod = earthAnimateRate / 24.0f;
+const float earthOrbitPeriod = earthDaytimePeriod / 365.25f;
+const float earthTilt = Deg2Rad(23.44f);
+const float earthDistance = 6.0f;
+
+float moonOrbit = 0.0f;
+const float moonOrbitPeriod = earthDaytimePeriod / 27.32f;
+const float moonTilt = Deg2Rad(6.69f);
+const float moonDistance = 4.0f;
+const float moonSize = 0.27f;
 
 
 
@@ -226,66 +283,311 @@ void setupGeometry()
 	//	so prepare those first
 	egpAttributeDescriptor attribs[] = {
 		egpCreateAttributeDescriptor(ATTRIB_POSITION, ATTRIB_VEC3, 0),
-		egpCreateAttributeDescriptor(ATTRIB_NORMAL, ATTRIB_VEC3, 0),
 		egpCreateAttributeDescriptor(ATTRIB_COLOR, ATTRIB_VEC3, 0),
+		egpCreateAttributeDescriptor(ATTRIB_NORMAL, ATTRIB_VEC3, 0),
 		egpCreateAttributeDescriptor(ATTRIB_TEXCOORD, ATTRIB_VEC2, 0),
 	};
 
+	// axes
+	attribs[0].data = egpGetAxesPositions();
+	attribs[1].data = egpGetAxesColors();
+	vao[axesModel] = egpCreateVAOInterleaved(PRIM_LINES, attribs, 2, egpGetAxesVertexCount(), (vbo + axesModel), 0);
+
+	// skybox
+	attribs[0].data = egpGetCubePositions();
+	attribs[1].data = egpGetCubeColors();
+	attribs[2].data = egpGetCubeNormals();
+	attribs[3].data = egpGetCubeTexcoords();
+	vao[skyboxModel] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetCubeVertexCount(), (vbo + skyboxModel), 0);
+
 	// low-res sphere
 	attribs[0].data = egpGetSphere8x6Positions();
-	attribs[1].data = egpGetSphere8x6Normals();
-	attribs[2].data = egpGetSphere8x6Colors();
+	attribs[1].data = egpGetSphere8x6Colors();
+	attribs[2].data = egpGetSphere8x6Normals();
 	attribs[3].data = egpGetSphere8x6Texcoords();
-	vao[sphere8x6VAO] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere8x6VertexCount(), (vbo + sphere8x6VBO), 0);
+	vao[sphere8x6Model] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere8x6VertexCount(), (vbo + sphere8x6Model), 0);
 
 	// high-res sphere
 	attribs[0].data = egpGetSphere32x24Positions();
-	attribs[1].data = egpGetSphere32x24Normals();
-	attribs[2].data = egpGetSphere32x24Colors();
+	attribs[1].data = egpGetSphere32x24Colors();
+	attribs[2].data = egpGetSphere32x24Normals();
 	attribs[3].data = egpGetSphere32x24Texcoords();
-	vao[sphere32x24VAO] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere32x24VertexCount(), (vbo + sphere32x24VBO), 0);
-
-	// cube
-	attribs[0].data = egpGetCubePositions();
-	attribs[1].data = egpGetCubeNormals();
-	attribs[2].data = egpGetCubeColors();
-	attribs[3].data = egpGetCubeTexcoords();
-	vao[cubeVAO] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetCubeVertexCount(), (vbo + cubeVBO), 0);
-
-	// wire cube
-	attribs[0].data = egpGetWireCubePositions();
-	vao[cubeWireVAO] = egpCreateVAOInterleaved(PRIM_LINES, attribs, 1, egpGetWireCubeVertexCount(), (vbo + cubeWireVBO), 0);
-
-	// indexed cube
-	attribs[0].data = egpGetCubeIndexedPositions();
-	attribs[1].data = egpGetCubeIndexedNormals();
-	attribs[2].data = egpGetCubeIndexedColors();
-	attribs[3].data = egpGetCubeIndexedTexcoords();
-	vao[cubeIndexedVAO] = egpCreateVAOInterleavedIndexed(PRIM_TRIANGLES, attribs, 4, egpGetCubeIndexedVertexCount(), (vbo + cubeIndexedVBO), INDEX_UINT, egpGetCubeIndexCount(), egpGetCubeIndices(), (ibo + cubeIndexedIBO));
-
-	// indexed wire cube
-	attribs[0].data = egpGetWireCubeIndexedPositions();
-	vao[cubeWireIndexedVAO] = egpCreateVAOInterleavedIndexed(PRIM_LINES, attribs, 1, egpGetCubeIndexedVertexCount(), (vbo + cubeWireIndexedVBO), INDEX_UINT, egpGetWireCubeIndexCount(), egpGetWireCubeIndices(), (ibo + cubeWireIndexedIBO));
+	vao[sphere32x24Model] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere32x24VertexCount(), (vbo + sphere32x24Model), 0);
 
 
-	// axes
-	const egpAttributeDescriptor axesAttribs[2] = {
-		egpCreateAttributeDescriptor(ATTRIB_POSITION, ATTRIB_VEC3, egpGetAxesPositions()),
-		egpCreateAttributeDescriptor(ATTRIB_COLOR, ATTRIB_VEC3, egpGetAxesColors()),
-	};
-	vao[axesVAO] = egpCreateVAOInterleaved(PRIM_LINES, axesAttribs, 2, egpGetAxesVertexCount(), (vbo + axesVBO), 0);
+	// loaded models
+	// attempt to load binary first; if failed, load object and save binary
+	// binary save/load is not necessary, but it is very fast
+	egpTriOBJDescriptor obj[1];
+
+	// low-res sphere
+	*obj = egpfwLoadBinaryOBJ("sphere8x6_bin.txt");
+	if (!obj->data)
+	{
+		*obj = egpfwLoadTriangleOBJ("../../../../resource/obj/sphere8x6.obj", NORMAL_LOAD, 1.0);
+		egpfwSaveBinaryOBJ(obj, "sphere8x6_bin.txt");
+	}
+	egpfwCreateVAOFromOBJ(obj, vao + sphereLowResObjModel, vbo + sphereLowResObjModel);
+	egpfwReleaseOBJ(obj);
+
+	// high-res sphere
+	*obj = egpfwLoadBinaryOBJ("sphere32x24_bin.txt");
+	if (!obj->data)
+	{
+		*obj = egpfwLoadTriangleOBJ("../../../../resource/obj/sphere32x24.obj", NORMAL_LOAD, 1.0);
+		egpfwSaveBinaryOBJ(obj, "sphere32x24_bin.txt");
+	}
+	egpfwCreateVAOFromOBJ(obj, vao + sphereHiResObjModel, vbo + sphereHiResObjModel);
+	egpfwReleaseOBJ(obj);
 }
 
 void deleteGeometry()
 {
-	// delete VAOs first (because referencing), then VBOs and IBOs
 	unsigned int i;
-	for (i = 0; i < vaoCount; ++i)
+	for (i = 0; i < modelCount; ++i)
+	{
 		egpReleaseVAO(vao + i);
-	for (i = 0; i < vboCount; ++i)
 		egpReleaseVBO(vbo + i);
-	for (i = 0; i < iboCount; ++i)
-		egpReleaseIBO(ibo + i);
+	}
+}
+
+
+// setup and delete textures
+void setupTextures()
+{
+	// here we can change the texture settings: 
+	//	1. smoothing: do we want it to appear 
+	//		rough/pixelated (GL_NEAREST) or smooth (GL_LINEAR)?
+	//	2. do we want it to repeat (GL_REPEAT) 
+	//		or clamp to the edges (GL_CLAMP) if texcoords are 
+	//		less than 0 or greater than 1?
+
+	// files
+	char *imgFiles[] = {
+		(char *)("../../../../resource/tex/bg/sky_clouds.png"),
+		(char *)("../../../../resource/tex/earth/2k/earth_dm_2k.png"),
+		(char *)("../../../../resource/tex/earth/2k/earth_sm_2k.png"),
+		(char *)("../../../../resource/tex/moon/2k/moon_dm_2k.png"),
+	};
+
+	// load
+	unsigned int ilHandle[textureCount] = { 0 }, status = 0, imgW = 0, imgH = 0;
+	const unsigned char *data = 0;
+	ilGenImages(textureCount, ilHandle);
+	ilEnable(IL_ORIGIN_SET);
+	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+	glGenTextures(textureCount, tex);
+	for (unsigned int i = 0; i < textureCount; ++i)
+	{
+		ilBindImage(ilHandle[i]);
+		status = ilLoadImage(imgFiles[i]);
+		if (status)
+		{
+			ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+			imgW = ilGetInteger(IL_IMAGE_WIDTH);
+			imgH = ilGetInteger(IL_IMAGE_HEIGHT);
+			data = ilGetData();
+
+			glBindTexture(GL_TEXTURE_2D, tex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, imgW, imgH, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+	}
+	ilDeleteImages(textureCount, ilHandle);
+
+
+	// skybox
+	glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);					// activate 2D texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// texture gets small/large, smooth
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);		// texture repeats on horiz axis
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+	// earth textures
+	glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);		// these two are deliberately different
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+	// moon textures
+	glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+	// disable textures
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void deleteTextures()
+{
+	// delete all textures at once
+	glDeleteTextures(textureCount, tex);
+}
+
+
+// setup and delete shaders
+void setupShaders()
+{
+	unsigned int u = 0;
+	egpFileInfo files[2];
+	egpShader shaders[2];
+
+	// array of common uniform names
+	const char *commonUniformName[] = {
+		(const char *)("mvp"),
+		(const char *)("lightPos"),
+		(const char *)("eyePos"),
+		(const char *)("tex_dm"),
+		(const char *)("tex_sm"),
+	};
+
+	const int imageLocations[] = {
+		0, 1, 2, 3, 4, 5, 6, 7
+	};
+
+
+	// activate a VAO for validation
+	egpActivateVAO(vao + sphere8x6Model);
+
+
+	// test color program
+	{
+		currentProgramIndex = testColorProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+
+		// load files
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passColor_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
+
+		// create shaders
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		// create, link and validate program
+		*currentProgram = egpCreateProgram();
+		egpAttachShaderToProgram(currentProgram, shaders + 0);
+		egpAttachShaderToProgram(currentProgram, shaders + 1);
+		egpLinkProgram(currentProgram);
+		egpValidateProgram(currentProgram);
+
+		// release shaders and files
+		egpReleaseShader(shaders + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 0);
+		egpReleaseFileContents(files + 1);
+	}
+
+	// test texture program
+	// example of shared shader
+	{
+		// load shared shader
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawTexture_fs4x.glsl");
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		// pass texcoord
+		{
+			// same as previous
+			currentProgramIndex = testTextureProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 1);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			// release unique shaders and files
+			egpReleaseShader(shaders + 0);
+			egpReleaseFileContents(files + 0);
+		}
+
+		// pass texcoord, passthru position
+		{
+			currentProgramIndex = testTexturePassthruProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_passthruPosition_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 1);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			egpReleaseShader(shaders + 0);
+			egpReleaseFileContents(files + 0);
+		}
+
+		// release shared
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 1);
+	}
+
+	// lighting
+	{
+		currentProgramIndex = phongProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/phong_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/phong_fs4x.glsl");
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		*currentProgram = egpCreateProgram();
+		egpAttachShaderToProgram(currentProgram, shaders + 0);
+		egpAttachShaderToProgram(currentProgram, shaders + 1);
+		egpLinkProgram(currentProgram);
+		egpValidateProgram(currentProgram);
+
+		egpReleaseShader(shaders + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 0);
+		egpReleaseFileContents(files + 1);
+	}
+
+
+	// configure all uniforms at once
+	for (currentProgramIndex = 0; currentProgramIndex < GLSLProgramCount; ++currentProgramIndex)
+	{
+		// get location of every uniform
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+		for (u = 0; u < GLSLCommonUniformCount; ++u)
+			currentUniformSet[u] = egpGetUniformLocation(currentProgram, commonUniformName[u]);
+
+		// bind constant uniform locations, if they exist, because they never change
+		// e.g. image bindings
+		egpSendUniformInt(currentUniformSet[unif_dm], UNIF_INT, 1, imageLocations);
+		egpSendUniformInt(currentUniformSet[unif_sm], UNIF_INT, 1, imageLocations + 1);
+	}
+
+
+	// disable all
+	egpActivateProgram(0);
+	egpActivateVAO(0);
+}
+
+void deleteShaders()
+{
+	// convenient way to release all programs
+	unsigned int i;
+	for (i = 0; i < GLSLProgramCount; ++i)
+		egpReleaseProgram(glslPrograms + i);
 }
 
 
@@ -372,6 +674,12 @@ int initGame()
 	// setup geometry
 	setupGeometry();
 
+	// setup textures
+	setupTextures();
+
+	// setup shaders
+	setupShaders();
+
 
 	// other
 	egpSetActiveMouse(mouse);
@@ -386,6 +694,12 @@ int termGame()
 {
 	// good practice to do this in reverse order of creation
 	//	in case something is referencing something else
+
+	// delete shaders
+	deleteShaders();
+
+	// delete textures
+	deleteTextures();
 
 	// delete geometry
 	deleteGeometry();
@@ -404,6 +718,10 @@ void displayControls()
 	printf("\n ~` = display controls");
 	printf("\n o = toggle slow-mo playback for all");
 	printf("\n p = toggle play/pause for all");
+
+	printf("\n l = real-time reload all shaders");
+	printf("\n i = toggle test shader program");
+
 	printf("\n-------------------------------------------------------");
 }
 
@@ -423,6 +741,18 @@ void handleInputState()
 	// pause/play
 	if (egpKeyboardIsKeyPressed(keybd, 'p'))
 		playing = 1 - playing;
+
+
+	// reload shaders
+	if (egpKeyboardIsKeyPressed(keybd, 'l'))
+	{
+		deleteShaders();
+		setupShaders();
+	}
+
+	// toggle test shader
+	if (egpKeyboardIsKeyPressed(keybd, 'i'))
+		testUseTextureProgram = 1 - testUseTextureProgram;
 
 
 	// finish by updating input state
@@ -449,9 +779,51 @@ void updateGameState(float dt)
 	// scale time first
 	dt *= (float)(playrate * playing) * 0.01f;
 
-	// ****update objects here
-	{
+	// update objects here
 
+	// SKYBOX TRANSFORM: 
+	{
+		// easy way: exact same as the camera's transform (view), but 
+		//	we remove the translation (which makes the background seem 
+		//	infinitely far away), and scale up instead
+
+		// multiply view matrix with scale matrix to make modelview
+		skyboxModelViewMatrix = viewMatrix * cbtk::cbmath::makeScale4(minClipDist);
+
+		// remove translation component (by setting 4th column to 0,0,0,1)
+		skyboxModelViewMatrix.c3 = cbmath::v4w;
+
+		// concatenate with proj to get mvp
+		skyboxModelViewProjectionMatrix = projectionMatrix * skyboxModelViewMatrix;
+	}
+
+	// earth: 
+	{
+		// animate daytime and orbit
+		earthDaytime += dt * earthDaytimePeriod;
+		earthOrbit += dt * earthOrbitPeriod;
+
+		// calculate model matrix
+		earthModelMatrix = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
+		earthModelMatrix.c3.x = cosf(earthOrbit) * earthDistance;
+		earthModelMatrix.c3.z = -sinf(earthOrbit) * earthDistance;
+
+		// update mvp
+		earthModelViewProjectionMatrix = viewProjMat * earthModelMatrix;
+
+		// update inverse
+		earthModelInverseMatrix = cbmath::transformInverseNoScale(earthModelMatrix);
+	}
+
+	// moon: 
+	{
+		moonOrbit += dt * moonOrbitPeriod;
+
+		moonModelMatrix = cbmath::makeRotationZ4(moonTilt) * cbmath::makeRotationY4(moonOrbit) * cbmath::makeScale4(moonSize);
+		moonModelMatrix.c3.x = earthModelMatrix.c3.x + cosf(moonOrbit) * moonDistance;
+		moonModelMatrix.c3.z = earthModelMatrix.c3.z - sinf(moonOrbit) * moonDistance;
+		moonModelViewProjectionMatrix = viewProjMat * moonModelMatrix;
+		moonModelInverseMatrix = cbmath::transformInverseNoScale(moonModelMatrix);
 	}
 }
 
@@ -461,7 +833,7 @@ void updateGameState(float dt)
 void renderGameState()
 {
 //-----------------------------------------------------------------------------
-	// ****DRAW ALL OBJECTS - ALGORITHM: 
+	// DRAW ALL OBJECTS - ALGORITHM: 
 	//	- activate shader program if different from last object
 	//	- bind texture we want to apply (skybox)
 	//	- send appropriate uniforms if different from last time we used this program
@@ -473,40 +845,71 @@ void renderGameState()
 
 	// first pass: scene
 	{
-		// ****
-		// TEST DRAW: demo shapes
+		// target back-buffer and clear
+		drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
+
+
+		// typically begin frame by clearing buffers
+		// alternatively, just redraw the background - clearing is expensive :)
+		//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+		// activate test program
+		if (testUseTextureProgram)
+			currentProgramIndex = testTextureProgramIndex;
+		else
+			currentProgramIndex = testColorProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+
+
+		// draw skybox instead of clearing
 		{
-			// target back-buffer and clear
-			drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glCullFace(GL_FRONT);
+			glDepthFunc(GL_ALWAYS);
+			glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);
 
-			// uncomment to draw everything as wireframe
-		//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			// retained
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, skyboxModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + skyboxModel);
+			egpDrawActiveVAO();
 
-			// draw 3D primitives with immediate mode (terrible)
-		//	egpDrawSphere8x6Immediate(viewProjMat.m, 0, 1.0f, 0.0f, 0.0f);
-		//	egpDrawSphere32x24Immediate(viewProjMat.m, 0, 0.0f, 1.0f, 0.0f);
-		//	egpDrawCubeImmediate(viewProjMat.m, 0, 1, 0.0f, 0.0f, 1.0f);
-		//	egpDrawWireCubeImmediate(viewProjMat.m, 0, 1, 1.0f, 0.5f, 0.0f);
-
-			// draw 3D primitives with retained mode (VAOs, proper)
-		//	egpActivateVAO(vao + sphere8x6VAO);
-		//	egpActivateVAO(vao + sphere32x24VAO);
-		//	egpActivateVAO(vao + cubeVAO);
-		//	egpActivateVAO(vao + cubeWireVAO);
-		//	egpActivateVAO(vao + cubeIndexedVAO);
-		//	egpActivateVAO(vao + cubeWireIndexedVAO);
-		//	egpDrawActiveVAO();
+			glDepthFunc(GL_LESS);
+			glCullFace(GL_BACK);
 		}
-	}
+
+		// draw textured moon
+		{
+			glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
+
+			// retained
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + sphere8x6Model);
+			egpDrawActiveVAO();
+		}
 
 
-	// ****
-	// TEST YOUR SHAPES
-	{
-		egpfwDrawColoredTriangleImmediate(viewProjMat.m, 0);
-	//	egpfwDrawColoredUnitQuadImmediate(viewProjMat.m, 0);
-	//	egpfwDrawTexturedUnitQuadImmediate(viewProjMat.m, 0);
+		// draw shaded earth
+		{
+			currentProgramIndex = phongProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
+
+			eyePos_object = earthModelInverseMatrix * cameraPosWorld;
+			lightPos_object = earthModelInverseMatrix * lightPos_world;
+			egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
+			egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + sphereHiResObjModel);
+			egpDrawActiveVAO();
+		}
 	}
 
 
@@ -516,13 +919,25 @@ void renderGameState()
 		// force draw in front of everything
 		glDisable(GL_DEPTH_TEST);
 
+		currentProgramIndex = testColorProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjMat.m);
+
 		// center of world
 		// (this is useful to see where the origin is and how big one unit is)
-		egpfwDrawAxesImmediate(viewProjMat.m, 0);
+		egpActivateVAO(vao + axesModel);
+		egpDrawActiveVAO();
 
 		// done
 		glEnable(GL_DEPTH_TEST);
 	}
+
+
+	// deactivate all
+	egpActivateVAO(0);
+	egpActivateProgram(0);
 }
 
 
