@@ -92,6 +92,7 @@ void egpfwDrawTexturedUnitQuadImmediate(const float *mvp, const int mvpLoc)
 
 //-----------------------------------------------------------------------------
 
+/*
 // ****
 // raw quad data
 // data should be arranged as TRIANGLE STRIP: use at most 4 vertices!
@@ -105,7 +106,7 @@ const float fwUnitQuadColors[quadNumVertices * 3] = {
 const float fwUnitQuadTexcoords[quadNumVertices * 2] = {
 	0.0f, //...
 };
-
+*/
 
 //-----------------------------------------------------------------------------
 

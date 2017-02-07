@@ -17,6 +17,10 @@
 //		-> replace 'out' with 'in':		in <structure name> { ...
 //	-> for one-by-one format, variable type and name must be identical
 
+in v2f {
+	vec4 color;
+} passData;
+
 
 // uniforms: same idea for all shader types
 // (none in this example)
@@ -27,6 +31,8 @@
 // same format as attribute, but with 'out' instead of 'in': 
 //		layout (location = <target index>) out <type> <name>;
 
+layout (location = 0) out vec4 color;
+
 
 // shader entry point: function executes once per-fragment
 void main()
@@ -34,4 +40,5 @@ void main()
 	// ****
 	// no required steps, but the goal is to assign a color to a target
 	// this example: copy inbound color varying directly to framebuffer target
+	color = passData.color;
 }
