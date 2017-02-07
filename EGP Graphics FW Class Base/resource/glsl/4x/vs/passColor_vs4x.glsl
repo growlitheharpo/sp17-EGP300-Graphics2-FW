@@ -57,6 +57,6 @@ void main()
 	// optional step: pass data along to next stage in pipeline
 	// this example: copy inbound color attribute directly to outbound varying
 
-	vec4 normalFlipped = normal / 2.0 + vec4(0.5f);
-	passData.color = normalFlipped;
+	//vec4 normalFlipped = normal / 2.0 + vec4(0.5f);
+	passData.color = color;//normalFlipped;
 }
