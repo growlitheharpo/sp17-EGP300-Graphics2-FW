@@ -22,6 +22,12 @@
     <Filter Include="Source Files\cpp">
       <UniqueIdentifier>{008ef152-8bb8-41d3-8c26-b1c4a33eeaee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\week1">
+      <UniqueIdentifier>{0ef48ae8-bd01-4218-997f-a8ded634f94d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\week2">
+      <UniqueIdentifier>{4fa1bd5d-7ce9-470a-9879-00d335d4b3bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -39,6 +45,21 @@
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwOBJLoader.h">
       <Filter>Header Files\egpfw</Filter>
     </ClInclude>
+    <ClInclude Include="transformMatrix.h">
+      <Filter>Source Files\week1</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Source Files\week1</Filter>
+    </ClInclude>
+    <ClInclude Include="vector3.h">
+      <Filter>Source Files\week1</Filter>
+    </ClInclude>
+    <ClInclude Include="Quaternion.h">
+      <Filter>Source Files\week2</Filter>
+    </ClInclude>
+    <ClInclude Include="QuaternionTest.h">
+      <Filter>Source Files\week2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -52,6 +73,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\egpfw\egpfwOBJLoader.c">
       <Filter>Source Files\c</Filter>
+    </ClCompile>
+    <ClCompile Include="transformMatrix.c">
+      <Filter>Source Files\week1</Filter>
+    </ClCompile>
+    <ClCompile Include="vector3.c">
+      <Filter>Source Files\week1</Filter>
+    </ClCompile>
+    <ClCompile Include="Quaternion.cpp">
+      <Filter>Source Files\week2</Filter>
+    </ClCompile>
+    <ClCompile Include="QuaternionTest.cpp">
+      <Filter>Source Files\week2</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

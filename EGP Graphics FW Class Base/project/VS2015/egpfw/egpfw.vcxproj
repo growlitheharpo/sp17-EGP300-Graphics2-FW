@@ -24,12 +24,21 @@
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwPrimitiveDataSimple.h" />
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwShaderProgram.h" />
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwVertexBuffer.h" />
+    <ClInclude Include="Quaternion.h" />
+    <ClInclude Include="QuaternionTest.h" />
+    <ClInclude Include="transformMatrix.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="vector3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwOBJLoader.c" />
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c" />
     <ClCompile Include="..\..\..\source\egpfw\egpfwShaderProgram.c" />
     <ClCompile Include="..\..\..\source\egpfw\egpfwVertexBuffer.c" />
+    <ClCompile Include="Quaternion.cpp" />
+    <ClCompile Include="QuaternionTest.cpp" />
+    <ClCompile Include="transformMatrix.c" />
+    <ClCompile Include="vector3.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FBCB5A67-EAA2-4A81-BF9C-6454ED41ECB7}</ProjectGuid>
