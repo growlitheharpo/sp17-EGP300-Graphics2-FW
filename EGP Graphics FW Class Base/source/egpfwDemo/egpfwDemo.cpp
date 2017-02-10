@@ -78,7 +78,7 @@ egpKeyboard keybd[1];
 cbtk::cbmath::mat4 viewMatrix, projectionMatrix, viewProjMat;
 // camera controls
 float cameraElevation = 0.0f, cameraAzimuth = 0.0f;
-float cameraRotateSpeed = 0.1f, cameraMoveSpeed = 1.0f, cameraDistance = 8.0f;
+float cameraRotateSpeed = 0.25f, cameraMoveSpeed = 1.0f, cameraDistance = 8.0f;
 cbtk::cbmath::vec4 cameraPosWorld(0.0f, 0.0f, cameraDistance, 1.0f), deltaCamPos;
 
 
@@ -94,6 +94,7 @@ enum ModelIndex
 {
 	// built-in models
 	axesModel, 
+	fsqModel, 
 	skyboxModel, sphere8x6Model, sphere32x24Model,
 
 	// loaded models
@@ -149,7 +150,20 @@ enum GLSLCommonUniformIndex
 egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
 int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
 int currentProgramIndex = 0;
-int testUseTextureProgram = 0;
+int testUseTextureProgram = 1;
+
+
+// framebuffer objects (FBOs)
+enum FBOIndex
+{
+	sceneFBO, 
+	
+//-----------------------------
+	fboCount
+};
+egpFrameBufferObjectDescriptor fbo[fboCount];
+int testDrawColor = 1;
+int testDrawAxes = 1;
 
 
 
@@ -313,6 +327,12 @@ void setupGeometry()
 	attribs[2].data = egpGetSphere32x24Normals();
 	attribs[3].data = egpGetSphere32x24Texcoords();
 	vao[sphere32x24Model] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere32x24VertexCount(), (vbo + sphere32x24Model), 0);
+
+	// full-screen quad (positions and texcoords only!)
+	attribs[1] = attribs[3];
+	attribs[0].data = egpfwGetUnitQuadPositions();
+	attribs[1].data = egpfwGetUnitQuadTexcoords();
+	vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 2, 4, (vbo + fsqModel), 0);
 
 
 	// loaded models
@@ -591,6 +611,23 @@ void deleteShaders()
 }
 
 
+// setup and delete framebuffers
+void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
+{
+	// prepare framebuffers in one simple call
+
+	// one for the scene
+	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_D32, SMOOTH_NOWRAP);
+}
+
+void deleteFramebuffers()
+{
+	// how convenient
+	for (unsigned int i = 0; i < fboCount; ++i)
+		egpfwReleaseFBO(fbo + i);
+}
+
+
 // restart all timers and time counters
 void resetTimers()
 {
@@ -655,9 +692,9 @@ void updateCameraOrbit(float dt)
 	// force camera to orbit around center of world
 	cameraAzimuth += dt * cameraRotateSpeed;
 
-	viewMatrix = cbtk::cbmath::makeRotationEuler4ZYX(-0.1f, cameraAzimuth, 0.0f);
+	viewMatrix = cbtk::cbmath::makeRotationEuler4ZYX(0.0f, cameraAzimuth, 0.0f);
 
-	cameraPosWorld.set(sinf(cameraAzimuth)*cameraDistance, 1.0f, cosf(cameraAzimuth)*cameraDistance, 1.0f);
+	cameraPosWorld.set(sinf(cameraAzimuth)*cameraDistance, 0.0f, cosf(cameraAzimuth)*cameraDistance, 1.0f);
 }
 
 
@@ -695,6 +732,9 @@ int termGame()
 	// good practice to do this in reverse order of creation
 	//	in case something is referencing something else
 
+	// delete fbos
+	deleteFramebuffers();
+
 	// delete shaders
 	deleteShaders();
 
@@ -721,6 +761,8 @@ void displayControls()
 
 	printf("\n l = real-time reload all shaders");
 	printf("\n i = toggle test shader program");
+	printf("\n f = toggle framebuffer output (color/depth)");
+	printf("\n x = toggle coordinate axes post-draw");
 
 	printf("\n-------------------------------------------------------");
 }
@@ -754,6 +796,14 @@ void handleInputState()
 	if (egpKeyboardIsKeyPressed(keybd, 'i'))
 		testUseTextureProgram = 1 - testUseTextureProgram;
 
+	// toggle framebuffer target to display
+	if (egpKeyboardIsKeyPressed(keybd, 'f'))
+		testDrawColor = 1 - testDrawColor;
+
+	// toggle axes
+	if (egpKeyboardIsKeyPressed(keybd, 'x'))
+		testDrawAxes = 1 - testDrawAxes;
+
 
 	// finish by updating input state
 	egpMouseUpdate(mouse);
@@ -766,7 +816,7 @@ void updateGameState(float dt)
 {
 	// update camera
 	updateCameraControlled(dt, mouse);
-	//	updateCameraOrbit(dt);
+//	updateCameraOrbit(dt);
 
 	// update view matrix
 	// 'c3' in a 4x4 matrix is the translation part
@@ -843,17 +893,11 @@ void renderGameState()
 
 //-----------------------------------------------------------------------------
 
+	// draw scene off-screen
+	egpfwActivateFBO(fbo + sceneFBO);
+
 	// first pass: scene
 	{
-		// target back-buffer and clear
-		drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
-
-
-		// typically begin frame by clearing buffers
-		// alternatively, just redraw the background - clearing is expensive :)
-		//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
 		// activate test program
 		if (testUseTextureProgram)
 			currentProgramIndex = testTextureProgramIndex;
@@ -913,31 +957,57 @@ void renderGameState()
 	}
 
 
-	// TEST DRAW: coordinate axes at center of spaces
-	//	and other line objects
+	// unbind all active framebuffers, setup for final pass 
+	// (draw to back buffer)
+	egpfwActivateFBO(0);
+	drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
+
+
+	// final pass: draw FSQ with scene FBO on it
 	{
-		// force draw in front of everything
-		glDisable(GL_DEPTH_TEST);
-
-		currentProgramIndex = testColorProgramIndex;
+		// use texturing program, no mvp
+		currentProgramIndex = testTexturePassthruProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
 		egpActivateProgram(currentProgram);
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjMat.m);
 
-		// center of world
-		// (this is useful to see where the origin is and how big one unit is)
-		egpActivateVAO(vao + axesModel);
+		// bind scene texture
+		if (testDrawColor)
+			egpfwBindColorTargetTexture((fbo + sceneFBO), 0, 0);
+		else
+			egpfwBindDepthTargetTexture((fbo + sceneFBO), 0);
+
+		// draw quad, ignore depth, always draw
+		glDisable(GL_DEPTH_TEST);
+		egpActivateVAO(vao + fsqModel);
 		egpDrawActiveVAO();
+
+		// done with textures
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		// TEST DRAW: coordinate axes at center of spaces
+		//	and other line objects
+		if (testDrawAxes)
+		{
+			currentProgramIndex = testColorProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjMat.m);
+
+			// center of world
+			// (this is useful to see where the origin is and how big one unit is)
+			egpActivateVAO(vao + axesModel);
+			egpDrawActiveVAO();
+		}
 
 		// done
 		glEnable(GL_DEPTH_TEST);
 	}
 
 
-	// deactivate all
-	egpActivateVAO(0);
+	// disable all renderables, shaders
 	egpActivateProgram(0);
+	egpActivateVAO(0);
 }
 
 
@@ -1003,6 +1073,11 @@ void onResizeWindow(int w, int h)
 		maxClipDist = (float)((unsigned int)(sqrtf(rf*rf + tf*tf + zfar*zfar)));
 		minClipDist = (float)((unsigned int)(sqrtf(zfar*zfar / 3.0f)));
 	}
+
+	// if framebuffers are backed against the size of the main window, then 
+	//	it's probably a good idea to tear down and remake the framebuffers...
+	deleteFramebuffers();
+	setupFramebuffers(viewport_tw, viewport_th);
 }
 
 // window moved
