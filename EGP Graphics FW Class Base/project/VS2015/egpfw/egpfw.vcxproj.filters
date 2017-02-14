@@ -65,7 +65,7 @@
     </ClInclude>
     <ClInclude Include="TStack.h">
       <Filter>Source Files\week3</Filter>
-	</ClInclude>
+    </ClInclude>
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwFrameBuffer.h">
       <Filter>Header Files\egpfw</Filter>
     </ClInclude>
@@ -97,7 +97,7 @@
     </ClCompile>
     <ClCompile Include="stackTest.cpp">
       <Filter>Source Files\week3</Filter>
-	</ClInclude>
+    </ClCompile>
     <ClCompile Include="..\..\..\source\egpfw\egpfwFrameBuffer.c">
       <Filter>Source Files\c</Filter>
     </ClCompile>
