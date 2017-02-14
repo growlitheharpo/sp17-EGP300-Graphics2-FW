@@ -32,7 +32,7 @@ class Stack
 		bool contains(const T& data) const;
 		int depth(const T& data) const;
 
-		bool empty() const { return mCount > 0; }
+		bool empty() const { return mCount == 0; }
 		unsigned int count() const { return mCount; }
 };
 
@@ -82,7 +82,8 @@ T Stack<T>::pop()
 	mHead = mHead->mNext;
 	mCount--;
 
-	return node->mData;
+	auto data = node->mData;
+	return data;
 }
 
 template <typename T>
