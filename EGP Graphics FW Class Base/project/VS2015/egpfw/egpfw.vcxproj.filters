@@ -28,6 +28,9 @@
     <Filter Include="Source Files\week2">
       <UniqueIdentifier>{4fa1bd5d-7ce9-470a-9879-00d335d4b3bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\week3">
+      <UniqueIdentifier>{9a88322c-499a-4eb3-8230-09f7a7d870c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -60,6 +63,9 @@
     <ClInclude Include="QuaternionTest.h">
       <Filter>Source Files\week2</Filter>
     </ClInclude>
+    <ClInclude Include="TStack.h">
+      <Filter>Source Files\week3</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -85,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="QuaternionTest.cpp">
       <Filter>Source Files\week2</Filter>
+    </ClCompile>
+    <ClCompile Include="stackTest.cpp">
+      <Filter>Source Files\week3</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

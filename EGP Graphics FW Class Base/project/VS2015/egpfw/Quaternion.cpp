@@ -135,6 +135,16 @@ Quaternion::Quaternion(const Quaternion& other)
 	vals = other.vals;
 }
 
+Quaternion::Quaternion(float amount, Vector3 axis)
+{
+	multiply(&axis, sin(amount));
+	
+	vals[X] = axis.x;
+	vals[Y] = axis.y;
+	vals[Z] = axis.z;
+	vals[W] = cos(amount);
+}
+
 Quaternion::Quaternion(float x, float y, float z, float w)
 {
 	vals[X] = x;

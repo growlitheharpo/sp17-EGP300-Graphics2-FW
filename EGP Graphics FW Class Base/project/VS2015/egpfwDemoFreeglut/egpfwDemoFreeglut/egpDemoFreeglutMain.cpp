@@ -1,6 +1,7 @@
 // EGPFW Framework Demo - Freeglut main for Windows
 // By Dan Buckstein
 
+#include "../../egpfw/TStack.h"
 #ifdef _WIN32
 //-----------------------------------------------------------------------------
 
@@ -122,6 +123,8 @@ int main(int argc, char **argv)
 
 	//	printf("\n\n");
 	//	system("pause");
+
+	return 0;
 }
 
 

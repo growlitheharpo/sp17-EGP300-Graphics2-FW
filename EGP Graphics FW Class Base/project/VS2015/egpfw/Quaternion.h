@@ -30,6 +30,7 @@ private:
 public:
 	Quaternion();
 	Quaternion(const Quaternion& other);
+	Quaternion(float amount, Vector3 axis);
 	Quaternion(float x, float y, float z, float w);
 	~Quaternion();
 
@@ -42,9 +43,9 @@ public:
 
 	static Quaternion makeRotationZYX(float yaw, float pitch, float roll);
 	static Quaternion makeRotationXYZ(float x, float y, float z);
-	static Quaternion makeRotationX(float x) { return makeRotationZYX(0.0f, 0.0f, x); }
-	static Quaternion makeRotationY(float y) { return makeRotationZYX(0.0f, y, 0.0f); }
-	static Quaternion makeRotationZ(float z) { return makeRotationZYX(z, 0.0f, 0.0f); }
+	static Quaternion makeRotationX(float x) { return Quaternion(x, RIGHT_VECTOR3); }
+	static Quaternion makeRotationY(float y) { return Quaternion(y, FORWARD_VECTOR3); }
+	static Quaternion makeRotationZ(float z) { return Quaternion(z, UP_VECTOR3); }
 	static TransformMatrix makeTransformationMatrix(const Quaternion& from);
 
 	void makeIdentity() { *this = identity(); }
