@@ -1,5 +1,5 @@
 // By Dan Buckstein
-// Modified by: _______________________________________________________________
+// Modified by: James Keats with permission from author.
 #include "egpfw/egpfw/egpfwOBJLoader.h"
 
 
@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <GL/glew.h>
 
 
 #define BUFFER_OFFSET_BYTE(p,n) ((char *)(p) + n)
@@ -56,6 +57,14 @@ typedef struct uniqueVertex		uniqueVertex;
 typedef struct uniqueTexcoord	uniqueTexcoord;
 typedef struct uniqueNormal		uniqueNormal;
 #endif	// __cplusplus
+
+struct interleave
+{
+	float3 pos, nor;
+	float2 texcoord;
+};
+
+typedef struct interleave interleave;
 
 
 //-----------------------------------------------------------------------------
@@ -160,13 +169,11 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 	//Load all the faces into faceBuffer
 	do
 	{
-		//format: f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
-		//TODO: BREAKING ON THIS LINE, FIX IT
 		sscanf(lineBuffer,
-			"%*s %i %*c %i %*c %i %*s %i %*c %i %*c %i %*s %i %*c %i %*c %i",
-			f.v0, f.vt0, f.vn0,
-			f.v1, f.vt1, f.vn1,
-			f.v2, f.vt2, f.vn2);
+			"%*s%i%*c%i%*c%i%i%*c%i%*c%i%i%*c%i%*c%i",
+			&f.v0, &f.vt0, &f.vn0,
+			&f.v1, &f.vt1, &f.vn1,
+			&f.v2, &f.vt2, &f.vn2);
 
 		faceBuffer[currentIndex] = f;
 		currentIndex++;
@@ -210,7 +217,87 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDescriptor *vao_out, egpVertexBufferObjectDescriptor *vbo_out)
 {
 	//...
-	//printf("Trying to create a VAO...\n");
+	void* faceStart = obj->data;
+	void* faceEnd = BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_POSITION]);
+
+	float3* vertexStart = (float3*)((char *)(obj->data) + obj->attribOffset[ATTRIB_POSITION]);
+	float3* normalStart = (float3*)((char *)(obj->data) + obj->attribOffset[ATTRIB_NORMAL]);
+	float2* texcoordStart = (float2*)((char *)(obj->data) + obj->attribOffset[ATTRIB_TEXCOORD]);
+
+	unsigned int numberOfFaces = (unsigned int)((char*)faceEnd - (char*)faceStart) / sizeof(face);
+
+	unsigned int vertexCount = numberOfFaces * 3;
+	unsigned int interleavedBufferSize = sizeof(interleave) * vertexCount;
+	interleave* interleavedBuffer = (interleave*)malloc(interleavedBufferSize);
+
+	face fdata;
+	interleave idata;
+	int i = 0;
+
+	for (void* walker = faceStart; walker != faceEnd; walker = BUFFER_OFFSET_BYTE(walker, sizeof(face)))
+	{
+		fdata = *(face*)walker;
+		
+		idata.pos = vertexStart[fdata.v0];
+		idata.nor = normalStart[fdata.vn0];
+		idata.texcoord = texcoordStart[fdata.vt0];
+
+		interleavedBuffer[i] = idata;
+		i++;
+
+		idata.pos = vertexStart[fdata.v1];
+		idata.nor = normalStart[fdata.vn1];
+		idata.texcoord = texcoordStart[fdata.vt1];
+
+		interleavedBuffer[i] = idata;
+		i++;
+
+		idata.pos = vertexStart[fdata.v2];
+		idata.nor = normalStart[fdata.vn2];
+		idata.texcoord = texcoordStart[fdata.vt2];
+
+		interleavedBuffer[i] = idata;
+		i++;
+	}
+
+	//generate a VBO
+	glGenBuffers(1, &vbo_out->glhandle);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_out->glhandle);
+	glBufferData(GL_ARRAY_BUFFER, interleavedBufferSize, (void*)interleavedBuffer, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	vbo_out->attribTypes[ATTRIB_NORMAL] = 1;
+	vbo_out->attribTypes[ATTRIB_TEXCOORD] = 1;
+	vbo_out->attribTypes[ATTRIB_POSITION] = 1;
+	vbo_out->vertexSize = sizeof(float3);
+	vbo_out->vertexCount = vertexCount;
+
+	glGenVertexArrays(1, &vao_out->glhandle);
+	glBindVertexArray(vao_out->glhandle);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_out->glhandle);
+	
+	egpCreateVAOInterleaved(PRIM_TRIANGLES, NULL, 3, vertexCount, vbo_out, NULL);
+
+	glEnableVertexAttribArray(ATTRIB_POSITION);
+	glVertexAttribPointer(ATTRIB_POSITION,
+		3, GL_FLOAT, GL_FALSE, sizeof(float3) + sizeof(float3) + sizeof(float2), (void*)0);
+	
+	glEnableVertexAttribArray(ATTRIB_NORMAL);
+	glVertexAttribPointer(ATTRIB_NORMAL,
+		3, GL_FLOAT, GL_FALSE, sizeof(float3) + sizeof(float3) + sizeof(float2), (void*)sizeof(float3));
+
+	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+	glVertexAttribPointer(ATTRIB_TEXCOORD,
+		3, GL_FLOAT, GL_FALSE, sizeof(float3) + sizeof(float3) + sizeof(float2), (void*)(sizeof(float3) + sizeof(float3)));
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	vao_out->vbo = vbo_out;
+	vao_out->primType = PRIM_TRIANGLES;
+	vao_out->ibo = NULL;
+
+	free(interleavedBuffer);
+
 	return 0;
 }
 
@@ -220,6 +307,7 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 int egpfwReleaseOBJ(egpTriOBJDescriptor *obj)
 {
 	//...
+	free(obj->data);
 	return 0;
 }
 
