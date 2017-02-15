@@ -71,11 +71,26 @@ typedef struct interleave interleave;
 
 
 #define BUFFER_SIZE 2048
+#define LINE_SIZE 64
 
 // ****
 // load triangulated OBJ file
 egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNormalMode normalMode, const double globalScale)
 {
+	unsigned int numVerticies, numTexcoords, numNormals, numFaces;
+	float3 vertexBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
+	float2 vertexTexBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
+	float3 vertexNorBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
+	face faceBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the faces
+
+	char lineBuffer[LINE_SIZE];
+	float3 currentF3 = { 0 };
+	float2 currentF2 = { 0 };
+	face f = { 0 };
+
+	int i = 0;
+
+	//Load our file handle
 	egpTriOBJDescriptor obj = { 0 };
 	FILE* objFile = fopen(objPath, "r");
 	if (objFile == NULL)
@@ -84,130 +99,127 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 		return obj;
 	}
 
-	char lineBuffer[64];
+	//Skip the junk, go to the first line that has a vertex.
 	while (lineBuffer[0] != 'v' && fgets(lineBuffer, 64, objFile) != NULL) {}
-	
-	if (feof(objFile)) //reached end without finding a v
-	{
-		printf("Unable to open file %s.\n", objPath);
-		return obj;
-	}
-
-	unsigned int numVerticies, numTexcoords, numNormals, numFaces;
-	float3 vertexBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
-	float2 vertexTexBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
-	float3 vertexNorBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
-	face faceBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the faces
-
-	float3 currentF3;
-	float2 currentF2;
-	face f = { 0 };
-
-	int currentIndex = 0;
 
 	//Load all the verticies into vertexBuffer
-	do 
+	while (lineBuffer[0] == 'v' && lineBuffer[1] == ' ')
 	{
+		//Scan the line data into currentF3 then put that in the buffer.
 		sscanf(lineBuffer, "%*s %f %f %f", &currentF3.f0, &currentF3.f1, &currentF3.f2);
-		vertexBuffer[currentIndex] = currentF3;
-		currentIndex++;
+		vertexBuffer[i] = currentF3;
+		i++;
 
-		if (currentIndex >= BUFFER_SIZE)
+		if (i >= BUFFER_SIZE)
 		{
-			printf("Number of verticies in obj overflowed buffer: %s", objPath);
+			printf("Number of verticies in .obj overflowed buffer: %s", objPath);
 			return obj;
 		}
 
-	} while (fgets(lineBuffer, 64, objFile) != NULL && lineBuffer[0] == 'v' && lineBuffer[1] == ' ');
+		if (fgets(lineBuffer, LINE_SIZE, objFile) != NULL)
+			break; //hit the end of the file early
+	}
 
-	numVerticies = currentIndex;
-	currentIndex = 0;
+	numVerticies = i;
+	i = 0;
 
 	//Load all the texcoords into vertexTexBuffer
 	while (lineBuffer[0] == 'v' && lineBuffer[1] == 't')
 	{
+		//Scan the line data into currentF2 then put that in the buffer.
 		sscanf(lineBuffer, "%*s %f %f", &currentF2.f0, &currentF2.f1);
-		vertexTexBuffer[currentIndex] = currentF2;
-		currentIndex++;
+		vertexTexBuffer[i] = currentF2;
+		i++;
 
-		if (currentIndex >= BUFFER_SIZE)
+		if (i >= BUFFER_SIZE)
 		{
-			printf("Number of texcoords in obj overflowed buffer: %s", objPath);
+			printf("Number of texcoords in .obj overflowed buffer: %s", objPath);
 			return obj;
 		}
 		
-		if (fgets(lineBuffer, 64, objFile) == NULL)
-			break;
+		if (fgets(lineBuffer, LINE_SIZE, objFile) == NULL)
+			break; //hit the end of the file early
 	}
 
-	numTexcoords = currentIndex;
-	currentIndex = 0;
+	numTexcoords = i;
+	i = 0;
 	
 	//Load all the normals into vertexNorBuffer
 	while (lineBuffer[0] == 'v' && lineBuffer[1] == 'n')
 	{
+		//Scan the line data into currentF3 then put that in the buffer.
 		sscanf(lineBuffer, "%*s %f %f %f", &currentF3.f0, &currentF3.f1, &currentF3.f2);
-		vertexNorBuffer[currentIndex] = currentF3;
-		currentIndex++;
+		vertexNorBuffer[i] = currentF3;
+		i++;
 
-		if (currentIndex >= BUFFER_SIZE)
+		if (i >= BUFFER_SIZE)
 		{
-			printf("Number of texcoords in obj overflowed buffer: %s", objPath);
+			printf("Number of normals in .obj overflowed buffer: %s", objPath);
 			return obj;
 		}
 
-		if (fgets(lineBuffer, 64, objFile) == NULL)
-			break;
+		if (fgets(lineBuffer, LINE_SIZE, objFile) == NULL)
+			break; //hit the end of the file early
 	}
 
-	numNormals = currentIndex;
-	currentIndex = 0;
+	numNormals = i;
+	i = 0;
 
-	//skip to the faces
+	//skip the junk in the middle and go to the faces
 	while (lineBuffer[0] != 'f' && fgets(lineBuffer, 64, objFile) != NULL) {}
 
 	//Load all the faces into faceBuffer
-	do
+	while (lineBuffer[0] == 'f' && lineBuffer[1] == ' ')
 	{
+		//Scan the line data into temporary face then put that in the buffer.
 		sscanf(lineBuffer,
-			"%*s%i%*c%i%*c%i%i%*c%i%*c%i%i%*c%i%*c%i",
+			"%*s %i %*c %i %*c %i %i %*c %i %*c %i %i %*c %i %*c %i",
 			&f.v0, &f.vt0, &f.vn0,
 			&f.v1, &f.vt1, &f.vn1,
 			&f.v2, &f.vt2, &f.vn2);
 
-		faceBuffer[currentIndex] = f;
-		currentIndex++;
+		//For some stupid reason, the faces are 1-indexed.
+		//Decrement everything so that they're 0-indexed.
+		--f.v0; --f.vt0; --f.vn0;
+		--f.v1; --f.vt1; --f.vn1;
+		--f.v2; --f.vt2; --f.vn2;
 
-		if (currentIndex >= BUFFER_SIZE)
+		faceBuffer[i] = f;
+		i++;
+
+		if (i >= BUFFER_SIZE)
 		{
-			printf("Number of faces in obj overflowed buffer: %s", objPath);
+			printf("Number of faces in .obj overflowed buffer: %s", objPath);
 			return obj;
 		}
-		
-	} while (fgets(lineBuffer, 64, objFile) != NULL && lineBuffer[0] == 'f' && lineBuffer[1] == ' ');
 
-	numFaces = currentIndex;
+		if (fgets(lineBuffer, LINE_SIZE, objFile) == NULL)
+			break;
+	}
+
+	numFaces = i;
+	i = 0;
 
 	//Alright, we finally have all of our data. What's our total size?
-	obj.dataSize = sizeof(float3) * numVerticies +
+	obj.dataSize = 
+		sizeof(float3) * numVerticies +
 		sizeof(float2) * numTexcoords +
 		sizeof(float3) * numNormals +
 		sizeof(face) * numFaces;
-
-	obj.attribOffset[ATTRIB_POSITION] = sizeof(face) * numFaces; //put the faces in first because we don't have an enum for them
-	obj.attribOffset[ATTRIB_TEXCOORD] = obj.attribOffset[ATTRIB_POSITION] + sizeof(float3) * numVerticies;
-	obj.attribOffset[ATTRIB_NORMAL] = obj.attribOffset[ATTRIB_TEXCOORD] + sizeof(float2) * numTexcoords;
 	
 	obj.data = (void*)malloc(obj.dataSize);
 
-	//Okay, everything is set up. Now, stuff our data into the buffer.
+	//We'll put the faces at 0 since they don't have an enum. Where do the chunks after that go?
+	obj.attribOffset[ATTRIB_POSITION] =	sizeof(face) * numFaces;
+	obj.attribOffset[ATTRIB_TEXCOORD] =	obj.attribOffset[ATTRIB_POSITION] + sizeof(float3) * numVerticies;
+	obj.attribOffset[ATTRIB_NORMAL] =	obj.attribOffset[ATTRIB_TEXCOORD] + sizeof(float2) * numTexcoords;
+
+	//Everything is set up. Now, copy our data directly into the buffer.
 	memcpy(obj.data, faceBuffer, sizeof(face) * numFaces);
 	memcpy(BUFFER_OFFSET_BYTE(obj.data, obj.attribOffset[ATTRIB_POSITION]), vertexBuffer, sizeof(float3) * numVerticies);
 	memcpy(BUFFER_OFFSET_BYTE(obj.data, obj.attribOffset[ATTRIB_TEXCOORD]), vertexTexBuffer, sizeof(float2) * numTexcoords);
 	memcpy(BUFFER_OFFSET_BYTE(obj.data, obj.attribOffset[ATTRIB_NORMAL]), vertexNorBuffer, sizeof(float3) * numNormals);
 
-	//printf("\nTrying to load an obj...\n");
-	//...
 	return obj;
 }
 
@@ -216,69 +228,78 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 // convert OBJ to VAO & VBO
 int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDescriptor *vao_out, egpVertexBufferObjectDescriptor *vbo_out)
 {
+	//Get the start and end + 1 of the face data so that we can loop through it.
 	void* faceStart = obj->data;
 	void* faceEnd = BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_POSITION]);
 
-	float3* vertexStart = (float3*)((char *)(obj->data) + obj->attribOffset[ATTRIB_POSITION]);
-	float3* normalStart = (float3*)((char *)(obj->data) + obj->attribOffset[ATTRIB_NORMAL]);
-	float2* texcoordStart = (float2*)((char *)(obj->data) + obj->attribOffset[ATTRIB_TEXCOORD]);
+	//Find our positions, normals, and texcoords inside the data buffer.
+	float3* data_positions = (float3*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_POSITION]));
+	float3* data_normals = (float3*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_NORMAL]));
+	float2* data_texcoords = (float2*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_TEXCOORD]));
 
+	//number of faces is the distance between the start and end of the face part of the buffer.
 	unsigned int numberOfFaces = (unsigned int)((char*)faceEnd - (char*)faceStart) / sizeof(face);
-
 	unsigned int vertexCount = numberOfFaces * 3;
 	
-	/* //This is the complicated way of doing it.
+
+	/* This is the complicated way of doing it.
+	//Create a pre-interleaved buffer
 	unsigned int interleavedBufferSize = sizeof(interleave) * vertexCount;
 	interleave* interleavedBuffer = (interleave*)malloc(interleavedBufferSize);
 
-	face fdata;
+	face* fdata;
 	interleave idata;
 	int i = 0;
 
+	//Walk down the face part of the data buffer and grab the relevant data from the other parts.
 	for (void* walker = faceStart; walker != faceEnd; walker = BUFFER_OFFSET_BYTE(walker, sizeof(face)))
 	{
-		fdata = *(face*)walker;
+		fdata = (face*)walker;
 		
-		idata.pos = vertexStart[fdata.v0];
-		idata.nor = normalStart[fdata.vn0];
-		idata.texcoord = texcoordStart[fdata.vt0];
+		//Grab the pos, normal, and texcoord for this vertex
+		idata.pos = data_positions[fdata->v0];
+		idata.nor = data_normals[fdata->vn0];
+		idata.texcoord = data_texcoords[fdata->vt0];
+
+		//Put it in the buffer
+		interleavedBuffer[i] = idata;
+		i++;
+
+		//Repeat 2 more times per face.
+
+		idata.pos = data_positions[fdata->v1];
+		idata.nor = data_normals[fdata->vn1];
+		idata.texcoord = data_texcoords[fdata->vt1];
 
 		interleavedBuffer[i] = idata;
 		i++;
 
-		idata.pos = vertexStart[fdata.v1];
-		idata.nor = normalStart[fdata.vn1];
-		idata.texcoord = texcoordStart[fdata.vt1];
-
-		interleavedBuffer[i] = idata;
-		i++;
-
-		idata.pos = vertexStart[fdata.v2];
-		idata.nor = normalStart[fdata.vn2];
-		idata.texcoord = texcoordStart[fdata.vt2];
+		idata.pos = data_positions[fdata->v2];
+		idata.nor = data_normals[fdata->vn2];
+		idata.texcoord = data_texcoords[fdata->vt2];
 
 		interleavedBuffer[i] = idata;
 		i++;
 	}
 
-	//generate a VBO
+	//generate a VBO using GL calls
 	glGenBuffers(1, &vbo_out->glhandle);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_out->glhandle);
 	glBufferData(GL_ARRAY_BUFFER, interleavedBufferSize, (void*)interleavedBuffer, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	//Set up the other vbo variables how I assume they're supposed to be used.
 	vbo_out->attribTypes[ATTRIB_NORMAL] = 1;
 	vbo_out->attribTypes[ATTRIB_TEXCOORD] = 1;
 	vbo_out->attribTypes[ATTRIB_POSITION] = 1;
 	vbo_out->vertexSize = sizeof(float3);
 	vbo_out->vertexCount = vertexCount;
 
+	//Bind the vbo to a vao using GL calls
 	glGenVertexArrays(1, &vao_out->glhandle);
 	glBindVertexArray(vao_out->glhandle);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_out->glhandle);
 	
-	egpCreateVAOInterleaved(PRIM_TRIANGLES, NULL, 3, vertexCount, vbo_out, NULL);
-
 	glEnableVertexAttribArray(ATTRIB_POSITION);
 	glVertexAttribPointer(ATTRIB_POSITION,
 		3, GL_FLOAT, GL_FALSE, sizeof(float3) + sizeof(float3) + sizeof(float2), (void*)0);
@@ -293,42 +314,49 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	//Set up the other vao variables how I assume they're supposed to be used.
 	vao_out->vbo = vbo_out;
 	vao_out->primType = PRIM_TRIANGLES;
 	vao_out->ibo = NULL;
 	
+	//Free the temporary buffer now that everything has been sent off to the GPU.
 	free(interleavedBuffer);
 	/**/
 
 	//* This is the "simple" way of doing it.
+	//Create three attribute buffers.
 	float3* posBuffer = malloc(sizeof(float3) * vertexCount);
 	float3* norBuffer = malloc(sizeof(float3) * vertexCount);
 	float2* texBuffer = malloc(sizeof(float2) * vertexCount);
-	face fdata;
+	face* fdata;
 	int i = 0;
 
+	//Walk down the face part of the data buffer and grab the relevant data from the other parts.
 	for (void* walker = faceStart; walker != faceEnd; walker = BUFFER_OFFSET_BYTE(walker, sizeof(face)))
 	{
-		fdata = *(face*)walker;
-		posBuffer[i] = vertexStart[fdata.v0];
-		norBuffer[i] = normalStart[fdata.vn0];
-		texBuffer[i] = texcoordStart[fdata.vt0];
+		//Grab the data from the walker's current position.
+		fdata = (face*)walker;
 
+		//put the face's first vertex in
+		posBuffer[i] = data_positions[fdata->v0];
+		norBuffer[i] = data_normals[fdata->vn0];
+		texBuffer[i] = data_texcoords[fdata->vt0];
 		i++;
 
-		posBuffer[i] = vertexStart[fdata.v1];
-		norBuffer[i] = normalStart[fdata.vn1];
-		texBuffer[i] = texcoordStart[fdata.vt1];
-
+		//put the face's second vertex in
+		posBuffer[i] = data_positions[fdata->v1];
+		norBuffer[i] = data_normals[fdata->vn1];
+		texBuffer[i] = data_texcoords[fdata->vt1];
 		i++;
 
-		posBuffer[i] = vertexStart[fdata.v2];
-		norBuffer[i] = normalStart[fdata.vn2];
-		texBuffer[i] = texcoordStart[fdata.vt2];
-
+		//put the face's third vertex in
+		posBuffer[i] = data_positions[fdata->v2];
+		norBuffer[i] = data_normals[fdata->vn2];
+		texBuffer[i] = data_texcoords[fdata->vt2];
 		i++;
 	}
 
+	//Create our attributes and bind them
 	egpAttributeDescriptor attribs[] = 
 	{
 		egpCreateAttributeDescriptor(ATTRIB_POSITION, ATTRIB_VEC3, posBuffer),
@@ -338,6 +366,11 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 
 	*vbo_out = egpCreateVBOInterleaved(attribs, 3, vertexCount);
 	*vao_out = egpCreateVAO(PRIM_TRIANGLES, vbo_out, NULL);
+
+	//Free our buffers. Presumably, the data has been sent off to the GPU so we don't need it anymore.
+	free(posBuffer);
+	free(norBuffer);
+	free(texBuffer);
 	/**/
 
 	return 0;
