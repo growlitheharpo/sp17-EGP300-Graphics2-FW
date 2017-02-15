@@ -237,6 +237,16 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 	float3* data_normals = (float3*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_NORMAL]));
 	float2* data_texcoords = (float2*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_TEXCOORD]));
 
+	/* Test output to prove that the data is loaded correctly. Hard-coded the numbers from the sphere8x6.obj
+	FILE* testOut = fopen("testoutput.txt", "w");
+	for (int j = 0; j < 42; j++)
+		fprintf(testOut, "v %f, %f, %f\n", data_positions[j].f0, data_positions[j].f1, data_positions[j].f2);
+	for (int j = 0; j < 61; j++)
+		fprintf(testOut, "vt %f, %f\n", data_texcoords[j].f0, data_texcoords[j].f1);
+	for (int j = 0; j < 240; j++)
+		fprintf(testOut, "vn %f, %f, %f\n", data_normals[j].f0, data_normals[j].f1, data_normals[j].f2);
+	fclose(testOut); /**/
+
 	//number of faces is the distance between the start and end of the face part of the buffer.
 	unsigned int numberOfFaces = (unsigned int)((char*)faceEnd - (char*)faceStart) / sizeof(face);
 	unsigned int vertexCount = numberOfFaces * 3;
