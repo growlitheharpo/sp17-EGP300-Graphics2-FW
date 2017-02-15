@@ -216,7 +216,6 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 // convert OBJ to VAO & VBO
 int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDescriptor *vao_out, egpVertexBufferObjectDescriptor *vbo_out)
 {
-	//...
 	void* faceStart = obj->data;
 	void* faceEnd = BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_POSITION]);
 
@@ -227,6 +226,8 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 	unsigned int numberOfFaces = (unsigned int)((char*)faceEnd - (char*)faceStart) / sizeof(face);
 
 	unsigned int vertexCount = numberOfFaces * 3;
+	
+	/* //This is the complicated way of doing it.
 	unsigned int interleavedBufferSize = sizeof(interleave) * vertexCount;
 	interleave* interleavedBuffer = (interleave*)malloc(interleavedBufferSize);
 
@@ -295,8 +296,49 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 	vao_out->vbo = vbo_out;
 	vao_out->primType = PRIM_TRIANGLES;
 	vao_out->ibo = NULL;
-
+	
 	free(interleavedBuffer);
+	/**/
+
+	//* This is the "simple" way of doing it.
+	float3* posBuffer = malloc(sizeof(float3) * vertexCount);
+	float3* norBuffer = malloc(sizeof(float3) * vertexCount);
+	float2* texBuffer = malloc(sizeof(float2) * vertexCount);
+	face fdata;
+	int i = 0;
+
+	for (void* walker = faceStart; walker != faceEnd; walker = BUFFER_OFFSET_BYTE(walker, sizeof(face)))
+	{
+		fdata = *(face*)walker;
+		posBuffer[i] = vertexStart[fdata.v0];
+		norBuffer[i] = normalStart[fdata.vn0];
+		texBuffer[i] = texcoordStart[fdata.vt0];
+
+		i++;
+
+		posBuffer[i] = vertexStart[fdata.v1];
+		norBuffer[i] = normalStart[fdata.vn1];
+		texBuffer[i] = texcoordStart[fdata.vt1];
+
+		i++;
+
+		posBuffer[i] = vertexStart[fdata.v2];
+		norBuffer[i] = normalStart[fdata.vn2];
+		texBuffer[i] = texcoordStart[fdata.vt2];
+
+		i++;
+	}
+
+	egpAttributeDescriptor attribs[] = 
+	{
+		egpCreateAttributeDescriptor(ATTRIB_POSITION, ATTRIB_VEC3, posBuffer),
+		egpCreateAttributeDescriptor(ATTRIB_NORMAL, ATTRIB_VEC3, norBuffer),
+		egpCreateAttributeDescriptor(ATTRIB_TEXCOORD, ATTRIB_VEC2, texBuffer),
+	};
+
+	*vbo_out = egpCreateVBOInterleaved(attribs, 3, vertexCount);
+	*vao_out = egpCreateVAO(PRIM_TRIANGLES, vbo_out, NULL);
+	/**/
 
 	return 0;
 }
