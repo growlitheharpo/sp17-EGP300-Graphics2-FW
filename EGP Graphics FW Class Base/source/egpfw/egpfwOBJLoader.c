@@ -116,7 +116,7 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 			return obj;
 		}
 
-		if (fgets(lineBuffer, LINE_SIZE, objFile) != NULL)
+		if (fgets(lineBuffer, LINE_SIZE, objFile) == NULL)
 			break; //hit the end of the file early
 	}
 
