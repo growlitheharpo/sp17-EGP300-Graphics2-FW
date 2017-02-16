@@ -77,12 +77,15 @@ typedef struct interleave interleave;
 // load triangulated OBJ file
 egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNormalMode normalMode, const double globalScale)
 {
+	egpTriOBJDescriptor obj = { 0 };
+
 	unsigned int numVerticies, numTexcoords, numNormals, numFaces;
 	float3 vertexBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
 	float2 vertexTexBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
 	float3 vertexNorBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the verticies
 	face faceBuffer[BUFFER_SIZE]; //load a (relatively) large buffer for the faces
-
+	
+	FILE* objFile;
 	char lineBuffer[LINE_SIZE];
 	float3 currentF3 = { 0 };
 	float2 currentF2 = { 0 };
@@ -91,8 +94,7 @@ egpTriOBJDescriptor egpfwLoadTriangleOBJ(const char *objPath, const egpMeshNorma
 	int i = 0;
 
 	//Load our file handle
-	egpTriOBJDescriptor obj = { 0 };
-	FILE* objFile = fopen(objPath, "r");
+	objFile = fopen(objPath, "r");
 	if (objFile == NULL)
 	{
 		printf("Unable to open file %s.\n", objPath);
@@ -236,16 +238,6 @@ int egpfwCreateVAOFromOBJ(const egpTriOBJDescriptor *obj, egpVertexArrayObjectDe
 	float3* data_positions = (float3*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_POSITION]));
 	float3* data_normals = (float3*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_NORMAL]));
 	float2* data_texcoords = (float2*)(BUFFER_OFFSET_BYTE(obj->data, obj->attribOffset[ATTRIB_TEXCOORD]));
-
-	/* Test output to prove that the data is loaded correctly. Hard-coded the numbers from the sphere8x6.obj
-	FILE* testOut = fopen("testoutput.txt", "w");
-	for (int j = 0; j < 42; j++)
-		fprintf(testOut, "v %f, %f, %f\n", data_positions[j].f0, data_positions[j].f1, data_positions[j].f2);
-	for (int j = 0; j < 61; j++)
-		fprintf(testOut, "vt %f, %f\n", data_texcoords[j].f0, data_texcoords[j].f1);
-	for (int j = 0; j < 240; j++)
-		fprintf(testOut, "vn %f, %f, %f\n", data_normals[j].f0, data_normals[j].f1, data_normals[j].f2);
-	fclose(testOut); /**/
 
 	//number of faces is the distance between the start and end of the face part of the buffer.
 	unsigned int numberOfFaces = (unsigned int)((char*)faceEnd - (char*)faceStart) / sizeof(face);
