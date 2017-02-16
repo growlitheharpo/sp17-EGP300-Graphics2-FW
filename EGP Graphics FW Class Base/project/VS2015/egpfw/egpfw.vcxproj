@@ -41,8 +41,8 @@
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="QuaternionTest.cpp" />
     <ClCompile Include="stackTest.cpp" />
-    <ClCompile Include="transformMatrix.c" />
-    <ClCompile Include="vector3.c" />
+    <ClCompile Include="transformMatrix.cpp" />
+    <ClCompile Include="vector3.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FBCB5A67-EAA2-4A81-BF9C-6454ED41ECB7}</ProjectGuid>

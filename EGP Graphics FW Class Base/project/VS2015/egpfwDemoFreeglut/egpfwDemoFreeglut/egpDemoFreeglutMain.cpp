@@ -2,6 +2,7 @@
 // By Dan Buckstein
 
 #include "../../egpfw/TStack.h"
+#include "../../egpfw/transformMatrix.h"
 #ifdef _WIN32
 //-----------------------------------------------------------------------------
 
@@ -85,9 +86,17 @@ void winClosePressed()
 	glutLeaveMainLoop();
 }
 
-// entry function
-int main(int argc, char **argv)
+int main()
 {
+	runTransformTestSuite();
+	system("pause");
+}
+
+// entry function
+int foo(int argc, char **argv)
+{
+	return 0;
+
 	// initialize graphics library
 	if (initGLUT(argc, argv))
 	{

@@ -46,13 +46,13 @@ public:
 	static Quaternion makeRotationX(float x) { return Quaternion(x, RIGHT_VECTOR3); }
 	static Quaternion makeRotationY(float y) { return Quaternion(y, FORWARD_VECTOR3); }
 	static Quaternion makeRotationZ(float z) { return Quaternion(z, UP_VECTOR3); }
-	static TransformMatrix makeTransformationMatrix(const Quaternion& from);
+	static TransformationMatrix makeTransformationMatrix(const Quaternion& from);
 
 	void makeIdentity() { *this = identity(); }
 	void concatenate(const Quaternion& other) { *this = concatenate(*this, other); }
 	void inverse() { *this = inverse(*this); }
 
-	TransformMatrix getTransformationMatrix() const { return makeTransformationMatrix(*this); }
+	TransformationMatrix getTransformationMatrix() const { return makeTransformationMatrix(*this); }
 
 	Vector3 applyToPoint(const Vector3& point) const;
 	Vector3 operator * (const Vector3& other) const { return this->applyToPoint(other); }

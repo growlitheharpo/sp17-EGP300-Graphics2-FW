@@ -137,11 +137,12 @@ Quaternion::Quaternion(const Quaternion& other)
 
 Quaternion::Quaternion(float amount, Vector3 axis)
 {
-	multiply(&axis, sin(amount));
+	axis.normalize();
+	axis *= sin(amount);
 	
-	vals[X] = axis.x;
-	vals[Y] = axis.y;
-	vals[Z] = axis.z;
+	vals[X] = axis.x();
+	vals[Y] = axis.y();
+	vals[Z] = axis.z();
 	vals[W] = cos(amount);
 }
 
@@ -233,10 +234,9 @@ float Quaternion::dot(const Quaternion& from, const Quaternion& to)
 	return from[X] * to[X] + from[Y] * to[Y] + from[Z] * to[Z] + from[W] * to[W];
 }
 
-TransformMatrix Quaternion::makeTransformationMatrix(const Quaternion& from)
+TransformationMatrix Quaternion::makeTransformationMatrix(const Quaternion& from)
 {
-	TransformMatrix result;
-	makeIdentiyMatrix(&result);
+	TransformationMatrix result;
 
 	Quaternion f = from;
 
@@ -284,12 +284,8 @@ Quaternion Quaternion::makeRotationXYZ(float x, float y, float z)
 Vector3 Quaternion::applyToPoint(const Vector3& point) const
 {
 	//I don't care about optimization hahahaha there's no stopping me now
-	Vector3 result = point;
-	TransformMatrix matrix = getTransformationMatrix();
-
-	applyTransformToPoint(&result, &matrix);
-
-	return result;
+	TransformationMatrix matrix = getTransformationMatrix();
+	return matrix.applyToPoint(point);
 }
 
 Quaternion Quaternion::operator*(const Quaternion& other) const

@@ -9,7 +9,8 @@ void runQuaternionTests()
 
 	Quaternion test = Quaternion::makeRotationZYX(DegToRad(90.0f), DegToRad(90.0f), 0.0f);
 	Vector3 newPoint = test * startPoint;
-	printVector(&newPoint, '\n');
+	newPoint.print();
+	//printVector(&newPoint, '\n');
 
 	//Quaternion xyz = Quaternion::makeRotationXYZ(DegToRad(40.0f), DegToRad(23.512f), DegToRad(180.0f)); //correctly produces different results.
 	//Quaternion zyx = Quaternion::makeRotationZYX(DegToRad(40.0f), DegToRad(23.512f), DegToRad(180.0f));
@@ -21,6 +22,6 @@ void runQuaternionTests()
 	startXYZ = xyz * startXYZ;
 	startZYX = zyx * startZYX;
 
-	printVector(&startXYZ, '\n');
-	printVector(&startZYX, '\n');
+	startXYZ.print();
+	startZYX.print();
 }

@@ -83,12 +83,6 @@
     <ClCompile Include="..\..\..\source\egpfw\egpfwOBJLoader.c">
       <Filter>Source Files\c</Filter>
     </ClCompile>
-    <ClCompile Include="transformMatrix.c">
-      <Filter>Source Files\week1</Filter>
-    </ClCompile>
-    <ClCompile Include="vector3.c">
-      <Filter>Source Files\week1</Filter>
-    </ClCompile>
     <ClCompile Include="Quaternion.cpp">
       <Filter>Source Files\week2</Filter>
     </ClCompile>
@@ -100,6 +94,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\egpfw\egpfwFrameBuffer.c">
       <Filter>Source Files\c</Filter>
+    </ClCompile>
+    <ClCompile Include="transformMatrix.cpp">
+      <Filter>Source Files\week1</Filter>
+    </ClCompile>
+    <ClCompile Include="vector3.cpp">
+      <Filter>Source Files\week1</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
