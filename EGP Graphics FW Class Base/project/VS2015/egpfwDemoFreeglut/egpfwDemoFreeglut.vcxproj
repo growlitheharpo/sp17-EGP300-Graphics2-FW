@@ -325,6 +325,9 @@
     <None Include="..\..\..\resource\glsl\4x\fs\drawColor_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs\drawTexture_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs\phong_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs_bloom\blur_gaussian_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs_bloom\brightpass_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passColor_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_vs4x.glsl" />

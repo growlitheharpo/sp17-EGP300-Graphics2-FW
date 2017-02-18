@@ -28,6 +28,9 @@
     <Filter Include="Resource Files\glsl\4x\fs">
       <UniqueIdentifier>{51f71258-b8ae-4314-a540-85deecdd0494}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\glsl\4x\fs_bloom">
+      <UniqueIdentifier>{9dcc4fa5-a54a-4da9-a995-83498e94fdff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -76,6 +79,15 @@
     </None>
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl">
       <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_bloom\blur_gaussian_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_bloom</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_bloom\brightpass_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_bloom</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_bloom</Filter>
     </None>
   </ItemGroup>
 </Project>

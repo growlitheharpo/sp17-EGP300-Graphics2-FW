@@ -52,7 +52,7 @@ unsigned int win_x = 0;
 unsigned int win_y = 0;
 unsigned int win_w = 1280;
 unsigned int win_h = 720;
-const unsigned int viewport_b = 4;
+const unsigned int viewport_b = 8;
 const unsigned int viewport_tb = viewport_b + viewport_b;
 const int viewport_nb = -(int)viewport_b;
 unsigned int viewport_tw = win_w + viewport_tb;
@@ -77,9 +77,9 @@ egpKeyboard keybd[1];
 // general: camera's view matrix and projection matrix
 cbtk::cbmath::mat4 viewMatrix, projectionMatrix, viewProjMat;
 // camera controls
-float cameraElevation = 0.0f, cameraAzimuth = 0.0f;
-float cameraRotateSpeed = 0.25f, cameraMoveSpeed = 1.0f, cameraDistance = 8.0f;
-cbtk::cbmath::vec4 cameraPosWorld(0.0f, 0.0f, cameraDistance, 1.0f), deltaCamPos;
+float cameraElevation = 0.25f, cameraAzimuth = 4.0f;
+float cameraRotateSpeed = 0.25f, cameraMoveSpeed = 4.0f, cameraDistance = 8.0f;
+cbtk::cbmath::vec4 cameraPosWorld(1.0f, -2.0f, -cameraDistance, 1.0f), deltaCamPos;
 
 
 
@@ -131,6 +131,11 @@ enum GLSLProgramIndex
 
 	phongProgramIndex,
 
+	// bloom
+	bloomBrightProgramIndex, 
+	bloomBlurProgramIndex, 
+	bloomBlendProgramIndex, 
+
 //-----------------------------
 	GLSLProgramCount
 };
@@ -144,26 +149,42 @@ enum GLSLCommonUniformIndex
 	unif_dm,
 	unif_sm,
 
+	unif_pixelSizeInv, 
+	unif_img, 
+	unif_img1, 
+	unif_img2, 
+	unif_img3, 
+
 //-----------------------------
 	GLSLCommonUniformCount
 };
 egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
 int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
 int currentProgramIndex = 0;
-int testUseTextureProgram = 1;
 
 
 // framebuffer objects (FBOs)
 enum FBOIndex
 {
 	sceneFBO, 
+
+	// bloom
+	brightFBO_d2, 
+	hblurFBO_d2, 
+	vblurFBO_d2, 
+	hblurFBO_d4, 
+	vblurFBO_d4,
+	hblurFBO_d8,
+	vblurFBO_d8,
+	compositeFBO,
 	
 //-----------------------------
 	fboCount
 };
-egpFrameBufferObjectDescriptor fbo[fboCount];
-int testDrawColor = 1;
-int testDrawAxes = 1;
+egpFrameBufferObjectDescriptor fbo[fboCount], *fboFinalDisplay = fbo;
+cbmath::vec2 pixelSizeInv[fboCount];
+int testDrawAxes = 0;
+int displayMode = 0;
 
 
 
@@ -228,22 +249,22 @@ int initGL()
 	const float lineWidth = 4.0f;
 	const float pointSize = lineWidth;
 
-	// backface culling
+	// textures ON
+	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+
+	// backface culling ON
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	// depth testing
-	glEnable(GL_DEPTH_TEST);
+	// depth testing OFF
+	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	// alpha blending
+	// alpha blending OFF
 	// result = ( new*[new alpha] ) + ( old*[1 - new alpha] )
-	glEnable(GL_BLEND);
+	glDisable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// textures
-	glEnable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
 
 	// lines and points
 	glLineWidth(lineWidth);
@@ -459,8 +480,8 @@ void deleteTextures()
 void setupShaders()
 {
 	unsigned int u = 0;
-	egpFileInfo files[2];
-	egpShader shaders[2];
+	egpFileInfo files[4];
+	egpShader shaders[4];
 
 	// array of common uniform names
 	const char *commonUniformName[] = {
@@ -469,6 +490,11 @@ void setupShaders()
 		(const char *)("eyePos"),
 		(const char *)("tex_dm"),
 		(const char *)("tex_sm"),
+		(const char *)("pixelSizeInv"),
+		(const char *)("img"),
+		(const char *)("img1"),
+		(const char *)("img2"),
+		(const char *)("img3"),
 	};
 
 	const int imageLocations[] = {
@@ -482,9 +508,6 @@ void setupShaders()
 
 	// test color program
 	{
-		currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-
 		// load files
 		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passColor_vs4x.glsl");
 		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
@@ -492,6 +515,9 @@ void setupShaders()
 		// create shaders
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		currentProgramIndex = testColorProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
 
 		// create, link and validate program
 		*currentProgram = egpCreateProgram();
@@ -516,12 +542,12 @@ void setupShaders()
 
 		// pass texcoord
 		{
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
 			// same as previous
 			currentProgramIndex = testTextureProgramIndex;
 			currentProgram = glslPrograms + currentProgramIndex;
-
-			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_vs4x.glsl");
-			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 
 			*currentProgram = egpCreateProgram();
 			egpAttachShaderToProgram(currentProgram, shaders + 0);
@@ -536,11 +562,11 @@ void setupShaders()
 
 		// pass texcoord, passthru position
 		{
-			currentProgramIndex = testTexturePassthruProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-
 			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_passthruPosition_vs4x.glsl");
 			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+			currentProgramIndex = testTexturePassthruProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
 
 			*currentProgram = egpCreateProgram();
 			egpAttachShaderToProgram(currentProgram, shaders + 0);
@@ -548,6 +574,59 @@ void setupShaders()
 			egpLinkProgram(currentProgram);
 			egpValidateProgram(currentProgram);
 
+			// bloom should use this vertex shader, so let's keep nesting!
+			{
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/brightpass_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = bloomBrightProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/blur_gaussian_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = bloomBlurProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/blend_screen_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = bloomBlendProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+			}
+
+			// done with passthru vs
 			egpReleaseShader(shaders + 0);
 			egpReleaseFileContents(files + 0);
 		}
@@ -594,6 +673,11 @@ void setupShaders()
 		// e.g. image bindings
 		egpSendUniformInt(currentUniformSet[unif_dm], UNIF_INT, 1, imageLocations);
 		egpSendUniformInt(currentUniformSet[unif_sm], UNIF_INT, 1, imageLocations + 1);
+
+		egpSendUniformInt(currentUniformSet[unif_img], UNIF_INT, 1, imageLocations);
+		egpSendUniformInt(currentUniformSet[unif_img1], UNIF_INT, 1, imageLocations + 1);
+		egpSendUniformInt(currentUniformSet[unif_img2], UNIF_INT, 1, imageLocations + 2);
+		egpSendUniformInt(currentUniformSet[unif_img3], UNIF_INT, 1, imageLocations + 3);
 	}
 
 
@@ -615,9 +699,40 @@ void deleteShaders()
 void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 {
 	// prepare framebuffers in one simple call
+	const unsigned int frameWidth_d2 = frameWidth / 2;
+	const unsigned int frameWidth_d4 = frameWidth / 4;
+	const unsigned int frameWidth_d8 = frameWidth / 8;
+	const unsigned int frameHeight_d2 = frameHeight / 2;
+	const unsigned int frameHeight_d4 = frameHeight / 4;
+	const unsigned int frameHeight_d8 = frameHeight / 8;
+	unsigned int i;
 
 	// one for the scene
 	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_D32, SMOOTH_NOWRAP);
+
+	// bright pass
+	fbo[brightFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+	// blur passes
+	fbo[hblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[vblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[hblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[vblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[hblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[vblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+	// composite pass
+	fbo[compositeFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+
+	// get inverted frame sizes
+	// this represents the size of one pixel within SCREEN SPACE
+	// since screen space is within [0, 1], one pixel = 1/size
+	for (i = 0; i < fboCount; ++i)
+		pixelSizeInv[i].set(
+			1.0f / (float)(fbo + i)->frameWidth, 
+			1.0f / (float)(fbo + i)->frameHeight
+		);
 }
 
 void deleteFramebuffers()
@@ -648,8 +763,9 @@ void drawToBackBuffer(int x, int y, unsigned int w, unsigned int h)
 	// tell OpenGL to draw directly to back buffer
 	glDrawBuffer(GL_BACK);
 
-	// reset buffer tests (we're only using color and depth)
-	glEnable(GL_DEPTH_TEST);
+	// reset buffer tests
+	// assume only FBOs are using depth
+	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_STENCIL_TEST);
 
 	// reset viewport with borders clipped
@@ -760,9 +876,9 @@ void displayControls()
 	printf("\n p = toggle play/pause for all");
 
 	printf("\n l = real-time reload all shaders");
-	printf("\n i = toggle test shader program");
-	printf("\n f = toggle framebuffer output (color/depth)");
 	printf("\n x = toggle coordinate axes post-draw");
+
+	printf("\n 0-9 = toggle pipeline stage to be displayed");
 
 	printf("\n-------------------------------------------------------");
 }
@@ -792,17 +908,26 @@ void handleInputState()
 		setupShaders();
 	}
 
-	// toggle test shader
-	if (egpKeyboardIsKeyPressed(keybd, 'i'))
-		testUseTextureProgram = 1 - testUseTextureProgram;
-
-	// toggle framebuffer target to display
-	if (egpKeyboardIsKeyPressed(keybd, 'f'))
-		testDrawColor = 1 - testDrawColor;
-
 	// toggle axes
 	if (egpKeyboardIsKeyPressed(keybd, 'x'))
 		testDrawAxes = 1 - testDrawAxes;
+
+
+	// toggle pipeline stage
+	if (egpKeyboardIsKeyPressed(keybd, '0'))
+	{
+		displayMode = fboCount;
+		fboFinalDisplay = fbo;
+	}
+	else
+	{
+		for (unsigned char c = '1', i = 0; c <= '9'; ++c, ++i)
+			if (egpKeyboardIsKeyPressed(keybd, c))
+			{
+				displayMode = i;
+				fboFinalDisplay = fbo + i;
+			}
+	}
 
 
 	// finish by updating input state
@@ -878,92 +1003,201 @@ void updateGameState(float dt)
 }
 
 
+// skybox clear
+void renderSkybox()
+{
+	currentProgramIndex = testTextureProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+
+	// draw skybox instead of clearing
+	glCullFace(GL_FRONT);
+	glDepthFunc(GL_ALWAYS);
+	glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);
+
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, skyboxModelViewProjectionMatrix.m);
+	egpActivateVAO(vao + skyboxModel);
+	egpDrawActiveVAO();
+
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
+}
+
+// draw scene objects
+void renderSceneObjects()
+{
+	// draw textured moon
+	{
+		currentProgramIndex = testTextureProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+
+		glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
+
+		// retained
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
+		egpActivateVAO(vao + sphere8x6Model);
+		egpDrawActiveVAO();
+	}
+
+	// draw shaded earth
+	{
+		currentProgramIndex = phongProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
+
+		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
+		lightPos_object = earthModelInverseMatrix * lightPos_world;
+		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
+		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
+		egpActivateVAO(vao + sphereHiResObjModel);
+		egpDrawActiveVAO();
+	}
+}
+
+
 // draw frame
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
 void renderGameState()
 {
 //-----------------------------------------------------------------------------
-	// DRAW ALL OBJECTS - ALGORITHM: 
-	//	- activate shader program if different from last object
-	//	- bind texture we want to apply (skybox)
-	//	- send appropriate uniforms if different from last time we used this program
-	//	- call appropriate draw function, based on whether we are indexed or not
-
-
-
 //-----------------------------------------------------------------------------
+	// BLOOM ALGORITHM: 
+	//	1. draw scene
+	//	2. bright pass scene output
+	//	3. blur bright pass output
+	//		(repeat h/v, repeat for more bloom)
+	//	4. composite
 
-	// draw scene off-screen
-	egpfwActivateFBO(fbo + sceneFBO);
+	cbmath::vec2 pixSzInv;
+	int currentPipelineStage, lastPipelineStage;
+
 
 	// first pass: scene
+	// draw scene objects off-screen
+	currentPipelineStage = sceneFBO;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	renderSkybox();
+	renderSceneObjects();
+
+
+	// only drawing full-screen now
+	egpActivateVAO(vao + fsqModel);
+
+
+	// second pass: bright pass/tone map the result of the scene pass
+	// free box-blur occurs because the target is smaller than the screen
+	currentProgramIndex = bloomBrightProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	egpActivateProgram(currentProgram);
+
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = brightFBO_d2;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+	egpDrawActiveVAO();
+
+
+	// third pass: Gaussian blur
+	currentProgramIndex = bloomBlurProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+
+	// horizontal
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = hblurFBO_d2;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+	egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, 
+		pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
+	egpDrawActiveVAO();
+
+	// repeat for vertical
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = vblurFBO_d2;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+	egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+	egpDrawActiveVAO();
+
+	// iterate on blurring for a more intense bloom effect
 	{
-		// activate test program
-		if (testUseTextureProgram)
-			currentProgramIndex = testTextureProgramIndex;
-		else
-			currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
+		// repeat for horizontal
+		lastPipelineStage = currentPipelineStage;
+		currentPipelineStage = hblurFBO_d4;
+		egpfwActivateFBO(fbo + currentPipelineStage);
+		egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+		egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+			pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
+		egpDrawActiveVAO();
 
+		// repeat for vertical
+		lastPipelineStage = currentPipelineStage;
+		currentPipelineStage = vblurFBO_d4;
+		egpfwActivateFBO(fbo + currentPipelineStage);
+		egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+		egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+			pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+		egpDrawActiveVAO();
 
-		// draw skybox instead of clearing
+		// ...moar bloom!
 		{
-			glCullFace(GL_FRONT);
-			glDepthFunc(GL_ALWAYS);
-			glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);
-
-			// retained
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, skyboxModelViewProjectionMatrix.m);
-			egpActivateVAO(vao + skyboxModel);
+			// repeat once more for horizontal
+			lastPipelineStage = currentPipelineStage;
+			currentPipelineStage = hblurFBO_d8;
+			egpfwActivateFBO(fbo + currentPipelineStage);
+			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+				pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
 			egpDrawActiveVAO();
 
-			glDepthFunc(GL_LESS);
-			glCullFace(GL_BACK);
-		}
-
-		// draw textured moon
-		{
-			glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
-
-			// retained
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
-			egpActivateVAO(vao + sphere8x6Model);
-			egpDrawActiveVAO();
-		}
-
-
-		// draw shaded earth
-		{
-			currentProgramIndex = phongProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
-
-			eyePos_object = earthModelInverseMatrix * cameraPosWorld;
-			lightPos_object = earthModelInverseMatrix * lightPos_world;
-			egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
-			egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
-			egpActivateVAO(vao + sphereHiResObjModel);
+			// ditto for vertical
+			lastPipelineStage = currentPipelineStage;
+			currentPipelineStage = vblurFBO_d8;
+			egpfwActivateFBO(fbo + currentPipelineStage);
+			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+				pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
 			egpDrawActiveVAO();
 		}
 	}
 
 
-	// unbind all active framebuffers, setup for final pass 
-	// (draw to back buffer)
+	// fourth pass: composite
+	currentProgramIndex = bloomBlendProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+
+	currentPipelineStage = compositeFBO;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + sceneFBO, 0, 0);
+	egpfwBindColorTargetTexture(fbo + vblurFBO_d2, 1, 0);
+	egpfwBindColorTargetTexture(fbo + vblurFBO_d4, 2, 0);
+	egpfwBindColorTargetTexture(fbo + vblurFBO_d8, 3, 0);
+	egpDrawActiveVAO();
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+	// FINAL DISPLAY: RENDER FINAL IMAGE ON FSQ TO BACK BUFFER
+
+	// use back buffer
 	egpfwActivateFBO(0);
 	drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
 
-
-	// final pass: draw FSQ with scene FBO on it
+	// final pass: draw FSQ with user-selected FBO on it
 	{
 		// use texturing program, no mvp
 		currentProgramIndex = testTexturePassthruProgramIndex;
@@ -971,14 +1205,10 @@ void renderGameState()
 		egpActivateProgram(currentProgram);
 
 		// bind scene texture
-		if (testDrawColor)
-			egpfwBindColorTargetTexture((fbo + sceneFBO), 0, 0);
+		if (displayMode != fboCount)
+			egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
 		else
-			egpfwBindDepthTargetTexture((fbo + sceneFBO), 0);
-
-		// draw quad, ignore depth, always draw
-		glDisable(GL_DEPTH_TEST);
-		egpActivateVAO(vao + fsqModel);
+			egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
 		egpDrawActiveVAO();
 
 		// done with textures
@@ -1003,7 +1233,8 @@ void renderGameState()
 		// done
 		glEnable(GL_DEPTH_TEST);
 	}
-
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 	// disable all renderables, shaders
 	egpActivateProgram(0);
