@@ -86,16 +86,9 @@ void winClosePressed()
 	glutLeaveMainLoop();
 }
 
-int main()
-{
-	runTransformTestSuite();
-	system("pause");
-}
-
 // entry function
-int foo(int argc, char **argv)
+int main(int argc, char **argv)
 {
-	return 0;
 
 	// initialize graphics library
 	if (initGLUT(argc, argv))
