@@ -1128,7 +1128,7 @@ void renderGameState()
 	egpfwActivateFBO(fbo + currentPipelineStage);
 	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
 	egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-		pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+		pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].y).v);
 	egpDrawActiveVAO();
 
 	// iterate on blurring for a more intense bloom effect
@@ -1148,7 +1148,7 @@ void renderGameState()
 		egpfwActivateFBO(fbo + currentPipelineStage);
 		egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
 		egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-			pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+			pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].y).v);
 		egpDrawActiveVAO();
 
 		// ...moar bloom!
@@ -1168,7 +1168,7 @@ void renderGameState()
 			egpfwActivateFBO(fbo + currentPipelineStage);
 			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
 			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-				pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+				pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].y).v);
 			egpDrawActiveVAO();
 		}
 	}
