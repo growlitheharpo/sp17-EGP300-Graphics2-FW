@@ -12,18 +12,14 @@
 
 // ****
 // attributes
-
 layout (location = 0) in vec4 position;
 layout (location = 8) in vec4 texcoord;
 
 
 // ****
 // varyings
+out vec2 passTexcoord;
 
-out v2f
-{
-	vec2 texcoord;
-} passData;
 
 // shader function
 void main()
@@ -34,5 +30,5 @@ void main()
 
 	// ****
 	// pass data
-	passData.texcoord = texcoord.xy;
+	passTexcoord = texcoord.xy;
 }
