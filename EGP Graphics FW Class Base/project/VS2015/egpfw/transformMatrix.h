@@ -1,44 +1,61 @@
 #ifndef __TRANSFORM_MATRIX_H
 #define __TRANSFORM_MATRIX_H
+#include "vector3.h"
 
-
-#ifdef __cplusplus
-extern "C"
+class TransformationMatrix
 {
-#endif	// __cplusplus
+	friend class Quaternion;
 
-	struct Vector3_struct;
-	typedef struct Vector3_struct Vector3;
+private:
+	float vals[4][4];
 
-	typedef struct TransformMatrix_struct{
-		float vals[4][4];
-	} TransformMatrix;
+public:
+	TransformationMatrix();
+	TransformationMatrix(const TransformationMatrix& other);
+	~TransformationMatrix() = default;
 
-	void multiplyMatrixByScalar(TransformMatrix* matrix, float scalar);
-	void printMatrix(TransformMatrix const* matrix);
-	void copyMatrix(TransformMatrix const* src, TransformMatrix* dest);
-	void transposeMatrix(TransformMatrix* matrix);
-	void makeIdentiyMatrix(TransformMatrix* matrix);
-	void makeXDirectionTransformMatrix(TransformMatrix* matrix, float amount);
-	void makeYDirectionTransformMatrix(TransformMatrix* matrix, float amount);
-	void makeZDirectionTransformMatrix(TransformMatrix* matrix, float amount);
-	void makeTransformFromRotation(TransformMatrix* matrix, float pitch, float yaw, float roll);
-	void makeTransformFromScale(TransformMatrix* matrix, float x, float y, float z);
-	void makeTransformFromUniformScale(TransformMatrix* matrix, float uniformScale);
-	void makeTransformFromTranslation(TransformMatrix* matrix, float dX, float dY, float dZ);
-	void inverseTransformUnscaled(TransformMatrix* matrix);
-	int areTransformsEqual(TransformMatrix* a, TransformMatrix* b);
-	void multiplyMatrix(TransformMatrix* matrixOut, TransformMatrix* matrixLeft, TransformMatrix* matrixRight);
-	void concatenateTransform(TransformMatrix* matrixOut, TransformMatrix* scaleMatrix, TransformMatrix* rotationMatrix, TransformMatrix* translationMatrix);
+	TransformationMatrix& operator = (const TransformationMatrix& other);
+	bool operator == (const TransformationMatrix& other) const;
+	bool operator != (const TransformationMatrix& other) const { return !(*this == other); }
 
-	void applyTransformToPoint(Vector3* pointInOut, TransformMatrix const* transform);
+	TransformationMatrix operator * (float scalar) const;
+	TransformationMatrix operator * (const TransformationMatrix& matrix) const;
+	TransformationMatrix& operator *= (float scalar);
+	TransformationMatrix& operator *= (const TransformationMatrix& matrix);
 
-	void runTransformTestSuite();
+	Vector3 operator * (const Vector3& point) const;
 
+	void multiply(float s) { *this *= s; }
+	void multiply(const TransformationMatrix& other) { *this *= other; }
+	void concatenate(const TransformationMatrix& other) { multiply(other); }
 
-#ifdef __cplusplus
-}
-#endif	// __cplusplus
+	Vector3 multipliy(const Vector3& point) const { return *this * point; };
+	Vector3 applyToPoint(const Vector3& point) const { return *this * point; }
+
+	void makeXDirectionRotation(float amount);
+	void makeYDirectionRotation(float amount);
+	void makeZDirectionRotation(float amount);
+
+	void makeRotationXYZ(float x, float y, float z);
+	void makeRotationZYX(float z, float y, float x);
+	void makeScale(float x, float y, float z);
+	void makeUniformScale(float s) { makeScale(s, s, s); }
+
+	void makeTranslation(float x, float y, float z);
+	void makeIdentity();
+	void transpose();
+
+	TransformationMatrix getInverseUnscaled();
+	void inverseUnscaled() { *this = getInverseUnscaled(); }
+
+	bool equals(const TransformationMatrix& other) const { return *this == other; }
+	void print();
+
+	static TransformationMatrix identity() { return TransformationMatrix(); }
+};
+
+void runTransformTestSuite();
+
 
 
 #endif

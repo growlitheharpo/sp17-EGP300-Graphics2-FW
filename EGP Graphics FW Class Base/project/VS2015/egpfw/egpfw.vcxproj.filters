@@ -66,6 +66,9 @@
     <ClInclude Include="TStack.h">
       <Filter>Source Files\week3</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwFrameBuffer.h">
+      <Filter>Header Files\egpfw</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -80,12 +83,6 @@
     <ClCompile Include="..\..\..\source\egpfw\egpfwOBJLoader.c">
       <Filter>Source Files\c</Filter>
     </ClCompile>
-    <ClCompile Include="transformMatrix.c">
-      <Filter>Source Files\week1</Filter>
-    </ClCompile>
-    <ClCompile Include="vector3.c">
-      <Filter>Source Files\week1</Filter>
-    </ClCompile>
     <ClCompile Include="Quaternion.cpp">
       <Filter>Source Files\week2</Filter>
     </ClCompile>
@@ -94,6 +91,15 @@
     </ClCompile>
     <ClCompile Include="stackTest.cpp">
       <Filter>Source Files\week3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\egpfw\egpfwFrameBuffer.c">
+      <Filter>Source Files\c</Filter>
+    </ClCompile>
+    <ClCompile Include="transformMatrix.cpp">
+      <Filter>Source Files\week1</Filter>
+    </ClCompile>
+    <ClCompile Include="vector3.cpp">
+      <Filter>Source Files\week1</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

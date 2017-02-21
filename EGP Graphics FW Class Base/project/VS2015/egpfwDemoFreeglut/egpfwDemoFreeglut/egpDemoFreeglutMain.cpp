@@ -2,6 +2,7 @@
 // By Dan Buckstein
 
 #include "../../egpfw/TStack.h"
+#include "../../egpfw/transformMatrix.h"
 #ifdef _WIN32
 //-----------------------------------------------------------------------------
 
@@ -88,6 +89,7 @@ void winClosePressed()
 // entry function
 int main(int argc, char **argv)
 {
+
 	// initialize graphics library
 	if (initGLUT(argc, argv))
 	{

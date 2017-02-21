@@ -19,6 +19,7 @@
 #include "egpfw/egpfw/egpfwVertexBuffer.h"
 
 #include "egpfw/egpfw/egpfwOBJLoader.h"
+#include "egpfw/egpfw/egpfwFrameBuffer.h"
 
 
 #endif	// __EGPFW_H
