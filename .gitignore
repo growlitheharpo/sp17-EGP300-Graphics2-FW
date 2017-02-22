@@ -10,6 +10,7 @@ ipch/
 xcuserdata/
 _SLN/
 _WORKSPACE/
+_SUBMISSION*
 *.DS_Store
 *.ipch
 *.db
