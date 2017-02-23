@@ -110,37 +110,43 @@ Vector3 TransformationMatrix::operator*(const Vector3& point) const
 		vals[2][0] * point.x() + vals[2][1] * point.y() + vals[2][2] * point.z() + vals[2][3]);
 }
 
-void TransformationMatrix::makeXDirectionRotation(float amount)
+TransformationMatrix TransformationMatrix::makeXDirectionRotation(float amount)
 {
-	makeIdentity();
+	TransformationMatrix result;
 
-	vals[1][1] = cos(amount);
-	vals[1][2] = sin(amount) * -1.0f;
-	vals[2][1] = vals[1][2] * -1.0f;
-	vals[2][2] = vals[1][1];
+	result.vals[1][1] = cos(amount);
+	result.vals[1][2] = sin(amount) * -1.0f;
+	result.vals[2][1] = result.vals[1][2] * -1.0f;
+	result.vals[2][2] = result.vals[1][1];
+
+	return result;
 }
 
-void TransformationMatrix::makeYDirectionRotation(float amount)
+TransformationMatrix TransformationMatrix::makeYDirectionRotation(float amount)
 {
-	makeIdentity();
+	TransformationMatrix result;
 
-	vals[0][0] = cos(amount);
-	vals[0][2] = sin(amount);
-	vals[2][0] = vals[0][2] * -1.0f;
-	vals[2][2] = vals[0][0];
+	result.vals[0][0] = cos(amount);
+	result.vals[0][2] = sin(amount);
+	result.vals[2][0] = result.vals[0][2] * -1.0f;
+	result.vals[2][2] = result.vals[0][0];
+
+	return result;
 }
 
-void TransformationMatrix::makeZDirectionRotation(float amount)
+TransformationMatrix TransformationMatrix::makeZDirectionRotation(float amount)
 {
-	makeIdentity();
+	TransformationMatrix result;
 
-	vals[0][0] = cos(amount);
-	vals[0][1] = sin(amount) * -1.0f;
-	vals[1][0] = vals[0][1] * -1.0f;
-	vals[1][1] = vals[1][1];
+	result.vals[0][0] = cos(amount);
+	result.vals[0][1] = sin(amount) * -1.0f;
+	result.vals[1][0] = result.vals[0][1] * -1.0f;
+	result.vals[1][1] = result.vals[1][1];
+
+	return result;
 }
 
-void TransformationMatrix::makeRotationXYZ(float x, float y, float z)
+TransformationMatrix TransformationMatrix::makeRotationXYZ(float x, float y, float z)
 {
 	TransformationMatrix xT, yT, zT;
 
@@ -148,10 +154,10 @@ void TransformationMatrix::makeRotationXYZ(float x, float y, float z)
 	yT.makeZDirectionRotation(y);
 	zT.makeYDirectionRotation(z);
 
-	*this = xT * yT * zT;
+	return xT * yT * zT;
 }
 
-void TransformationMatrix::makeRotationZYX(float z, float y, float x)
+TransformationMatrix TransformationMatrix::makeRotationZYX(float z, float y, float x)
 {
 	TransformationMatrix xT, yT, zT;
 
@@ -159,25 +165,29 @@ void TransformationMatrix::makeRotationZYX(float z, float y, float x)
 	yT.makeZDirectionRotation(y);
 	zT.makeYDirectionRotation(z);
 
-	*this = zT * yT * xT;
+	return zT * yT * xT;
 }
 
-void TransformationMatrix::makeScale(float x, float y, float z)
+TransformationMatrix TransformationMatrix::makeScale(float x, float y, float z)
 {
-	makeIdentity();
+	TransformationMatrix result;
 
-	vals[0][0] = x;
-	vals[1][1] = y;
-	vals[2][2] = z;
+	result.vals[0][0] = x;
+	result.vals[1][1] = y;
+	result.vals[2][2] = z;
+
+	return result;
 }
 
-void TransformationMatrix::makeTranslation(float x, float y, float z)
+TransformationMatrix TransformationMatrix::makeTranslation(float x, float y, float z)
 {
-	makeIdentity();
+	TransformationMatrix result;
 
-	vals[0][3] = x;
-	vals[1][3] = y;
-	vals[2][3] = z;
+	result.vals[0][3] = x;
+	result.vals[1][3] = y;
+	result.vals[2][3] = z;
+
+	return result;
 }
 
 void TransformationMatrix::makeIdentity()

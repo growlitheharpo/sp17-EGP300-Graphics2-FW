@@ -1,6 +1,9 @@
 #include "TStack.h"
 #include <iostream>
 #include "vector3.h"
+#include "transformMatrix.h"
+#include "Quaternion.h"
+#include "utils.h"
 
 void testStack()
 {
@@ -21,18 +24,23 @@ void testStack()
 
 	std::cout << " empty now? " << (aStack.empty() ? "true" : "false") << std::endl;
 
-	/*
-	Stack<Vector3> vecStack;
-	vecStack.push(ONE_VECTOR3);
-	vecStack.push(UP_VECTOR3);
-	vecStack.push(RIGHT_VECTOR3);
+	Stack<TransformationMatrix> transformStack;
+	
+	transformStack.push(TransformationMatrix::makeRotationZYX(0.0f, 0.0f, DegToRad(-90.0f)));
+	transformStack.push(TransformationMatrix::makeUniformScale(2.0f));
+	transformStack.push(TransformationMatrix::makeTranslation(0.0f, 0.0f, 5.0f));
+	transformStack.push(TransformationMatrix::makeTranslation(0.0f, 2.0f, 0.0f));
 
-	int depth = vecStack.depth(ONE_VECTOR3);
-	bool contains = vecStack.contains(UP_VECTOR3);
-	std::cout << "Depth of one vector: " << depth << "  contains up vector " << (contains ? "true" : "false") << std::endl;
+	Vector3 newPoint = transformStack.product() * UP_VECTOR3;
+	newPoint.print();
 
-	while (!aStack.empty())
-		printVector(&vecStack.pop(), '\n');*/
+	transformStack.push(TransformationMatrix::makeTranslation(0.0f, -2.0f, -5.0f));
+	transformStack.push(TransformationMatrix::makeUniformScale(0.5f));
+	transformStack.push(TransformationMatrix::makeRotationZYX(0.0f, 0.0f, DegToRad(90.0f)));
+
+	newPoint = transformStack.product() * UP_VECTOR3;
+	newPoint.print();
 
 	std::cout << std::endl;
+	system("pause");
 }

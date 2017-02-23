@@ -28,6 +28,8 @@ class Stack
 		void push(const T& data);
 		T pop();
 		T peek() const;
+
+		T product();
 		
 		bool contains(const T& data) const;
 		int depth(const T& data) const;
@@ -93,6 +95,21 @@ T Stack<T>::peek() const
 		throw std::out_of_range("Tried to peek an empty stack!");
 
 	return mHead->mData;
+}
+
+template <typename T>
+T Stack<T>::product()
+{
+	T result = T();
+
+	auto walker = mHead;
+	while (walker != nullptr)
+	{
+		result *= walker->mData;
+		walker = walker->mNext;
+	}
+
+	return result;
 }
 
 template <typename T>
