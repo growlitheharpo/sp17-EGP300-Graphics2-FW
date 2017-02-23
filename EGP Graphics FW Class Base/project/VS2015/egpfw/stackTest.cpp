@@ -5,6 +5,21 @@
 #include "Quaternion.h"
 #include "utils.h"
 
+TransformationMatrix Stack<TransformationMatrix>::product() const
+{
+	TransformationMatrix result;
+
+	auto walker = mHead;
+	while (walker != nullptr)
+	{
+		result *= walker->mData;
+		walker = walker->mNext;
+	}
+
+	return result;
+}
+
+
 void testStack()
 {
 	Stack<int> aStack({ 5, 4, 3, 2, 1 });

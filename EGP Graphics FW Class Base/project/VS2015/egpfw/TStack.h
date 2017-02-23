@@ -2,11 +2,12 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <memory>
+#include "transformMatrix.h"
 
 template <typename T>
-class Stack
+class __TBaseStack
 {
-	private:
+	protected:
 		struct Node
 		{
 			T mData;
@@ -21,16 +22,14 @@ class Stack
 		unsigned int mCount;
 
 	public:
-		Stack();
-		Stack(std::initializer_list<T> elements);
-		~Stack();
+		__TBaseStack();
+		__TBaseStack(std::initializer_list<T> elements);
+		~__TBaseStack();
 
 		void push(const T& data);
 		T pop();
 		T peek() const;
 
-		T product();
-		
 		bool contains(const T& data) const;
 		int depth(const T& data) const;
 
@@ -39,14 +38,29 @@ class Stack
 };
 
 template <typename T>
-Stack<T>::Stack()
+class Stack : public __TBaseStack<T>
+{
+	public:
+		using __TBaseStack<T>::__TBaseStack;
+};
+
+template <>
+class Stack<TransformationMatrix> : public __TBaseStack<TransformationMatrix>
+{
+	public:
+		using __TBaseStack<TransformationMatrix>::__TBaseStack;
+		TransformationMatrix product() const;
+};
+
+template <typename T>
+__TBaseStack<T>::__TBaseStack()
 {
 	mCount = 0;
 	mHead = nullptr;
 }
 
 template <typename T>
-Stack<T>::Stack(std::initializer_list<T> elements)
+__TBaseStack<T>::__TBaseStack(std::initializer_list<T> elements)
 {
 	mCount = 0;
 	mHead = nullptr;
@@ -56,14 +70,14 @@ Stack<T>::Stack(std::initializer_list<T> elements)
 }
 
 template <typename T>
-Stack<T>::~Stack()
+__TBaseStack<T>::~__TBaseStack()
 {
 	while (count() > 0)
 		pop();
 }
 
 template <typename T>
-void Stack<T>::push(const T& data)
+void __TBaseStack<T>::push(const T& data)
 {
 	auto newNode = std::make_shared<Node>();
 	newNode->mData = data;
@@ -74,7 +88,7 @@ void Stack<T>::push(const T& data)
 }
 
 template <typename T>
-T Stack<T>::pop()
+T __TBaseStack<T>::pop()
 {
 	if (empty())
 		throw std::out_of_range("Tried to pop an empty stack!");
@@ -89,7 +103,7 @@ T Stack<T>::pop()
 }
 
 template <typename T>
-T Stack<T>::peek() const
+T __TBaseStack<T>::peek() const
 {
 	if (empty())
 		throw std::out_of_range("Tried to peek an empty stack!");
@@ -98,28 +112,13 @@ T Stack<T>::peek() const
 }
 
 template <typename T>
-T Stack<T>::product()
-{
-	T result = T();
-
-	auto walker = mHead;
-	while (walker != nullptr)
-	{
-		result *= walker->mData;
-		walker = walker->mNext;
-	}
-
-	return result;
-}
-
-template <typename T>
-bool Stack<T>::contains(const T& data) const
+bool __TBaseStack<T>::contains(const T& data) const
 {
 	return depth(data) > -1;
 }
 
 template <typename T>
-int Stack<T>::depth(const T& data) const
+int __TBaseStack<T>::depth(const T& data) const
 {
 	auto currentNode = mHead;
 	int count = 0;
