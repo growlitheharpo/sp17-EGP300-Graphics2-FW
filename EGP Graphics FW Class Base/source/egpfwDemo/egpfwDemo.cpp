@@ -132,6 +132,7 @@ enum GLSLProgramIndex
 	testTexturePassthruProgramIndex, 
 
 	phongProgramIndex,
+	silhouetteOutlineProgramIndex,
 	celshadeProgramIndex,
 
 	// bloom
@@ -697,6 +698,26 @@ void setupShaders()
 		egpReleaseFileContents(files + 0);
 		egpReleaseFileContents(files + 1);
 	}
+	{
+		currentProgramIndex = silhouetteOutlineProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/silhouette_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/silhouette_fs4x.glsl");
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+		
+		*currentProgram = egpCreateProgram();
+		egpAttachShaderToProgram(currentProgram, shaders + 0);
+		egpAttachShaderToProgram(currentProgram, shaders + 1);
+		egpLinkProgram(currentProgram);
+		egpValidateProgram(currentProgram);
+
+		egpReleaseShader(shaders + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 0);
+		egpReleaseFileContents(files + 1);
+	}
 
 	// configure all uniforms at once
 	for (currentProgramIndex = 0; currentProgramIndex < GLSLProgramCount; ++currentProgramIndex)
@@ -1068,46 +1089,80 @@ void renderSceneObjects()
 {
 	// draw textured moon
 	{
-		currentProgramIndex = celshadeProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
+		//draw silhouette
+		{
+			currentProgramIndex = silhouetteOutlineProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
+			glCullFace(GL_FRONT);
 
-		// retained
-		eyePos_object = moonModelInverseMatrix * cameraPosWorld;
-		lightPos_object = moonModelInverseMatrix * lightPos_world;
-		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
-		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + sphere32x24Model);
+			egpDrawActiveVAO();
+			glCullFace(GL_BACK);
+		}
+		//* draw the cel-shaded portion
+		{
+			currentProgramIndex = celshadeProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
 
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + sphere32x24Model);
-		egpDrawActiveVAO();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
+
+			eyePos_object = moonModelInverseMatrix * cameraPosWorld;
+			lightPos_object = moonModelInverseMatrix * lightPos_world;
+			egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
+			egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
+
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + sphere32x24Model);
+			egpDrawActiveVAO();
+		} /**/
 	}
 
 	// draw shaded earth
 	{
-		currentProgramIndex = celshadeProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
+		//draw silhouette
+		{
+			currentProgramIndex = silhouetteOutlineProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
+			glCullFace(GL_FRONT);
 
-		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
-		lightPos_object = earthModelInverseMatrix * lightPos_world;
-		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
-		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + torusGithubModel);
-		egpDrawActiveVAO();
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + torusGithubModel);
+			egpDrawActiveVAO();
+			
+			glCullFace(GL_BACK);
+		}
+		//* draw the cel-shaded portion
+		{
+			currentProgramIndex = celshadeProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
+
+			eyePos_object = earthModelInverseMatrix * cameraPosWorld;
+			lightPos_object = earthModelInverseMatrix * lightPos_world;
+			egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
+			egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
+			egpActivateVAO(vao + torusGithubModel);
+			egpDrawActiveVAO();
+		} /**/
 	}
 }
 
