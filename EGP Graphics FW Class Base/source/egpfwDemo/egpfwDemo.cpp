@@ -114,6 +114,7 @@ enum TextureIndex
 	skyboxTexHandle,
 	earthTexHandle_dm, earthTexHandle_sm,
 	moonTexHandle_dm,
+	celshadeRamp,
 
 	//-----------------------------
 	textureCount
@@ -130,6 +131,7 @@ enum GLSLProgramIndex
 	testTexturePassthruProgramIndex, 
 
 	phongProgramIndex,
+	celshadeProgramIndex,
 
 	// bloom
 	bloomBrightProgramIndex, 
@@ -409,6 +411,7 @@ void setupTextures()
 		(char *)("../../../../resource/tex/earth/2k/earth_dm_2k.png"),
 		(char *)("../../../../resource/tex/earth/2k/earth_sm_2k.png"),
 		(char *)("../../../../resource/tex/moon/2k/moon_dm_2k.png"),
+		(char *)("../../../../resource/tex/cel/test_cel_gradient.png"),
 	};
 
 	// load
@@ -450,6 +453,7 @@ void setupTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);		// these two are deliberately different
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -464,6 +468,12 @@ void setupTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+	//cel ramp texture
+	glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 	// disable textures
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -657,7 +667,26 @@ void setupShaders()
 		egpReleaseFileContents(files + 0);
 		egpReleaseFileContents(files + 1);
 	}
+	{
+		currentProgramIndex = celshadeProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
 
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/celshade_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/celshade_fs4x.glsl");
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		*currentProgram = egpCreateProgram();
+		egpAttachShaderToProgram(currentProgram, shaders + 0);
+		egpAttachShaderToProgram(currentProgram, shaders + 1);
+		egpLinkProgram(currentProgram);
+		egpValidateProgram(currentProgram);
+
+		egpReleaseShader(shaders + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 0);
+		egpReleaseFileContents(files + 1);
+	}
 
 	// configure all uniforms at once
 	for (currentProgramIndex = 0; currentProgramIndex < GLSLProgramCount; ++currentProgramIndex)
@@ -1044,15 +1073,15 @@ void renderSceneObjects()
 
 	// draw shaded earth
 	{
-		currentProgramIndex = phongProgramIndex;
+		currentProgramIndex = celshadeProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		currentUniformSet = glslCommonUniforms[currentProgramIndex];
 		egpActivateProgram(currentProgram);
 
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
 
 		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
 		lightPos_object = earthModelInverseMatrix * lightPos_world;

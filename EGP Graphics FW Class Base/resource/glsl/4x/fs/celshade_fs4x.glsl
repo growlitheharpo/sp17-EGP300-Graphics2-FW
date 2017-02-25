@@ -23,8 +23,8 @@ in VertexData
 
 // ****
 // uniforms
-uniform sampler2D tex_dm;
-uniform sampler2D tex_sm;
+uniform sampler2D tex_dm;	//texture 0
+uniform sampler2D tex_sm;	//texture 1
 
 
 // ****

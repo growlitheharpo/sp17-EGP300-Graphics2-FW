@@ -89,5 +89,11 @@
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl">
       <Filter>Resource Files\glsl\4x\fs_bloom</Filter>
     </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\celshade_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\celshade_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
+    </None>
   </ItemGroup>
 </Project>
