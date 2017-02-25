@@ -1,5 +1,5 @@
 /*
-	Phong (VS)
+	Cel (VS)
 	By Dan Buckstein
 	Vertex shader that passes data required to perform Phong shading.
 	
