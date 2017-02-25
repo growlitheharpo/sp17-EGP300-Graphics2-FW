@@ -100,6 +100,7 @@ enum ModelIndex
 	// loaded models
 	sphereLowResObjModel,
 	sphereHiResObjModel,
+	torusGithubModel,
 
 //-----------------------------
 	modelCount
@@ -381,6 +382,15 @@ void setupGeometry()
 		egpfwSaveBinaryOBJ(obj, "sphere32x24_bin.txt");
 	}
 	egpfwCreateVAOFromOBJ(obj, vao + sphereHiResObjModel, vbo + sphereHiResObjModel);
+	egpfwReleaseOBJ(obj);
+
+	*obj = egpfwLoadBinaryOBJ("torus.txt");
+	if (!obj->data)
+	{
+		*obj = egpfwLoadTriangleOBJ("../../../../resource/obj/torus.obj", NORMAL_LOAD, 1.0);
+		egpfwSaveBinaryOBJ(obj, "torus.txt");
+	}
+	egpfwCreateVAOFromOBJ(obj, vao + torusGithubModel, vbo + torusGithubModel);
 	egpfwReleaseOBJ(obj);
 }
 
@@ -1058,16 +1068,24 @@ void renderSceneObjects()
 {
 	// draw textured moon
 	{
-		currentProgramIndex = testTextureProgramIndex;
+		currentProgramIndex = celshadeProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		currentUniformSet = glslCommonUniforms[currentProgramIndex];
 		egpActivateProgram(currentProgram);
 
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
 
 		// retained
+		eyePos_object = moonModelInverseMatrix * cameraPosWorld;
+		lightPos_object = moonModelInverseMatrix * lightPos_world;
+		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
+		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
+
 		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + sphere8x6Model);
+		egpActivateVAO(vao + sphere32x24Model);
 		egpDrawActiveVAO();
 	}
 
@@ -1088,7 +1106,7 @@ void renderSceneObjects()
 		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
 		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
 		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + sphereHiResObjModel);
+		egpActivateVAO(vao + torusGithubModel);
 		egpDrawActiveVAO();
 	}
 }
