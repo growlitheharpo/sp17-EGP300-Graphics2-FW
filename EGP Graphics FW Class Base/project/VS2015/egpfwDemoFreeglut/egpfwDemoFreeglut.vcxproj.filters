@@ -31,6 +31,12 @@
     <Filter Include="Resource Files\glsl\4x\fs_bloom">
       <UniqueIdentifier>{9dcc4fa5-a54a-4da9-a995-83498e94fdff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\glsl\4x\fs_deferred">
+      <UniqueIdentifier>{0de73b3e-afb4-4c1d-a5db-c76d5474b7d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\4x\vs_deferred">
+      <UniqueIdentifier>{afb56fe8-f464-4e4c-a9db-5c822a65a431}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -88,6 +94,24 @@
     </None>
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl">
       <Filter>Resource Files\glsl\4x\fs_bloom</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_deferred\deferredComposite_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_deferred</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_deferred\deferredShading_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_deferred</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_deferred\drawGBuffers_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_deferred</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_deferred\phong_deferred_pointLight_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_deferred</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_deferred\passAttribs_world_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_deferred</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_deferred\passPosition_clip_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_deferred</Filter>
     </None>
   </ItemGroup>
 </Project>
