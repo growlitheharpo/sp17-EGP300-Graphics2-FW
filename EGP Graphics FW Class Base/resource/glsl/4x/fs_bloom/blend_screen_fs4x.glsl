@@ -39,5 +39,4 @@ void main()
 	vec4 imgSample3 = texture(img3, passTexcoord);
 
 	fragColor = 1.0 - (1.0 - imgSample0)*(1.0 - imgSample1)*(1.0 - imgSample2)*(1.0 - imgSample3);
-	//fragColor = imgSample0 + imgSample1 + imgSample2 + imgSample3;
 }
