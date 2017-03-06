@@ -10,16 +10,18 @@
 #version 410
 
 
+// ****
 // varyings
 in vec2 passTexcoord;
 
 
 // ****
 // uniforms
-uniform sampler2D img;
 uniform vec2 pixelSizeInv;
+uniform sampler2D img;
 
 
+// ****
 // target
 layout (location = 0) out vec4 fragColor;
 
@@ -39,26 +41,28 @@ layout (location = 0) out vec4 fragColor;
 //	2^10:	1	10	45	120	210	252	210	120	45	10	1
 vec4 Gaussian8(in vec2 center, in vec2 axis, in sampler2D image)
 {
-	// ****
 	vec4 result = texture(image, center) * 70.0;
 	vec2 axis_n = -axis;
-
-	vec2 samplingCoord = center; //sampling positive direction
-	vec2 samplingCoord_n = center; //sampling negative direction
-
+	vec2 samplingCoord = center;	// sampling positive direction
+	vec2 samplingCoord_n = center;	// sampling negative direction
 	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 56.0;
 	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 28.0;
 	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 8.0;
 	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n));
-
 	return result / 256.0;
-
-	//return texture(image, center);
 }
 vec4 Gaussian10(in vec2 center, in vec2 axis, in sampler2D image)
 {
-	// ****
-	return texture(image, center);
+	vec4 result = texture(image, center) * 252.0;
+	vec2 axis_n = -axis;
+	vec2 samplingCoord = center;	// sampling positive direction
+	vec2 samplingCoord_n = center;	// sampling negative direction
+	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 210.0;
+	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 120.0;
+	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 45.0;
+	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n)) * 10.0;
+	result += (texture(image, samplingCoord += axis) + texture(image, samplingCoord_n += axis_n));
+	return result / 1024.0;
 }
 
 
@@ -67,6 +71,5 @@ void main()
 {
 	// ****
 	// output: Gaussian blur on an arbitrary axis
-	//fragColor = texture(img, passTexcoord);
-	fragColor = Gaussian8(passTexcoord, pixelSizeInv, img);
+	fragColor = Gaussian10(passTexcoord, pixelSizeInv, img);
 }
