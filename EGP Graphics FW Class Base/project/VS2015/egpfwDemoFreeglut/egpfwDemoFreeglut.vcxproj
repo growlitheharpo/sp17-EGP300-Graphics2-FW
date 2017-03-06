@@ -332,12 +332,16 @@
     <None Include="..\..\..\resource\glsl\4x\fs_deferred\deferredShading_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_deferred\drawGBuffers_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_deferred\phong_deferred_pointLight_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_projtex_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_shadowmap_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passColor_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\phong_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\transform_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_deferred\passAttribs_world_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_deferred\passPosition_clip_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs_shadow\phong_passAltClip_vs4x.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
