@@ -37,6 +37,12 @@
     <Filter Include="Resource Files\glsl\4x\vs_deferred">
       <UniqueIdentifier>{afb56fe8-f464-4e4c-a9db-5c822a65a431}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\glsl\4x\vs_shadow">
+      <UniqueIdentifier>{18e0fe4a-2790-4914-b634-e3ad498cc77f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\glsl\4x\fs_shadow">
+      <UniqueIdentifier>{aee0df81-846e-455e-91a8-23848438fa71}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -112,6 +118,18 @@
     </None>
     <None Include="..\..\..\resource\glsl\4x\vs_deferred\passPosition_clip_vs4x.glsl">
       <Filter>Resource Files\glsl\4x\vs_deferred</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\transform_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_shadow\phong_passAltClip_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_shadow</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_shadowmap_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_shadow</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_projtex_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs_shadow</Filter>
     </None>
   </ItemGroup>
 </Project>
