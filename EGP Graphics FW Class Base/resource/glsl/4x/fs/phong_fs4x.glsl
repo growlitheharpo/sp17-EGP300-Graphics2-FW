@@ -61,7 +61,7 @@ void main()
 
 	// ****
 	// output: phong
-//	fragColor = vec4(kd + ks) + AMBIENT;
+	//	fragColor = vec4(kd + ks) + AMBIENT;
 
 	// ****
 	// extra: apply textures as well

@@ -32,16 +32,7 @@ public:
 	Vector3 multipliy(const Vector3& point) const { return *this * point; };
 	Vector3 applyToPoint(const Vector3& point) const { return *this * point; }
 
-	void makeXDirectionRotation(float amount);
-	void makeYDirectionRotation(float amount);
-	void makeZDirectionRotation(float amount);
-
-	void makeRotationXYZ(float x, float y, float z);
-	void makeRotationZYX(float z, float y, float x);
-	void makeScale(float x, float y, float z);
-	void makeUniformScale(float s) { makeScale(s, s, s); }
-
-	void makeTranslation(float x, float y, float z);
+	
 	void makeIdentity();
 	void transpose();
 
@@ -52,6 +43,17 @@ public:
 	void print();
 
 	static TransformationMatrix identity() { return TransformationMatrix(); }
+
+	static TransformationMatrix makeXDirectionRotation(float amount);
+	static TransformationMatrix makeYDirectionRotation(float amount);
+	static TransformationMatrix makeZDirectionRotation(float amount);
+
+	static TransformationMatrix makeRotationXYZ(float x, float y, float z);
+	static TransformationMatrix makeRotationZYX(float z, float y, float x);
+	static TransformationMatrix makeScale(float x, float y, float z);
+	static TransformationMatrix makeUniformScale(float s) { return makeScale(s, s, s); }
+
+	static TransformationMatrix makeTranslation(float x, float y, float z);
 };
 
 void runTransformTestSuite();

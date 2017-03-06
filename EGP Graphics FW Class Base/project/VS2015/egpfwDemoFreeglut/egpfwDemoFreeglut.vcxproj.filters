@@ -31,6 +31,9 @@
     <Filter Include="Resource Files\glsl\4x\fs_bloom">
       <UniqueIdentifier>{9dcc4fa5-a54a-4da9-a995-83498e94fdff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\glsl\4x\gs">
+      <UniqueIdentifier>{06974315-16fb-4f49-80b8-244cbc86bd8b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -88,6 +91,18 @@
     </None>
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl">
       <Filter>Resource Files\glsl\4x\fs_bloom</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\celshade_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\celshade_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\silhouette_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\silhouette_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
     </None>
   </ItemGroup>
 </Project>
