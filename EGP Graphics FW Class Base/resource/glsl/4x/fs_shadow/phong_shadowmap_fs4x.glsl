@@ -73,10 +73,11 @@ void main()
 	float shadowSample = texture(shadowmap, projector_uv.xy).r;
 
 	bool fragIsShadowed = (projector_uv.z > shadowSample + shadowBias);
+	bool behindLight = (pass.position_clip_alt.z < 0.0);
 	
 	vec4 color = phong();
 
-	if (fragIsShadowed)
+	if (fragIsShadowed && !behindLight)
 		color *= 0.2;
 
 	fragColor = color + AMBIENT;
