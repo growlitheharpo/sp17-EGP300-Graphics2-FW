@@ -1391,96 +1391,53 @@ void renderGameState()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex[atlas_diffuse]);
 
-	/*
-<<<<<<< HEAD
-	// repeat for vertical
-	lastPipelineStage = currentPipelineStage;
-	currentPipelineStage = vblurFBO_d2;
-	egpfwActivateFBO(fbo + currentPipelineStage);
-	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
-	egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-		pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].y).v);
-	egpDrawActiveVAO();
-=======
->>>>>>> inclass/james*/
-
 	switch (displayMode)
 	{
-	case displayScene: 
-	case displaySceneDepth:
-		// draw scene, just output colors
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		renderSceneObjects(mvp, 0, 0, 0, numMVPsPerObject, 0, 1);
-		break;
-	case displaySceneProjTex: 
-		// draw scene with projective texturing
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = projectiveTextureProgram;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);	// using texture to project
-		renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
-		break;
-	case displaySceneShadowMap: 
-	case displayShadowMap: 
-		// draw scene to shadow map target
-		currentPipelineStage = shadowFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = testTransformProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		renderSceneObjects(mvp + numCameras, 0, 0, 0, numMVPsPerObject, 0, 0);	// reverse culling
-
-		// draw scene with shadow mapping
-		lastPipelineStage = currentPipelineStage;
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-
-		/*
-<<<<<<< HEAD
-		egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
-		egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-			pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].y).v);
-		egpDrawActiveVAO();
-
-		// ...moar bloom!
-		{
-			// repeat once more for horizontal
-			lastPipelineStage = currentPipelineStage;
-			currentPipelineStage = hblurFBO_d8;
+		case displayScene: 
+		case displaySceneDepth:
+			// draw scene, just output colors
+			currentPipelineStage = sceneFBO;
 			egpfwActivateFBO(fbo + currentPipelineStage);
-			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
-			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-				pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
-			egpDrawActiveVAO();
-
-			// ditto for vertical
-			lastPipelineStage = currentPipelineStage;
-			currentPipelineStage = vblurFBO_d8;
+			currentProgramIndex = testColorProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+			renderSceneObjects(mvp, 0, 0, 0, numMVPsPerObject, 0, 1);
+			break;
+		case displaySceneProjTex: 
+			// draw scene with projective texturing
+			currentPipelineStage = sceneFBO;
 			egpfwActivateFBO(fbo + currentPipelineStage);
-			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
-			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
-				pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].y).v);
-			egpDrawActiveVAO();
-		}
-=======*/
-		currentProgramIndex = shadowMapProgram;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		egpfwBindDepthTargetTexture(fbo + lastPipelineStage, 3);	// using shadow map
-		renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
-		break;
-//>>>>>>> inclass/james
+			currentProgramIndex = projectiveTextureProgram;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+			glActiveTexture(GL_TEXTURE4);
+			glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);	// using texture to project
+			renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
+			break;
+		case displaySceneShadowMap: 
+		case displayShadowMap: 
+			// draw scene to shadow map target
+			currentPipelineStage = shadowFBO;
+			egpfwActivateFBO(fbo + currentPipelineStage);
+			currentProgramIndex = testTransformProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+			renderSceneObjects(mvp + numCameras, 0, 0, 0, numMVPsPerObject, 0, 0);	// reverse culling
+
+			// draw scene with shadow mapping
+			lastPipelineStage = currentPipelineStage;
+			currentPipelineStage = sceneFBO;
+			egpfwActivateFBO(fbo + currentPipelineStage);
+			currentProgramIndex = shadowMapProgram;
+			currentProgram = glslPrograms + currentProgramIndex;
+			currentUniformSet = glslCommonUniforms[currentProgramIndex];
+			egpActivateProgram(currentProgram);
+			egpfwBindDepthTargetTexture(fbo + lastPipelineStage, 3);	// using shadow map
+			renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
+			break;
 	}
 
 
