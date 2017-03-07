@@ -78,6 +78,9 @@
     <ClInclude Include="render_enums.h">
       <Filter>Source Files\week7</Filter>
     </ClInclude>
+    <ClInclude Include="RenderPath.h">
+      <Filter>Source Files\week7</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -111,6 +114,9 @@
       <Filter>Source Files\week1</Filter>
     </ClCompile>
     <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files\week7</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPath.cpp">
       <Filter>Source Files\week7</Filter>
     </ClCompile>
   </ItemGroup>
