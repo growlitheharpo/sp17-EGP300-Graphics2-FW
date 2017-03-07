@@ -119,26 +119,6 @@ enum TextureIndex
 unsigned int tex[textureCount] = { 0 };
 
 
-// GLSL program handle objects: 
-// very convenient way to organize programs and their uniforms!
-enum GLSLProgramIndex
-{
-	testColorProgramIndex,
-	testTextureProgramIndex,
-	testTexturePassthruProgramIndex, 
-
-	phongProgramIndex,
-	silhouetteOutlineProgramIndex,
-	celshadeProgramIndex,
-	testTransformProgramIndex, 
-
-	// shadow mapping and projective texturing
-	projectiveTextureProgram, 
-	shadowMapProgram, 
-
-//-----------------------------
-	GLSLProgramCount
-};
 enum GLSLCommonUniformIndex
 {
 	unif_mvp,
@@ -181,18 +161,6 @@ int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *curr
 int currentProgramIndex = 0;
 
 
-// framebuffer objects (FBOs)
-enum FBOIndex
-{
-	// scene
-	sceneFBO, 
-
-	// shadow map
-	shadowFBO, 
-
-//-----------------------------
-	fboCount
-};
 enum DisplayMode
 {
 	displayScene, 
@@ -201,6 +169,7 @@ enum DisplayMode
 	displaySceneShadowMap, 
 	displayShadowMap, 
 };
+
 egpFrameBufferObjectDescriptor fbo[fboCount], *fboFinalDisplay = fbo;
 int displayMode = displayScene;
 int displayColor = 1;

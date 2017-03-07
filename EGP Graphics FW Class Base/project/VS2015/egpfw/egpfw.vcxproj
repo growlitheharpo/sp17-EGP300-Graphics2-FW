@@ -27,6 +27,8 @@
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwVertexBuffer.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="QuaternionTest.h" />
+    <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="render_enums.h" />
     <ClInclude Include="TStack.h" />
     <ClInclude Include="transformMatrix.h" />
     <ClInclude Include="utils.h" />
@@ -40,6 +42,7 @@
     <ClCompile Include="..\..\..\source\egpfw\egpfwVertexBuffer.c" />
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="QuaternionTest.cpp" />
+    <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="stackTest.cpp" />
     <ClCompile Include="transformMatrix.cpp" />
     <ClCompile Include="vector3.cpp" />

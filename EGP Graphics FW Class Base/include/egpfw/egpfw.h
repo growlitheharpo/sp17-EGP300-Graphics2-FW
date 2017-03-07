@@ -21,5 +21,7 @@
 #include "egpfw/egpfw/egpfwOBJLoader.h"
 #include "egpfw/egpfw/egpfwFrameBuffer.h"
 
+#include "../../project/VS2015/egpfw/render_enums.h"
+
 
 #endif	// __EGPFW_H

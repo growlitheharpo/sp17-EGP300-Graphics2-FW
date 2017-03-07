@@ -31,6 +31,9 @@
     <Filter Include="Source Files\week3">
       <UniqueIdentifier>{9a88322c-499a-4eb3-8230-09f7a7d870c0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\week7">
+      <UniqueIdentifier>{e76b735e-3058-4ad6-976c-0da040c1dd9f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -69,6 +72,12 @@
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwFrameBuffer.h">
       <Filter>Header Files\egpfw</Filter>
     </ClInclude>
+    <ClInclude Include="RenderPass.h">
+      <Filter>Source Files\week7</Filter>
+    </ClInclude>
+    <ClInclude Include="render_enums.h">
+      <Filter>Source Files\week7</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -100,6 +109,9 @@
     </ClCompile>
     <ClCompile Include="vector3.cpp">
       <Filter>Source Files\week1</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files\week7</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
