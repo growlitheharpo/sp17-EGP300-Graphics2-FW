@@ -39,6 +39,7 @@
 // framework includes
 
 #include "egpfw/egpfw.h"
+#include "../../project/VS2015/egpfw/RenderPath.h"
 
 
 //-----------------------------------------------------------------------------
@@ -74,6 +75,14 @@ egpMouse mouse[1];
 egpKeyboard keybd[1];
 
 
+// general: camera's view matrix and projection matrix
+cbtk::cbmath::mat4 viewMatrix, projectionMatrix, viewProjMat;
+// camera controls
+float cameraElevation = 0.25f, cameraAzimuth = 4.0f;
+float cameraRotateSpeed = 0.25f, cameraMoveSpeed = 4.0f, cameraDistance = 8.0f;
+cbtk::cbmath::vec4 cameraPosWorld(1.0f, -2.0f, -cameraDistance, 1.0f), deltaCamPos;
+
+
 
 //-----------------------------------------------------------------------------
 // graphics-related data and handles
@@ -85,14 +94,13 @@ egpKeyboard keybd[1];
 enum ModelIndex
 {
 	// built-in models
-	axesModel,
-	fsqModel,
-	boxModel, sphere8x6Model, sphere32x24Model,
+	axesModel, 
+	fsqModel, 
+	skyboxModel, sphere8x6Model, sphere32x24Model,
 
 	// loaded models
 	sphereLowResObjModel,
 	sphereHiResObjModel,
-	torusGithubModel,
 
 //-----------------------------
 	modelCount
@@ -107,107 +115,91 @@ enum TextureIndex
 	skyboxTexHandle,
 	earthTexHandle_dm, earthTexHandle_sm,
 	moonTexHandle_dm,
-	celshadeRamp,
-	booleanTexHandle, 
 
-	atlas_diffuse,
-	atlas_specular,
-
-//-----------------------------
+	//-----------------------------
 	textureCount
 };
 unsigned int tex[textureCount] = { 0 };
 
+/*
+// GLSL program handle objects: 
+// very convenient way to organize programs and their uniforms!
+enum GLSLProgramIndex
+{
+	testColorProgramIndex,
+	testTextureProgramIndex,
+	testTexturePassthruProgramIndex, 
 
+	phongProgramIndex,
+
+	// bloom
+	bloomBrightProgramIndex, 
+	bloomBlurProgramIndex, 
+	bloomBlendProgramIndex, 
+
+//-----------------------------
+	GLSLProgramCount
+};*/
 enum GLSLCommonUniformIndex
 {
 	unif_mvp,
 
-	unif_lightColor,
 	unif_lightPos,
 	unif_eyePos,
 
-	unif_atlasMat,
-	unif_normalScale,
-
 	unif_dm,
 	unif_sm,
-	unif_bool, 
 
-	// shadow mapping
-	unif_mvp_projector, 
-	unif_projtex, 
-	unif_shadowmap, 
+	unif_pixelSizeInv, 
+	unif_img, 
+	unif_img1, 
+	unif_img2, 
+	unif_img3, 
 
 //-----------------------------
 	GLSLCommonUniformCount
-};
-const char *commonUniformName[] = {
-	(const char *)("mvp"),
-	(const char *)("lightColor"),
-	(const char *)("lightPos"),
-	(const char *)("eyePos"),
-	(const char *)("atlasMat"),
-	(const char *)("normalScale"),
-	(const char *)("tex_dm"),
-	(const char *)("tex_sm"),
-	(const char *)("tex_bool"),
-	(const char *)("mvp_projector"),
-	(const char *)("projtex"),
-	(const char *)("shadowmap"),
 };
 egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
 int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
 int currentProgramIndex = 0;
 
-
-enum DisplayMode
+/*
+// framebuffer objects (FBOs)
+enum FBOIndex
 {
-	displayScene, 
-	displaySceneDepth, 
-	displaySceneProjTex, 
-	displaySceneShadowMap, 
-	displayShadowMap, 
-};
+	sceneFBO, 
 
+	// bloom
+	brightFBO_d2, 
+	hblurFBO_d2, 
+	vblurFBO_d2, 
+	hblurFBO_d4, 
+	vblurFBO_d4,
+	hblurFBO_d8,
+	vblurFBO_d8,
+	compositeFBO,
+	
+//-----------------------------
+	fboCount
+};*/
 egpFrameBufferObjectDescriptor fbo[fboCount], *fboFinalDisplay = fbo;
-int displayMode = displayScene;
-int displayColor = 1;
+cbmath::vec2 pixelSizeInv[fboCount];
 int testDrawAxes = 0;
+int displayMode = 0;
 
 
 
 //-----------------------------------------------------------------------------
 // our game objects
 
-// cameras
-const unsigned int numCameras = 1, activeCamera = 0;
-cbmath::mat4 projectionMatrix[numCameras];
-// camera controls
-float cameraElevation = 0.0f, cameraAzimuth = 0.0f;
-float cameraRotateSpeed = 0.25f, cameraMoveSpeed = 4.0f, cameraDistance = 8.0f;
-cbmath::vec4 cameraPos_world[numCameras] = {
-	cbmath::vec4(0.0f, 0.0f, cameraDistance, 1.0f)
-}, cameraPos_obj[numCameras], deltaCamPos;
+// transformation matrices
+cbmath::mat4 skyboxModelViewMatrix, skyboxModelViewProjectionMatrix;
+cbmath::mat4 earthModelMatrix, earthModelViewProjectionMatrix, earthModelInverseMatrix;
+cbmath::mat4 moonModelMatrix, moonModelViewProjectionMatrix, moonModelInverseMatrix;
 
 
-// light positions and colors
-// for the colors, let the xyz components represent color in rgb, and 
-//	the w component represent the radius of the light volume
-const unsigned int numLights = 1;
-cbmath::vec4 lightPos_world[numLights] = {
-	cbmath::vec4(10.0f, 20.0f, 5.0f, 1.0f),
-}, lightPos_obj[numLights];
-cbmath::vec4 lightColor[numLights] = {
-	cbmath::vec4(1.0f, 1.0f, 1.0f, 100.0f),
-};
-
-// bias matrix for using light as viewer
-const cbmath::mat4 bias(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f);
-
-// projection matrix for light as a viewer
-const float lightNearZ = 10.0f, lightFarZ = 100.0f;
-const cbmath::mat4 lightProjMat = cbmath::makePerspective(-lightNearZ, lightNearZ, -lightNearZ, lightNearZ, lightNearZ, lightFarZ);
+// light and camera for shading
+cbmath::vec4 lightPos_world(10.0f, 10.0f, 20.0f, 1.0f), lightPos_object, eyePos_object;
 
 
 // raw animation values: 
@@ -225,33 +217,7 @@ const float moonTilt = Deg2Rad(6.69f);
 const float moonDistance = 4.0f;
 const float moonSize = 0.27f;
 
-
-
-// list of scene objects and respective matrices
-enum SceneObjects
-{
-	skyboxObject,
-	groundObject,
-	moonObject,
-	marsObject,
-	earthObject,
-//-----------------------------
-	sceneObjectCount,
-//-----------------------------
-	cameraObjects = sceneObjectCount,
-	lightObjects = cameraObjects + numCameras,
-//-----------------------------
-	sceneObjectTotalCount = lightObjects + numLights
-};
-
-// transformation matrices
-cbmath::mat4 modelMatrix[sceneObjectTotalCount];
-cbmath::mat4 modelMatrixInv[sceneObjectTotalCount];
-cbmath::mat4 viewProjectionMatrix[sceneObjectTotalCount];
-cbmath::mat4 atlasMatrix[sceneObjectCount];
-
-cbmath::mat4 boxModelViewProjectionMatrix;
-
+RenderPath globalRenderPath;
 
 
 //-----------------------------------------------------------------------------
@@ -369,7 +335,7 @@ void setupGeometry()
 	attribs[1].data = egpGetCubeColors();
 	attribs[2].data = egpGetCubeNormals();
 	attribs[3].data = egpGetCubeTexcoords();
-	vao[boxModel] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetCubeVertexCount(), (vbo + boxModel), 0);
+	vao[skyboxModel] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetCubeVertexCount(), (vbo + skyboxModel), 0);
 
 	// low-res sphere
 	attribs[0].data = egpGetSphere8x6Positions();
@@ -385,21 +351,11 @@ void setupGeometry()
 	attribs[3].data = egpGetSphere32x24Texcoords();
 	vao[sphere32x24Model] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere32x24VertexCount(), (vbo + sphere32x24Model), 0);
 
-	// full-screen quad
-	{
-		const float tmpNormalData[] = {
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
-		};
-
-		attribs[0].data = egpfwGetUnitQuadPositions();
-		attribs[1].data = egpfwGetUnitQuadColors();
-		attribs[2].data = tmpNormalData;
-		attribs[3].data = egpfwGetUnitQuadTexcoords();
-		vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 4, 4, (vbo + fsqModel), 0);
-	}
+	// full-screen quad (positions and texcoords only!)
+	attribs[1] = attribs[3];
+	attribs[0].data = egpfwGetUnitQuadPositions();
+	attribs[1].data = egpfwGetUnitQuadTexcoords();
+	vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 2, 4, (vbo + fsqModel), 0);
 
 
 	// loaded models
@@ -426,34 +382,6 @@ void setupGeometry()
 	}
 	egpfwCreateVAOFromOBJ(obj, vao + sphereHiResObjModel, vbo + sphereHiResObjModel);
 	egpfwReleaseOBJ(obj);
-
-	*obj = egpfwLoadBinaryOBJ("torus.txt");
-	if (!obj->data)
-	{
-		*obj = egpfwLoadTriangleOBJ("../../../../resource/obj/torus.obj", NORMAL_LOAD, 1.0);
-		egpfwSaveBinaryOBJ(obj, "torus.txt");
-	}
-	egpfwCreateVAOFromOBJ(obj, vao + torusGithubModel, vbo + torusGithubModel);
-	egpfwReleaseOBJ(obj);
-
-	// geometry-related constants
-	modelMatrix[groundObject] = cbmath::makeTranslation4(0.0f, -5.0f, 0.0f) * cbmath::makeScale4(10.0f, 0.1f, 10.0f);
-	modelMatrixInv[groundObject] = cbmath::transformInverse(modelMatrix[groundObject]);
-
-	atlasMatrix[skyboxObject] = atlasMatrix[groundObject] = cbmath::makeScale4(0.125f, 0.125f, 0.0f);
-	atlasMatrix[earthObject] = atlasMatrix[moonObject] = atlasMatrix[marsObject] = cbmath::makeScale4(0.5f, 0.25f, 0.0f);
-	atlasMatrix[earthObject].c3.y = 0.75f;
-	atlasMatrix[moonObject].c3.y = 0.5f;
-	atlasMatrix[marsObject].c3.y = 0.25f;
-	atlasMatrix[groundObject].c3.y = 0.125f;
-
-	// lights
-	for (unsigned int i = 0, j = lightObjects; i < numLights; ++i, ++j)
-	{
-		modelMatrix[j] = cbmath::makeFrenet4(lightPos_world[i].xyz, cbmath::v3zero, cbmath::v3y);
-		modelMatrixInv[j] = cbmath::transformInverseNoScale(modelMatrix[j]);
-		viewProjectionMatrix[j] = lightProjMat * modelMatrixInv[j];
-	}
 }
 
 void deleteGeometry()
@@ -483,10 +411,6 @@ void setupTextures()
 		(char *)("../../../../resource/tex/earth/2k/earth_dm_2k.png"),
 		(char *)("../../../../resource/tex/earth/2k/earth_sm_2k.png"),
 		(char *)("../../../../resource/tex/moon/2k/moon_dm_2k.png"),
-		(char *)("../../../../resource/tex/cel/test_cel_gradient.png"),
-		(char *)("../../../../resource/tex/logic/bool.png"),
-		(char *)("../../../../resource/tex/atlas/atlas_diffuse.png"),
-		(char *)("../../../../resource/tex/atlas/atlas_specular.png"),
 	};
 
 	// load
@@ -521,45 +445,27 @@ void setupTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);		// texture repeats on horiz axis
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+
 	// earth textures
 	glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);		// these two are deliberately different
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
 	glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	//cel ramp texture
-	glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-	// boolean ramp
-	glBindTexture(GL_TEXTURE_2D, tex[booleanTexHandle]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	// moon textures
+	glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-
-	// atlas textures
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_diffuse]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// pixelated for demonstration purposes
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_specular]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// disable textures
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -578,6 +484,20 @@ void setupShaders()
 	unsigned int u = 0;
 	egpFileInfo files[4];
 	egpShader shaders[4];
+
+	// array of common uniform names
+	const char *commonUniformName[] = {
+		(const char *)("mvp"),
+		(const char *)("lightPos"),
+		(const char *)("eyePos"),
+		(const char *)("tex_dm"),
+		(const char *)("tex_sm"),
+		(const char *)("pixelSizeInv"),
+		(const char *)("img"),
+		(const char *)("img1"),
+		(const char *)("img2"),
+		(const char *)("img3"),
+	};
 
 	const int imageLocations[] = {
 		0, 1, 2, 3, 4, 5, 6, 7
@@ -656,6 +576,58 @@ void setupShaders()
 			egpLinkProgram(currentProgram);
 			egpValidateProgram(currentProgram);
 
+			// bloom should use this vertex shader, so let's keep nesting!
+			{
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/brightpass_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = bloomBrightProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/blur_gaussian_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = bloomBlurProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/blend_screen_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = bloomBlendProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+			}
+
 			// done with passthru vs
 			egpReleaseShader(shaders + 0);
 			egpReleaseFileContents(files + 0);
@@ -666,75 +638,13 @@ void setupShaders()
 		egpReleaseFileContents(files + 1);
 	}
 
-	// transform, no FS
+	// lighting
 	{
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
-		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-
-		currentProgramIndex = testTransformProgramIndex;
+		currentProgramIndex = phongProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 
-		*currentProgram = egpCreateProgram();
-		egpAttachShaderToProgram(currentProgram, shaders + 0);
-		egpLinkProgram(currentProgram);
-		egpValidateProgram(currentProgram);
-
-		egpReleaseShader(shaders + 0);
-		egpReleaseFileContents(files + 0);
-	}
-
-	// shadow mapping and projective texturing
-	{
-		// load shared shader
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_shadow/phong_passAltClip_vs4x.glsl");
-		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-
-		// projective
-		{
-			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_shadow/phong_projtex_fs4x.glsl");
-			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
-
-			currentProgramIndex = projectiveTextureProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-
-			*currentProgram = egpCreateProgram();
-			egpAttachShaderToProgram(currentProgram, shaders + 0);
-			egpAttachShaderToProgram(currentProgram, shaders + 1);
-			egpLinkProgram(currentProgram);
-			egpValidateProgram(currentProgram);
-
-			egpReleaseShader(shaders + 1);
-			egpReleaseFileContents(files + 1);
-		}
-
-		// shadow
-		{
-			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_shadow/phong_shadowmap_fs4x.glsl");
-			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
-
-			currentProgramIndex = shadowMapProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-
-			*currentProgram = egpCreateProgram();
-			egpAttachShaderToProgram(currentProgram, shaders + 0);
-			egpAttachShaderToProgram(currentProgram, shaders + 1);
-			egpLinkProgram(currentProgram);
-			egpValidateProgram(currentProgram);
-
-			egpReleaseShader(shaders + 1);
-			egpReleaseFileContents(files + 1);
-		}
-
-		// release shared
-		egpReleaseShader(shaders + 0);
-		egpReleaseFileContents(files + 0);
-	}
-	{
-		currentProgramIndex = celshadeProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/celshade_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/celshade_fs4x.glsl");
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/phong_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/phong_fs4x.glsl");
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
@@ -749,26 +659,7 @@ void setupShaders()
 		egpReleaseFileContents(files + 0);
 		egpReleaseFileContents(files + 1);
 	}
-	{
-		currentProgramIndex = silhouetteOutlineProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
 
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/silhouette_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/silhouette_fs4x.glsl");
-		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
-		
-		*currentProgram = egpCreateProgram();
-		egpAttachShaderToProgram(currentProgram, shaders + 0);
-		egpAttachShaderToProgram(currentProgram, shaders + 1);
-		egpLinkProgram(currentProgram);
-		egpValidateProgram(currentProgram);
-
-		egpReleaseShader(shaders + 0);
-		egpReleaseShader(shaders + 1);
-		egpReleaseFileContents(files + 0);
-		egpReleaseFileContents(files + 1);
-	}
 
 	// configure all uniforms at once
 	for (currentProgramIndex = 0; currentProgramIndex < GLSLProgramCount; ++currentProgramIndex)
@@ -784,9 +675,11 @@ void setupShaders()
 		// e.g. image bindings
 		egpSendUniformInt(currentUniformSet[unif_dm], UNIF_INT, 1, imageLocations);
 		egpSendUniformInt(currentUniformSet[unif_sm], UNIF_INT, 1, imageLocations + 1);
-		egpSendUniformInt(currentUniformSet[unif_bool], UNIF_INT, 1, imageLocations + 2);
-		egpSendUniformInt(currentUniformSet[unif_shadowmap], UNIF_INT, 1, imageLocations + 3);
-		egpSendUniformInt(currentUniformSet[unif_projtex], UNIF_INT, 1, imageLocations + 4);
+
+		egpSendUniformInt(currentUniformSet[unif_img], UNIF_INT, 1, imageLocations);
+		egpSendUniformInt(currentUniformSet[unif_img1], UNIF_INT, 1, imageLocations + 1);
+		egpSendUniformInt(currentUniformSet[unif_img2], UNIF_INT, 1, imageLocations + 2);
+		egpSendUniformInt(currentUniformSet[unif_img3], UNIF_INT, 1, imageLocations + 3);
 	}
 
 
@@ -808,14 +701,125 @@ void deleteShaders()
 void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 {
 	// prepare framebuffers in one simple call
-	const egpColorFormat colorFormat = COLOR_RGBA16;
-	const unsigned int shadowMapSize = 2048;
+	const unsigned int frameWidth_d2 = frameWidth / 2;
+	const unsigned int frameWidth_d4 = frameWidth / 4;
+	const unsigned int frameWidth_d8 = frameWidth / 8;
+	const unsigned int frameHeight_d2 = frameHeight / 2;
+	const unsigned int frameHeight_d4 = frameHeight / 4;
+	const unsigned int frameHeight_d8 = frameHeight / 8;
+	unsigned int i;
 
 	// one for the scene
-	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_D32, SMOOTH_NOWRAP);
+	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_D32, SMOOTH_NOWRAP);
 
-	// one for the shadow map, depth only!
-	fbo[shadowFBO] = egpfwCreateFBO(shadowMapSize, shadowMapSize, 0, COLOR_DISABLE, DEPTH_D32, WRAP_DISABLE);
+	// bright pass
+	fbo[brightFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+	// blur passes
+	fbo[hblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[vblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[hblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[vblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[hblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	fbo[vblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+	// composite pass
+	fbo[compositeFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+
+	// get inverted frame sizes
+	// this represents the size of one pixel within SCREEN SPACE
+	// since screen space is within [0, 1], one pixel = 1/size
+	for (i = 0; i < fboCount; ++i)
+		pixelSizeInv[i].set(
+			1.0f / (float)(fbo + i)->frameWidth, 
+			1.0f / (float)(fbo + i)->frameHeight
+		);
+}
+
+void setupRenderPaths()
+{
+	/*
+	RenderPass p1(fbo, glslPrograms, bloomBrightProgramIndex, brightFBO_d2);
+	p1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + sceneFBO, 0, 0));
+
+	RenderPass p2(fbo, glslPrograms, bloomBlurProgramIndex, hblurFBO_d2);
+	p2.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + brightFBO_d2, 0, 0));
+	p2.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1, pixSzInv.set(pixelSizeInv[)*/
+
+	cbmath::vec2 pixSzInv;
+	
+	RenderPass brightPass(fbo, glslPrograms);
+	brightPass.setProgram(bloomBrightProgramIndex);
+	brightPass.setPipelineStage(brightFBO_d2);
+	brightPass.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + sceneFBO, 0, 0));
+
+	RenderPass hblur1(fbo, glslPrograms);
+	hblur1.setProgram(bloomBlurProgramIndex);
+	hblur1.setPipelineStage(hblurFBO_d2);
+	hblur1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + brightFBO_d2, 0, 0));
+	hblur1.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1, 
+		pixSzInv.set(pixelSizeInv[brightFBO_d2].x, 0.0f).v));
+
+	RenderPass vblur1(fbo, glslPrograms);
+	vblur1.setProgram(bloomBlurProgramIndex);
+	vblur1.setPipelineStage(vblurFBO_d2);
+	vblur1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + hblurFBO_d2, 0, 0));
+	vblur1.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(pixelSizeInv[hblurFBO_d2].y, 0.0f).v));
+
+	/*
+	RenderPass hblur2(fbo, glslPrograms);
+	hblur2.setProgram(bloomBlurProgramIndex);
+	hblur2.setPipelineStage(hblurFBO_d4);
+	hblur2.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d2, 0, 0));
+	hblur2.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(pixelSizeInv[vblurFBO_d2].x, 0.0f).v));
+
+	RenderPass vblur2(fbo, glslPrograms);
+	vblur1.setProgram(bloomBlurProgramIndex);
+	vblur1.setPipelineStage(vblurFBO_d4);
+	vblur1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + hblurFBO_d4, 0, 0));
+	vblur1.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(pixelSizeInv[hblurFBO_d4].y, 0.0f).v));
+
+	RenderPass hblur3(fbo, glslPrograms);
+	hblur3.setProgram(bloomBlurProgramIndex);
+	hblur3.setPipelineStage(hblurFBO_d8);
+	hblur3.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d4, 0, 0));
+	hblur3.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(pixelSizeInv[vblurFBO_d4].x, 0.0f).v));
+
+	RenderPass vblur3(fbo, glslPrograms);
+	vblur3.setProgram(bloomBlurProgramIndex);
+	vblur3.setPipelineStage(vblurFBO_d8);
+	vblur3.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + hblurFBO_d8, 0, 0));
+	vblur3.addUniform(RenderPass::uniform_float(
+		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(pixelSizeInv[hblurFBO_d8].y, 0.0f).v));*/
+
+	RenderPass composite(fbo, glslPrograms);
+	composite.setProgram(bloomBlendProgramIndex);
+	composite.setPipelineStage(compositeFBO);
+	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + sceneFBO, 0, 0));
+	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d2, 1, 0));
+	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d4, 2, 0));
+	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d8, 3, 0));
+
+	globalRenderPath.addRenderPass(brightPass);
+	globalRenderPath.addRenderPass(hblur1);
+	globalRenderPath.addRenderPass(vblur1);
+	//globalRenderPath.addRenderPass(hblur2);
+	//globalRenderPath.addRenderPass(vblur2);
+	//globalRenderPath.addRenderPass(hblur3);
+	//globalRenderPath.addRenderPass(vblur3);
+	globalRenderPath.addRenderPass(composite);
 }
 
 void deleteFramebuffers()
@@ -859,7 +863,7 @@ void drawToBackBuffer(int x, int y, unsigned int w, unsigned int h)
 //-----------------------------------------------------------------------------
 
 // update camera
-void updateCameraControlled(float dt, unsigned int controlCamera, unsigned int controlCameraIndex, egpMouse *mouse)
+void updateCameraControlled(float dt, egpMouse *mouse)
 {
 	// TRACK MOUSE AND KEYS TO CONTROL CAMERA: 
 	// remember, the view transform is the INVERSE of the camera's model transform, 
@@ -873,7 +877,7 @@ void updateCameraControlled(float dt, unsigned int controlCamera, unsigned int c
 		cameraAzimuth -= (float)egpMouseDeltaX(mouse) * dt * cameraRotateSpeed;
 	}
 
-	modelMatrix[controlCamera] = cbtk::cbmath::makeRotationEuler4ZYX(cameraElevation, cameraAzimuth, 0.0f);
+	viewMatrix = cbtk::cbmath::makeRotationEuler4ZYX(cameraElevation, cameraAzimuth, 0.0f);
 
 	// apply current rotation to our movement vector so that "forward" is the direction the camera is facing
 	deltaCamPos.set(
@@ -881,19 +885,19 @@ void updateCameraControlled(float dt, unsigned int controlCamera, unsigned int c
 		(float)egpKeyboardDifference(keybd, 'e', 'q'),
 		(float)egpKeyboardDifference(keybd, 's', 'w'),
 		0.0f);
-	deltaCamPos = modelMatrix[controlCamera] * deltaCamPos;
+	deltaCamPos = viewMatrix * deltaCamPos;
 
-	cameraPos_world[controlCameraIndex] += cbtk::cbmath::normalize(deltaCamPos) * dt * cameraMoveSpeed;
+	cameraPosWorld += cbtk::cbmath::normalize(deltaCamPos) * dt * cameraMoveSpeed;
 }
 
-void updateCameraOrbit(float dt, unsigned int controlCamera, unsigned int controlCameraIndex)
+void updateCameraOrbit(float dt)
 {
 	// force camera to orbit around center of world
 	cameraAzimuth += dt * cameraRotateSpeed;
 
-	modelMatrix[controlCamera] = cbtk::cbmath::makeRotationEuler4ZYX(0.0f, cameraAzimuth, 0.0f);
+	viewMatrix = cbtk::cbmath::makeRotationEuler4ZYX(0.0f, cameraAzimuth, 0.0f);
 
-	cameraPos_world[controlCameraIndex].set(sinf(cameraAzimuth)*cameraDistance, 0.0f, cosf(cameraAzimuth)*cameraDistance, 1.0f);
+	cameraPosWorld.set(sinf(cameraAzimuth)*cameraDistance, 0.0f, cosf(cameraAzimuth)*cameraDistance, 1.0f);
 }
 
 
@@ -916,6 +920,8 @@ int initGame()
 	// setup shaders
 	setupShaders();
 
+	// setup paths and passes
+	setupRenderPaths();
 
 	// other
 	egpSetActiveMouse(mouse);
@@ -961,7 +967,7 @@ void displayControls()
 	printf("\n l = real-time reload all shaders");
 	printf("\n x = toggle coordinate axes post-draw");
 
-	printf("\n 1-5 = toggle pipeline stage to be displayed");
+	printf("\n 0-9 = toggle pipeline stage to be displayed");
 
 	printf("\n-------------------------------------------------------");
 }
@@ -997,35 +1003,19 @@ void handleInputState()
 
 
 	// toggle pipeline stage
-	if (egpKeyboardIsKeyPressed(keybd, '1'))
+	if (egpKeyboardIsKeyPressed(keybd, '0'))
 	{
-		displayMode = displayScene;
-		displayColor = 1;
-		fboFinalDisplay = fbo + sceneFBO;
+		displayMode = fboCount;
+		fboFinalDisplay = fbo;
 	}
-	else if (egpKeyboardIsKeyPressed(keybd, '2'))
+	else
 	{
-		displayMode = displaySceneDepth;
-		displayColor = 0;
-		fboFinalDisplay = fbo + sceneFBO;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '3'))
-	{
-		displayMode = displaySceneProjTex;
-		displayColor = 1;
-		fboFinalDisplay = fbo + sceneFBO;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '4'))
-	{
-		displayMode = displaySceneShadowMap;
-		displayColor = 1;
-		fboFinalDisplay = fbo + sceneFBO;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '5'))
-	{
-		displayMode = displayShadowMap;
-		displayColor = 0;
-		fboFinalDisplay = fbo + shadowFBO;
+		for (unsigned char c = '1', i = 0; c <= '9'; ++c, ++i)
+			if (egpKeyboardIsKeyPressed(keybd, c))
+			{
+				displayMode = i;
+				fboFinalDisplay = fbo + i;
+			}
 	}
 
 
@@ -1038,17 +1028,15 @@ void handleInputState()
 // update game state using the time since the last update (dt) in seconds
 void updateGameState(float dt)
 {
-	const unsigned int controlCamera = cameraObjects + activeCamera;
-
 	// update camera
-	updateCameraControlled(dt, controlCamera, activeCamera, mouse);
-//	updateCameraOrbit(dt, controlCamera);
+	updateCameraControlled(dt, mouse);
+//	updateCameraOrbit(dt);
 
 	// update view matrix
 	// 'c3' in a 4x4 matrix is the translation part
-	modelMatrix[controlCamera].c3 = cameraPos_world[activeCamera];
-	modelMatrixInv[controlCamera] = cbtk::cbmath::transformInverseNoScale(modelMatrix[controlCamera]);
-	viewProjectionMatrix[controlCamera] = projectionMatrix[activeCamera] * modelMatrixInv[controlCamera];
+	viewMatrix.c3 = cameraPosWorld;
+	viewMatrix = cbtk::cbmath::transformInverseNoScale(viewMatrix);
+	viewProjMat = projectionMatrix * viewMatrix;
 
 
 	// update game objects
@@ -1064,11 +1052,13 @@ void updateGameState(float dt)
 		//	infinitely far away), and scale up instead
 
 		// multiply view matrix with scale matrix to make modelview
-		modelMatrix[skyboxObject] = cbmath::makeScaleTranslate(minClipDist, cameraPos_world[activeCamera].xyz);
-		modelMatrixInv[skyboxObject] = cbmath::transformInverseUniformScale(modelMatrix[skyboxObject]);
+		skyboxModelViewMatrix = viewMatrix * cbtk::cbmath::makeScale4(minClipDist);
+
+		// remove translation component (by setting 4th column to 0,0,0,1)
+		skyboxModelViewMatrix.c3 = cbmath::v4w;
 
 		// concatenate with proj to get mvp
-		boxModelViewProjectionMatrix = modelMatrixInv[controlCamera] * modelMatrix[skyboxObject];
+		skyboxModelViewProjectionMatrix = projectionMatrix * skyboxModelViewMatrix;
 	}
 
 	// earth: 
@@ -1078,27 +1068,26 @@ void updateGameState(float dt)
 		earthOrbit += dt * earthOrbitPeriod;
 
 		// calculate model matrix
-		modelMatrix[earthObject] = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
-		modelMatrix[earthObject].c3.x = cosf(earthOrbit) * earthDistance;
-		modelMatrix[earthObject].c3.z = -sinf(earthOrbit) * earthDistance;
-		modelMatrixInv[earthObject] = cbmath::transformInverseNoScale(modelMatrix[earthObject]);
+		earthModelMatrix = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
+		earthModelMatrix.c3.x = cosf(earthOrbit) * earthDistance;
+		earthModelMatrix.c3.z = -sinf(earthOrbit) * earthDistance;
+
+		// update mvp
+		earthModelViewProjectionMatrix = viewProjMat * earthModelMatrix;
+
+		// update inverse
+		earthModelInverseMatrix = cbmath::transformInverseNoScale(earthModelMatrix);
 	}
 
 	// moon: 
 	{
 		moonOrbit += dt * moonOrbitPeriod;
 
-		modelMatrix[moonObject] = cbmath::makeRotationZ4(moonTilt) * cbmath::makeRotationY4(moonOrbit) * cbmath::makeScale4(moonSize);
-		modelMatrix[moonObject].c3.x = modelMatrix[earthObject].c3.x + cosf(moonOrbit) * moonDistance;
-		modelMatrix[moonObject].c3.z = modelMatrix[earthObject].c3.z - sinf(moonOrbit) * moonDistance;
-		modelMatrixInv[moonObject] = cbmath::transformInverseNoScale(modelMatrix[moonObject]);
-	}
-
-	// mars: 
-	{
-		modelMatrix[marsObject] = modelMatrix[moonObject];
-		modelMatrix[marsObject].c3.y += 2.0f;
-		modelMatrixInv[marsObject] = cbmath::transformInverseNoScale(modelMatrix[marsObject]);
+		moonModelMatrix = cbmath::makeRotationZ4(moonTilt) * cbmath::makeRotationY4(moonOrbit) * cbmath::makeScale4(moonSize);
+		moonModelMatrix.c3.x = earthModelMatrix.c3.x + cosf(moonOrbit) * moonDistance;
+		moonModelMatrix.c3.z = earthModelMatrix.c3.z - sinf(moonOrbit) * moonDistance;
+		moonModelViewProjectionMatrix = viewProjMat * moonModelMatrix;
+		moonModelInverseMatrix = cbmath::transformInverseNoScale(moonModelMatrix);
 	}
 }
 
@@ -1116,200 +1105,52 @@ void renderSkybox()
 	glDepthFunc(GL_ALWAYS);
 	glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);
 
-	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, boxModelViewProjectionMatrix.m);
-	egpActivateVAO(vao + boxModel);
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, skyboxModelViewProjectionMatrix.m);
+	egpActivateVAO(vao + skyboxModel);
 	egpDrawActiveVAO();
 
 	glDepthFunc(GL_LESS);
 	glCullFace(GL_BACK);
 }
 
-
-// update and draw scene objects
-void updateObjectMVPs(const cbmath::mat4 modelMat, const cbmath::mat4 biasMat, 
-	const cbmath::mat4 *vp, cbmath::mat4 *mvp_out, const unsigned int numMatrices)
+// draw scene objects
+void renderSceneObjects()
 {
-	unsigned int i;
-	for (i = 0; i < numMatrices; ++i, ++vp, ++mvp_out)
-		*mvp_out = biasMat * (*vp * modelMat);
-}
-
-void updateObjectSpacePoint(const cbmath::mat4 modelMatInv,
-	const cbmath::vec4 *point_world, cbmath::vec4 *point_obj, const unsigned int numPoints)
-{
-	unsigned int i;
-	for (i = 0; i < numPoints; ++i, ++point_world, ++point_obj)
-		*point_obj = modelMatInv * *point_world;
-}
-
-void updateSendLightsCamera(const cbmath::mat4 modelInv)
-{
-	// light position(s) in object space
-	updateObjectSpacePoint(modelInv, lightPos_world, lightPos_obj, numLights);
-	egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, numLights, lightPos_obj->v);
-
-	// camera position(s) in object space
-	updateObjectSpacePoint(modelInv, cameraPos_world + activeCamera, cameraPos_obj + activeCamera, 1);
-	egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, cameraPos_obj[activeCamera].v);
-}
-
-void sendObjectMatrices(const cbmath::mat4 *mvp_main, const cbmath::mat4 *mvp_other, const cbmath::mat4 *atlas,
-	const unsigned int numOtherMatrices, int mvpMainLocation, int mvpOtherLocation, int atlasLocation)
-{
-	egpSendUniformFloatMatrix(currentUniformSet[mvpMainLocation], UNIF_MAT4, 1, 0, mvp_main->m);
-	if (mvp_other && numOtherMatrices)
-		egpSendUniformFloatMatrix(currentUniformSet[mvpOtherLocation], UNIF_MAT4, numOtherMatrices, 0, mvp_other->m);
-	if (atlas)
-		egpSendUniformFloatMatrix(currentUniformSet[atlasLocation], UNIF_MAT4, 1, 0, atlas->m);
-}
-
-void renderSceneObjects(const cbmath::mat4 *mvp_main, const cbmath::mat4 *mvp_other, const cbmath::mat4 *atlas,
-	const unsigned int numOtherMatrices, const unsigned int numSceneObjects, int lighting, int cullBack)
-{
-	// light colors for all
-	if (lighting)
-		egpSendUniformFloat(currentUniformSet[unif_lightColor], UNIF_VEC4, numLights, lightColor->v);
-
-	// background
+	// draw textured moon
 	{
-		/*Draw cel-shaded version:
-		//*<<<<<<< HEAD
-		//draw silhouette
-		{
-			currentProgramIndex = silhouetteOutlineProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-
-			glCullFace(GL_FRONT);
-
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
-			egpActivateVAO(vao + sphere32x24Model);
-			egpDrawActiveVAO();
-			glCullFace(GL_BACK);
-		}
-		//* draw the cel-shaded portion
-		{
-			currentProgramIndex = celshadeProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
-
-			eyePos_object = moonModelInverseMatrix * cameraPosWorld;
-			lightPos_object = moonModelInverseMatrix * lightPos_world;
-			egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
-			egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
-
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
-			egpActivateVAO(vao + sphere32x24Model);
-			egpDrawActiveVAO();
-		}
-
-		//draw silhouette
-		{
-		currentProgramIndex = silhouetteOutlineProgramIndex;
+		currentProgramIndex = testTextureProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		currentUniformSet = glslCommonUniforms[currentProgramIndex];
 		egpActivateProgram(currentProgram);
 
-		glCullFace(GL_FRONT);
+		glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
 
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + torusGithubModel);
+		// retained
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
+		egpActivateVAO(vao + sphere8x6Model);
 		egpDrawActiveVAO();
+	}
 
-		glCullFace(GL_BACK);
-		}
-		//* draw the cel-shaded portion
-		{
-		currentProgramIndex = celshadeProgramIndex;
+	// draw shaded earth
+	{
+		currentProgramIndex = phongProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		currentUniformSet = glslCommonUniforms[currentProgramIndex];
 		egpActivateProgram(currentProgram);
 
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex[celshadeRamp]);
 
 		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
 		lightPos_object = earthModelInverseMatrix * lightPos_world;
 		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
 		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
 		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + torusGithubModel);
-		egpDrawActiveVAO();
-		}
-======= */
-		// normal scaling adjustment values
-		const float normalScale[2] = { -1.0f, +1.0f };
-
-		glCullFace(GL_FRONT);
-		glDepthFunc(GL_ALWAYS);
-		egpSendUniformFloat(currentUniformSet[unif_normalScale], UNIF_FLOAT, 1, normalScale);	// invert
-
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[skyboxObject]);
-		sendObjectMatrices(mvp_main, mvp_other, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpActivateVAO(vao + boxModel);
-		egpDrawActiveVAO();
-
-		egpSendUniformFloat(currentUniformSet[unif_normalScale], UNIF_FLOAT, 1, normalScale + 1);
-		glDepthFunc(GL_LESS);
-
-		// leave culling inverted for shadows
-		if (cullBack)
-			glCullFace(GL_BACK);
-	}
-
-
-	// ground
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[groundObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
+		egpActivateVAO(vao + sphereHiResObjModel);
 		egpDrawActiveVAO();
 	}
-
-	// moon
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[moonObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpActivateVAO(vao + sphere8x6Model);
-		egpDrawActiveVAO();
-	}
-
-	// mars
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[marsObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpDrawActiveVAO();
-	}
-
-	// earth
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[earthObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpActivateVAO(vao + sphere32x24Model);
-		egpDrawActiveVAO();
-	}
-
-
-	// done
-	glCullFace(GL_BACK);
 }
 
 
@@ -1317,159 +1158,169 @@ void renderSceneObjects(const cbmath::mat4 *mvp_main, const cbmath::mat4 *mvp_ot
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
 void renderGameState()
 {
-	const unsigned int controlCamera = cameraObjects + activeCamera;
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-	// PROJECTIVE TEXTURING ALGORITHM: 
-	//	1. draw scene with main and alternative clipping pipeline (mvp)
-	//		-> perform shadow test in frag shader, apply texture
+	// BLOOM ALGORITHM: 
+	//	1. draw scene
+	//	2. bright pass scene output
+	//	3. blur bright pass output
+	//		(repeat h/v, repeat for more bloom)
+	//	4. composite
 
-	// DEFERRED LIGHTING ALGORITHM: 
-	//	1. draw scene to depth-only target from light's point of view
-	//	2. draw scene with main and alternative clipping pipeline (mvp)
-	//		-> perform shadow test in frag shader, apply shadow
-
-
+	cbmath::vec2 pixSzInv;
 	int currentPipelineStage, lastPipelineStage;
 
-	// each object has one matrix per camera and per light
-	const unsigned int numMVPsPerObject = (numCameras + numLights);
-	const unsigned int numMVPs = numMVPsPerObject * sceneObjectCount;
-	cbmath::mat4 mvp[numMVPs];
-	cbmath::mat4 mvpb[numMVPs];
 
-	// update all MVP matrices once
+	// first pass: scene
+	// draw scene objects off-screen
+	currentPipelineStage = sceneFBO;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	renderSkybox();
+	renderSceneObjects();
+
+
+	// only drawing full-screen now
+	egpActivateVAO(vao + fsqModel);
+
+#define USE_OLD_PASS
+#ifdef USE_OLD_PASS
+	// second pass: bright pass/tone map the result of the scene pass
+	// free box-blur occurs because the target is smaller than the screen
+	currentProgramIndex = bloomBrightProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	egpActivateProgram(currentProgram);
+
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = brightFBO_d2;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+	egpDrawActiveVAO();
+
+
+	// third pass: Gaussian blur
+	currentProgramIndex = bloomBlurProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+
+	// horizontal
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = hblurFBO_d2;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+	egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, 
+		pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
+	egpDrawActiveVAO();
+
+	// repeat for vertical
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = vblurFBO_d2;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+	egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+		pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+	egpDrawActiveVAO();
+
+	// iterate on blurring for a more intense bloom effect
 	{
-		cbmath::mat4 *mvpPtr = mvp, *mvpbPtr = mvpb;
-		const cbmath::mat4 *modelMatPtr = modelMatrix, *viewprojMatPtr = viewProjectionMatrix + cameraObjects;
-		unsigned int i;
-		for (i = 0; i < sceneObjectCount; ++i, ++modelMatPtr, mvpPtr += numMVPsPerObject, mvpbPtr += numMVPsPerObject)
+		// repeat for horizontal
+		lastPipelineStage = currentPipelineStage;
+		currentPipelineStage = hblurFBO_d4;
+		egpfwActivateFBO(fbo + currentPipelineStage);
+		egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+		egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+			pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
+		egpDrawActiveVAO();
+
+		// repeat for vertical
+		lastPipelineStage = currentPipelineStage;
+		currentPipelineStage = vblurFBO_d4;
+		egpfwActivateFBO(fbo + currentPipelineStage);
+		egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+		egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+			pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+		egpDrawActiveVAO();
+
+		// ...moar bloom!
 		{
-			updateObjectMVPs(*modelMatPtr, cbmath::m4Identity, viewprojMatPtr, mvpPtr, numMVPsPerObject);
-			updateObjectMVPs(*modelMatPtr, bias, viewprojMatPtr, mvpbPtr, numMVPsPerObject);
+			// repeat once more for horizontal
+			lastPipelineStage = currentPipelineStage;
+			currentPipelineStage = hblurFBO_d8;
+			egpfwActivateFBO(fbo + currentPipelineStage);
+			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+				pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v);
+			egpDrawActiveVAO();
+
+			// ditto for vertical
+			lastPipelineStage = currentPipelineStage;
+			currentPipelineStage = vblurFBO_d8;
+			egpfwActivateFBO(fbo + currentPipelineStage);
+			egpfwBindColorTargetTexture(fbo + lastPipelineStage, 0, 0);
+			egpSendUniformFloat(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1,
+				pixSzInv.set(0.0f, pixelSizeInv[lastPipelineStage].x).v);
+			egpDrawActiveVAO();
 		}
 	}
 
 
-	// bind atlases
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, tex[booleanTexHandle]);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_specular]);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_diffuse]);
+	// fourth pass: composite
+	currentProgramIndex = bloomBlendProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
 
-	switch (displayMode)
-	{
-		case displayScene: 
-		case displaySceneDepth:
-			// draw scene, just output colors
-			currentPipelineStage = sceneFBO;
-			egpfwActivateFBO(fbo + currentPipelineStage);
-			currentProgramIndex = testColorProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-			renderSceneObjects(mvp, 0, 0, 0, numMVPsPerObject, 0, 1);
-			break;
-		case displaySceneProjTex: 
-			// draw scene with projective texturing
-			currentPipelineStage = sceneFBO;
-			egpfwActivateFBO(fbo + currentPipelineStage);
-			currentProgramIndex = projectiveTextureProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-			glActiveTexture(GL_TEXTURE4);
-			glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);	// using texture to project
-			renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
-			break;
-		case displaySceneShadowMap: 
-		case displayShadowMap: 
-			// draw scene to shadow map target
-			currentPipelineStage = shadowFBO;
-			egpfwActivateFBO(fbo + currentPipelineStage);
-			currentProgramIndex = testTransformProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-			renderSceneObjects(mvp + numCameras, 0, 0, 0, numMVPsPerObject, 0, 0);	// reverse culling
+	currentPipelineStage = compositeFBO;
+	egpfwActivateFBO(fbo + currentPipelineStage);
+	egpfwBindColorTargetTexture(fbo + sceneFBO, 0, 0);
+	egpfwBindColorTargetTexture(fbo + vblurFBO_d2, 1, 0);
+	egpfwBindColorTargetTexture(fbo + vblurFBO_d4, 2, 0);
+	egpfwBindColorTargetTexture(fbo + vblurFBO_d8, 3, 0);
+	egpDrawActiveVAO();
 
-			// draw scene with shadow mapping
-			lastPipelineStage = currentPipelineStage;
-			currentPipelineStage = sceneFBO;
-			egpfwActivateFBO(fbo + currentPipelineStage);
-			currentProgramIndex = shadowMapProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-			currentUniformSet = glslCommonUniforms[currentProgramIndex];
-			egpActivateProgram(currentProgram);
-			egpfwBindDepthTargetTexture(fbo + lastPipelineStage, 3);	// using shadow map
-			renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
-			break;
-	}
-
-
-/*	
-	// DEBUGGING: add object to final output
-	{
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjectionMatrix[cameraObjects].m);
-		egpActivateVAO(vao + sphere32x24Model);
-		egpDrawActiveVAO();
-	}
-*/
+#else
+	globalRenderPath.render();
+#endif
 
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 	// FINAL DISPLAY: RENDER FINAL IMAGE ON FSQ TO BACK BUFFER
+
+	// use back buffer
+	egpfwActivateFBO(0);
+	drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
+
+	// final pass: draw FSQ with user-selected FBO on it
 	{
-		// use back buffer
-		egpfwActivateFBO(0);
-		drawToBackBuffer(viewport_nb, viewport_nb, viewport_tw, viewport_th);
-
-		// draw FSQ with user-selected FBO on it
-		egpActivateVAO(vao + fsqModel);
-
 		// use texturing program, no mvp
 		currentProgramIndex = testTexturePassthruProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
 
 		// bind scene texture
-		if (displayColor)
+		if (displayMode != fboCount)
 			egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
 		else
 			egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
 		egpDrawActiveVAO();
 
+		// done with textures
+		glBindTexture(GL_TEXTURE_2D, 0);
+
 		// TEST DRAW: coordinate axes at center of spaces
 		//	and other line objects
-		if (testDrawAxes && displayMode != displayShadowMap)
+		if (testDrawAxes)
 		{
-			cbmath::mat4 t = viewProjectionMatrix[controlCamera];
-
-			egpActivateVAO(vao + axesModel);
 			currentProgramIndex = testColorProgramIndex;
 			currentProgram = glslPrograms + currentProgramIndex;
 			currentUniformSet = glslCommonUniforms[currentProgramIndex];
 			egpActivateProgram(currentProgram);
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjMat.m);
 
 			// center of world
 			// (this is useful to see where the origin is and how big one unit is)
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, t.m);
-			egpDrawActiveVAO();
-
-			// light source
-			t = t * modelMatrix[lightObjects];
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, t.m);
+			egpActivateVAO(vao + axesModel);
 			egpDrawActiveVAO();
 		}
 
@@ -1528,15 +1379,15 @@ void onResizeWindow(int w, int h)
 	// set new sizes
 	win_w = w;
 	win_h = h;
+	win_aspect = ((float)w) / ((float)h);
 
 	// calculate total viewport size
 	viewport_tw = w + viewport_tb;
 	viewport_th = h + viewport_tb;
-	win_aspect = ((float)viewport_tw) / ((float)viewport_th);
 
 	// update projection matrix
-	projectionMatrix[activeCamera] = cbtk::cbmath::makePerspective(fovy, win_aspect, znear, zfar);
-	viewProjectionMatrix[cameraObjects + activeCamera] = projectionMatrix[activeCamera] * modelMatrixInv[cameraObjects + activeCamera];
+	projectionMatrix = cbtk::cbmath::makePerspective(fovy, win_aspect, znear, zfar);
+	viewProjMat = projectionMatrix * viewMatrix;
 
 	// update max clipping distance using pythagorean theorem 
 	//	to far corner of frustum; the purpose of this is to 
