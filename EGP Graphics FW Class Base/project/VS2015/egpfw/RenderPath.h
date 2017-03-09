@@ -2,11 +2,6 @@
 #include <vector>
 #include "RenderPass.h"
 
-namespace cbmath
-{
-	union mat4;
-}
-
 class RenderPath
 {
 	private:

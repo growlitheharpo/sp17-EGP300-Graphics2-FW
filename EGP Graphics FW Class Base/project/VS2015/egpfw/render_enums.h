@@ -13,6 +13,11 @@ enum GLSLProgramIndex
 	celshadeProgramIndex,
 	testTransformProgramIndex,
 
+	// bloom
+	bloomBrightProgramIndex,
+	bloomBlurProgramIndex,
+	bloomBlendProgramIndex,
+
 	// shadow mapping and projective texturing
 	projectiveTextureProgram,
 	shadowMapProgram,
@@ -26,6 +31,16 @@ enum FBOIndex
 {
 	// scene
 	sceneFBO,
+
+	// bloom
+	brightFBO_d2,
+	hblurFBO_d2,
+	vblurFBO_d2,
+	hblurFBO_d4,
+	vblurFBO_d4,
+	hblurFBO_d8,
+	vblurFBO_d8,
+	compositeFBO,
 
 	// shadow map
 	shadowFBO,

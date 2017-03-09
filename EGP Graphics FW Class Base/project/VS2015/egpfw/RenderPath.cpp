@@ -1,4 +1,5 @@
 ﻿#include "RenderPath.h"
+#include "egpfw/egpfw.h"
 
 RenderPath::RenderPath()
 {

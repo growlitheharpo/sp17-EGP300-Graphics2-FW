@@ -1,6 +1,7 @@
 #pragma once
 #include "render_enums.h"
-#include "egpfw/egpfw.h"
+#include "egpfw/egpfw/utils/egpfwShaderProgramUtils.h"
+#include "egpfw/egpfw/egpfwFrameBuffer.h"
 #include <vector>
 
 class RenderPass
