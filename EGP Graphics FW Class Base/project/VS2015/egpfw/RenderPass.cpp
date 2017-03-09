@@ -20,6 +20,21 @@ RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* program
 	mPipelineStage = fbo;
 }
 
+void RenderPass::addUniform(const uniform_int& i)
+{
+	mIntUniforms.push_back(i);
+}
+
+void RenderPass::addUniform(const uniform_float& f)
+{
+	mFloatUniforms.push_back(f);
+}
+
+void RenderPass::addUniform(const uniform_float_matrix& fm)
+{
+	mFloatMatrixUniforms.push_back(fm);
+}
+
 void RenderPass::setProgram(int p)
 {
 	mProgram = p;

@@ -69,9 +69,9 @@ class RenderPass
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo);
 		~RenderPass() = default;
 
-		void addUniform(const uniform_int& i) { mIntUniforms.push_back(i); }
-		void addUniform(const uniform_float& f) { mFloatUniforms.push_back(f); }
-		void addUniform(const uniform_float_matrix& fm) { mFloatMatrixUniforms.push_back(fm); }
+		void addUniform(const uniform_int& i);
+		void addUniform(const uniform_float& f);
+		void addUniform(const uniform_float_matrix& fm);
 		
 		void addColorTarget(const FBOTargetColorTexture& ct) { mColorTargets.push_back(ct); }
 		void addDepthTarget(const FBOTargetDepthTexture& dt) { mDepthTargets.push_back(dt); }
