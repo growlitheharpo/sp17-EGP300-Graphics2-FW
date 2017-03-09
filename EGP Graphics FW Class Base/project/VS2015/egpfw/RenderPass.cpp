@@ -1,14 +1,6 @@
 #include "RenderPass.h"
 #include <stdexcept>
-
-RenderPass::RenderPass()
-{
-	mFBOArray = nullptr;
-	mProgramArray = nullptr;
-
-	mProgram = GLSLProgramCount;
-	mPipelineStage = fboCount;
-}
+#include <iostream>
 
 RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs)
 {
@@ -38,16 +30,6 @@ void RenderPass::setPipelineStage(FBOIndex i)
 	mPipelineStage = i;
 }
 
-void RenderPass::setFBOArray(egpFrameBufferObjectDescriptor* fboArray)
-{
-	mFBOArray = fboArray;
-}
-
-void RenderPass::setProgramArray(egpProgram* programs)
-{
-	mProgramArray = programs;
-}
-
 void RenderPass::sendData() const
 {
 	for (auto data : mIntUniforms)
@@ -60,7 +42,10 @@ void RenderPass::sendData() const
 		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, data.values);
 
 	for (auto target : mColorTargets)
-		egpfwBindColorTargetTexture(target.fbo, target.glBinding, target.targetIndex);
+	{
+		if (egpfwBindColorTargetTexture(target.fbo, target.glBinding, target.targetIndex) == false)
+			std::cout << "ERROR!! COULD NOT BIND A COLOR TARGET!" << std::endl;
+	}
 
 	for (auto target : mDepthTargets)
 		egpfwBindDepthTargetTexture(target.fbo, target.glBinding);

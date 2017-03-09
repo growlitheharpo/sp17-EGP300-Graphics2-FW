@@ -65,7 +65,6 @@ class RenderPass
 		std::vector<FBOTargetDepthTexture> mDepthTargets;
 
 	public:
-		RenderPass();
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs);
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, GLSLProgramIndex program, FBOIndex fbo);
 		~RenderPass() = default;
@@ -79,9 +78,6 @@ class RenderPass
 
 		void setProgram(GLSLProgramIndex p);
 		void setPipelineStage(FBOIndex i);
-
-		void setFBOArray(egpFrameBufferObjectDescriptor* fboArray);
-		void setProgramArray(egpProgram* programs);
 
 		void sendData() const;
 		void activate() const;
