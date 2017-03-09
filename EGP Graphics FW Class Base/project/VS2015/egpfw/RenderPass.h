@@ -52,8 +52,8 @@ class RenderPass
 		};
 		
 	private:
-		GLSLProgramIndex mProgram;
-		FBOIndex mPipelineStage;
+		int mProgram;
+		int mPipelineStage;
 		egpFrameBufferObjectDescriptor* mFBOArray;
 		egpProgram* mProgramArray;
 
@@ -66,7 +66,7 @@ class RenderPass
 
 	public:
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs);
-		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, GLSLProgramIndex program, FBOIndex fbo);
+		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo);
 		~RenderPass() = default;
 
 		void addUniform(const uniform_int& i) { mIntUniforms.push_back(i); }
@@ -76,8 +76,8 @@ class RenderPass
 		void addColorTarget(const FBOTargetColorTexture& ct) { mColorTargets.push_back(ct); }
 		void addDepthTarget(const FBOTargetDepthTexture& dt) { mDepthTargets.push_back(dt); }
 
-		void setProgram(GLSLProgramIndex p);
-		void setPipelineStage(FBOIndex i);
+		void setProgram(int p);
+		void setPipelineStage(int i);
 
 		void sendData() const;
 		void activate() const;

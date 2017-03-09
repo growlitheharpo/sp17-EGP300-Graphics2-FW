@@ -11,7 +11,7 @@ RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* program
 	mPipelineStage = fboCount;
 }
 
-RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, GLSLProgramIndex program, FBOIndex fbo)
+RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo)
 {
 	mFBOArray = fbos;
 	mProgramArray = programs;
@@ -20,12 +20,12 @@ RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* program
 	mPipelineStage = fbo;
 }
 
-void RenderPass::setProgram(GLSLProgramIndex p)
+void RenderPass::setProgram(int p)
 {
 	mProgram = p;
 }
 
-void RenderPass::setPipelineStage(FBOIndex i)
+void RenderPass::setPipelineStage(int i)
 {
 	mPipelineStage = i;
 }
@@ -56,6 +56,7 @@ void RenderPass::activate() const
 	if (mFBOArray == nullptr || mProgramArray == nullptr)
 		throw std::invalid_argument("Did not initailize RenderPass");
 
-	egpfwActivateFBO(mFBOArray + mPipelineStage);
 	egpActivateProgram(mProgramArray + mProgram);
+
+	egpfwActivateFBO(mFBOArray + mPipelineStage);
 }
