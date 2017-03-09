@@ -749,7 +749,42 @@ void setupRenderPaths()
 		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1, pixSzInv.set(pixelSizeInv[)*/
 
 	cbmath::vec2 pixSzInv;
+	FBOIndex currentPipelineStage, lastPipelineStage;
+
+	currentPipelineStage = sceneFBO;
+
+	RenderPass brightPass(fbo, glslPrograms), hblur1(fbo, glslPrograms), vblur1(fbo, glslPrograms);
+
+	currentProgramIndex = bloomBrightProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	brightPass.setProgram(currentProgramIndex);
+
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = brightFBO_d2;
+	brightPass.setPipelineStage(currentPipelineStage);
+	brightPass.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + lastPipelineStage, 0, 0));
+
+	//Gaussian blur
+	currentProgramIndex = bloomBlurProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+
+	hblur1.setProgram(currentProgramIndex);
+
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = hblurFBO_d2;
+	hblur1.setPipelineStage(currentPipelineStage);
+	hblur1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + lastPipelineStage, 0, 0));
+	hblur1.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, pixSzInv.set(pixelSizeInv[lastPipelineStage].x, 0.0f).v));
+
+	vblur1.setProgram(currentProgramIndex);
+	lastPipelineStage = currentPipelineStage;
+	currentPipelineStage = vblurFBO_d2;
+	vblur1.setPipelineStage(currentPipelineStage);
+	vblur1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + lastPipelineStage, 0, 0));
+	vblur1.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, pixSzInv.set(pixelSizeInv[lastPipelineStage].y, 0.0f).v));
 	
+	/*
 	RenderPass brightPass(fbo, glslPrograms);
 	brightPass.setProgram(bloomBrightProgramIndex);
 	brightPass.setPipelineStage(brightFBO_d2);
@@ -769,7 +804,7 @@ void setupRenderPaths()
 	vblur1.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + hblurFBO_d2, 0, 0));
 	vblur1.addUniform(RenderPass::uniform_float(
 		glslCommonUniforms[bloomBlurProgramIndex][unif_pixelSizeInv], UNIF_VEC2, 1,
-		pixSzInv.set(pixelSizeInv[hblurFBO_d2].y, 0.0f).v));
+		pixSzInv.set(pixelSizeInv[hblurFBO_d2].y, 0.0f).v));/**/
 
 	/*
 	RenderPass hblur2(fbo, glslPrograms);
@@ -811,6 +846,8 @@ void setupRenderPaths()
 	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d2, 1, 0));
 	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d4, 2, 0));
 	composite.addColorTarget(RenderPass::FBOTargetColorTexture(fbo + vblurFBO_d8, 3, 0));
+
+	globalRenderPath.clearAllPasses();
 
 	globalRenderPath.addRenderPass(brightPass);
 	globalRenderPath.addRenderPass(hblur1);
