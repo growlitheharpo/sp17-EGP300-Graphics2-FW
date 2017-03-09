@@ -48,6 +48,24 @@ void RenderPass::setProgramArray(egpProgram* programs)
 	mProgramArray = programs;
 }
 
+void RenderPass::sendData() const
+{
+	for (auto data : mIntUniforms)
+		egpSendUniformInt(data.location, data.type, data.count, data.values);
+	
+	for (auto data : mFloatUniforms)
+		egpSendUniformFloat(data.location, data.type, data.count, data.values);
+
+	for (auto data : mFloatMatrixUniforms)
+		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, data.values);
+
+	for (auto target : mColorTargets)
+		egpfwBindColorTargetTexture(target.fbo, target.glBinding, target.targetIndex);
+
+	for (auto target : mDepthTargets)
+		egpfwBindDepthTargetTexture(target.fbo, target.glBinding);
+}
+
 void RenderPass::activate() const
 {
 	if (mFBOArray == nullptr || mProgramArray == nullptr)
