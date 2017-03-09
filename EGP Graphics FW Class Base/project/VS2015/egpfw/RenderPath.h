@@ -13,6 +13,7 @@ class RenderPath
 
 		void addRenderPass(const RenderPass& pass);
 		void addRenderPass(RenderPass&& pass);
+		void clearAllPasses();
 
 		void render();
 };

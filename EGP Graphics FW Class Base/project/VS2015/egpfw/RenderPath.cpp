@@ -19,6 +19,11 @@ void RenderPath::addRenderPass(RenderPass&& pass)
 	mPasses.push_back(std::move(pass));
 }
 
+void RenderPath::clearAllPasses()
+{
+	mPasses.clear();
+}
+
 void RenderPath::render()
 {
 	for (auto pass : mPasses)
