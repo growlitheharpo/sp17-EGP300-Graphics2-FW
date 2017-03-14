@@ -13,9 +13,9 @@ class RenderPass
 			int location;
 			E type;
 			unsigned int count;
-			std::vector<T> values;
+			std::vector<T*> values;
 
-			UniformData(int l, E t, unsigned int c, std::initializer_list<T> v) : location(l), type(t), count(c), values(v) {}
+			UniformData(int l, E t, unsigned int c, std::initializer_list<T*> v) : location(l), type(t), count(c), values(v) {}
 		};
 
 		template <typename E, typename T>
@@ -25,9 +25,9 @@ class RenderPass
 			E type;
 			unsigned int count;
 			int transpose;
-			std::vector<T> values;
+			std::vector<T*> values;
 
-			UniformMatrixData(int l, E t, unsigned int c, int tr, std::initializer_list<T> v) : location(l), type(t), count(c), transpose(tr), values(v) {}
+			UniformMatrixData(int l, E t, unsigned int c, int tr, std::initializer_list<T*> v) : location(l), type(t), count(c), transpose(tr), values(v) {}
 		};
 
 		typedef UniformData<egpUniformIntType, int> uniform_int;
@@ -64,6 +64,9 @@ class RenderPass
 		std::vector<FBOTargetColorTexture> mColorTargets;
 		std::vector<FBOTargetDepthTexture> mDepthTargets;
 
+		template <typename T>
+		static std::vector<T> fetchVals(std::vector<T*>& refs);
+
 	public:
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs);
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo);
@@ -81,4 +84,17 @@ class RenderPass
 
 		void sendData() const;
 		void activate() const;
+
 };
+
+template <typename T>
+inline std::vector<T> RenderPass::fetchVals(std::vector<T*>& refs)
+{
+	std::vector<T> result;
+	result.reserve(refs.size());
+
+	for (auto iter : refs)
+		result.push_back(*iter);
+
+	return result;
+}

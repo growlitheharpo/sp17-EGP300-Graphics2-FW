@@ -54,13 +54,13 @@ void RenderPass::sendData() const
 		egpfwBindDepthTargetTexture(mFBOArray + target.fboIndex, target.glBinding);
 
 	for (auto data : mIntUniforms)
-		egpSendUniformInt(data.location, data.type, data.count, data.values.data());
+		egpSendUniformInt(data.location, data.type, data.count, fetchVals(data.values).data());
 	
 	for (auto data : mFloatUniforms)
-		egpSendUniformFloat(data.location, data.type, data.count, data.values.data());
+		egpSendUniformFloat(data.location, data.type, data.count, fetchVals(data.values).data());
 
 	for (auto data : mFloatMatrixUniforms)
-		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, data.values.data());
+		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, fetchVals(data.values).data());
 }
 
 void RenderPass::activate() const

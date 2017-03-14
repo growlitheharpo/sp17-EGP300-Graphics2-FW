@@ -82,6 +82,7 @@ float cameraElevation = 0.25f, cameraAzimuth = 4.0f;
 float cameraRotateSpeed = 0.25f, cameraMoveSpeed = 4.0f, cameraDistance = 8.0f;
 cbtk::cbmath::vec4 cameraPosWorld(1.0f, -2.0f, -cameraDistance, 1.0f), deltaCamPos;
 
+float CONST_ZERO_FLOAT = 0.0f;
 
 bool useTheBrokenOne = false;
 
@@ -741,6 +742,7 @@ void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 
 void setupRenderPaths()
 {
+	printf("DOING SETUP");
 	RenderPass brightPass(fbo, glslPrograms),
 		hblur1(fbo, glslPrograms), vblur1(fbo, glslPrograms),
 		hblur2(fbo, glslPrograms), vblur2(fbo, glslPrograms),
@@ -755,32 +757,32 @@ void setupRenderPaths()
 	hblur1.setProgram(bloomBlurProgramIndex);
 	hblur1.setPipelineStage(hblurFBO_d2);
 	hblur1.addColorTarget(RenderPass::FBOTargetColorTexture(brightFBO_d2, 0, 0));
-	hblur1.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { pixelSizeInv[brightFBO_d2].x, 0.0f }));
+	hblur1.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[brightFBO_d2].x, &CONST_ZERO_FLOAT }));
 
 	vblur1.setProgram(bloomBlurProgramIndex);
 	vblur1.setPipelineStage(vblurFBO_d2);
 	vblur1.addColorTarget(RenderPass::FBOTargetColorTexture(hblurFBO_d2, 0, 0));
-	vblur1.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { 0.0f, pixelSizeInv[hblurFBO_d2].y }));
+	vblur1.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d2].y }));
 
 	hblur2.setProgram(bloomBlurProgramIndex);
 	hblur2.setPipelineStage(hblurFBO_d4);
 	hblur2.addColorTarget(RenderPass::FBOTargetColorTexture(vblurFBO_d2, 0, 0));
-	hblur2.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { pixelSizeInv[vblurFBO_d2].x, 0.0f }));
+	hblur2.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d2].x, &CONST_ZERO_FLOAT }));
 
 	vblur2.setProgram(bloomBlurProgramIndex);
 	vblur2.setPipelineStage(vblurFBO_d4);
 	vblur2.addColorTarget(RenderPass::FBOTargetColorTexture(hblurFBO_d4, 0, 0));
-	vblur2.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { 0.0f, pixelSizeInv[hblurFBO_d4].y }));
+	vblur2.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d4].y }));
 
 	hblur3.setProgram(bloomBlurProgramIndex);
 	hblur3.setPipelineStage(hblurFBO_d8);
 	hblur3.addColorTarget(RenderPass::FBOTargetColorTexture(vblurFBO_d4, 0, 0));
-	hblur3.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { pixelSizeInv[vblurFBO_d4].x, 0.0f }));
+	hblur3.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d4].x, &CONST_ZERO_FLOAT }));
 
 	vblur3.setProgram(bloomBlurProgramIndex);
 	vblur3.setPipelineStage(vblurFBO_d8);
 	vblur3.addColorTarget(RenderPass::FBOTargetColorTexture(hblurFBO_d8, 0, 0));
-	vblur3.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { 0.0f, pixelSizeInv[hblurFBO_d8].y }));
+	vblur3.addUniform(RenderPass::uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
 
 	RenderPass composite(fbo, glslPrograms);
 	composite.setProgram(bloomBlendProgramIndex);
@@ -1255,7 +1257,6 @@ void renderGameState()
 	}
 	else
 	{
-		setupRenderPaths();
 		globalRenderPath.render();
 	}
 
