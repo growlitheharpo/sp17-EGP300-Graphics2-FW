@@ -47,6 +47,12 @@ void RenderPass::setPipelineStage(int i)
 
 void RenderPass::sendData() const
 {
+	for (auto target : mColorTargets)
+		egpfwBindColorTargetTexture(mFBOArray + target.fboIndex, target.glBinding, target.targetIndex);
+
+	for (auto target : mDepthTargets)
+		egpfwBindDepthTargetTexture(mFBOArray + target.fboIndex, target.glBinding);
+
 	for (auto data : mIntUniforms)
 		egpSendUniformInt(data.location, data.type, data.count, data.values);
 	
@@ -55,15 +61,6 @@ void RenderPass::sendData() const
 
 	for (auto data : mFloatMatrixUniforms)
 		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, data.values);
-
-	for (auto target : mColorTargets)
-	{
-		if (egpfwBindColorTargetTexture(target.fbo, target.glBinding, target.targetIndex) == false)
-			std::cout << "ERROR!! COULD NOT BIND A COLOR TARGET!" << std::endl;
-	}
-
-	for (auto target : mDepthTargets)
-		egpfwBindDepthTargetTexture(target.fbo, target.glBinding);
 }
 
 void RenderPass::activate() const

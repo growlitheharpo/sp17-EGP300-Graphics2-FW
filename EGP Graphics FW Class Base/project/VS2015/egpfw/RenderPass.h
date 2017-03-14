@@ -36,19 +36,19 @@ class RenderPass
 
 		struct FBOTargetColorTexture
 		{
-			egpFrameBufferObjectDescriptor* fbo;
+			int fboIndex;
 			unsigned int glBinding;
 			int targetIndex;
 
-			FBOTargetColorTexture(egpFrameBufferObjectDescriptor* f, unsigned int b, int t) : fbo(f), glBinding(b), targetIndex(t) {}
+			FBOTargetColorTexture(int f, unsigned int b, int t) : fboIndex(f), glBinding(b), targetIndex(t) {}
 		};
 
 		struct FBOTargetDepthTexture
 		{
-			egpFrameBufferObjectDescriptor* fbo;
+			int fboIndex;
 			unsigned int glBinding;
 			
-			FBOTargetDepthTexture(egpFrameBufferObjectDescriptor* f, unsigned int b) : fbo(f), glBinding(b) {}
+			FBOTargetDepthTexture(int f, unsigned int b) : fboIndex(f), glBinding(b) {}
 		};
 		
 	private:
