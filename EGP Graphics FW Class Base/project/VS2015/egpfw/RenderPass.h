@@ -13,9 +13,9 @@ class RenderPass
 			int location;
 			E type;
 			unsigned int count;
-			T* values;
+			std::vector<T> values;
 
-			UniformData(int l, E t, unsigned int c, T* v) : location(l), type(t), count(c), values(v) {}
+			UniformData(int l, E t, unsigned int c, std::initializer_list<T> v) : location(l), type(t), count(c), values(v) {}
 		};
 
 		template <typename E, typename T>
@@ -25,9 +25,9 @@ class RenderPass
 			E type;
 			unsigned int count;
 			int transpose;
-			T* values;
+			std::vector<T> values;
 
-			UniformMatrixData(int l, E t, unsigned int c, int tr, T* v) : location(l), type(t), count(c), transpose(tr), values(v) {}
+			UniformMatrixData(int l, E t, unsigned int c, int tr, std::initializer_list<T> v) : location(l), type(t), count(c), transpose(tr), values(v) {}
 		};
 
 		typedef UniformData<egpUniformIntType, int> uniform_int;
@@ -76,8 +76,8 @@ class RenderPass
 		void addColorTarget(const FBOTargetColorTexture& ct) { mColorTargets.push_back(ct); }
 		void addDepthTarget(const FBOTargetDepthTexture& dt) { mDepthTargets.push_back(dt); }
 
-		void setProgram(int p);
-		void setPipelineStage(int i);
+		void setProgram(GLSLProgramIndex p);
+		void setPipelineStage(FBOIndex i);
 
 		void sendData() const;
 		void activate() const;

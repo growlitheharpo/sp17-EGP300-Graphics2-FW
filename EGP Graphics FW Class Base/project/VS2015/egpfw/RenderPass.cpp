@@ -35,12 +35,12 @@ void RenderPass::addUniform(const uniform_float_matrix& fm)
 	mFloatMatrixUniforms.push_back(fm);
 }
 
-void RenderPass::setProgram(int p)
+void RenderPass::setProgram(GLSLProgramIndex p)
 {
 	mProgram = p;
 }
 
-void RenderPass::setPipelineStage(int i)
+void RenderPass::setPipelineStage(FBOIndex i)
 {
 	mPipelineStage = i;
 }
@@ -54,13 +54,13 @@ void RenderPass::sendData() const
 		egpfwBindDepthTargetTexture(mFBOArray + target.fboIndex, target.glBinding);
 
 	for (auto data : mIntUniforms)
-		egpSendUniformInt(data.location, data.type, data.count, data.values);
+		egpSendUniformInt(data.location, data.type, data.count, data.values.data());
 	
 	for (auto data : mFloatUniforms)
-		egpSendUniformFloat(data.location, data.type, data.count, data.values);
+		egpSendUniformFloat(data.location, data.type, data.count, data.values.data());
 
 	for (auto data : mFloatMatrixUniforms)
-		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, data.values);
+		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, data.values.data());
 }
 
 void RenderPass::activate() const
