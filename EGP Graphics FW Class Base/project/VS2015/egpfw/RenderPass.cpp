@@ -96,9 +96,11 @@ void RenderPass::activate() const
 	if (mFBOArray == nullptr || mProgramArray == nullptr)
 		throw std::invalid_argument("Did not initailize RenderPass");
 
-	egpActivateProgram(mProgramArray + mProgram);
+	if (mProgram != GLSLProgramCount)
+		egpActivateProgram(mProgramArray + mProgram);
 
-	egpfwActivateFBO(mFBOArray + mPipelineStage);
+	if (mPipelineStage != fboCount)
+		egpfwActivateFBO(mFBOArray + mPipelineStage);
 
 	if (mAssociatedVAO != nullptr)
 		egpActivateVAO(mAssociatedVAO);

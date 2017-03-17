@@ -1,8 +1,8 @@
 #pragma once
 #include "render_enums.h"
 #include "egpfw/egpfw/egpfwFrameBuffer.h"
-#include "RenderPassData.h"
 #include <egpfw/egpfw/utils/egpfwVertexBufferUtils.h>
+#include "RenderPassData.h"
 
 class RenderPass
 {
