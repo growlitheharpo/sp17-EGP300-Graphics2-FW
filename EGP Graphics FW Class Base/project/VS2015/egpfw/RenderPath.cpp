@@ -32,6 +32,8 @@ void RenderPath::clearAllPasses()
 
 void RenderPath::render()
 {
+	//Activate and draw each of our passes.
+
 	for (auto pass : mPasses)
 	{
 		pass.activate();

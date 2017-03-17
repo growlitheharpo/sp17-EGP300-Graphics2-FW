@@ -16,5 +16,7 @@ class RenderPath
 		void addRenderPasses(std::initializer_list<RenderPass> passes);
 		void clearAllPasses();
 
+		/**
+		 * \brief Activates and renders every pass in our collection. */
 		void render();
 };
