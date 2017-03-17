@@ -75,7 +75,6 @@ void RenderPass::sendData() const
 
 	for (auto data : mFloatMatrixUniforms)
 		egpSendUniformFloatMatrix(data.location, UNIF_MAT4, data.count, data.transpose, data.value->m);
-		//egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, fetchVals(data.values).data());
 
 	for (auto data : mTextures)
 	{
