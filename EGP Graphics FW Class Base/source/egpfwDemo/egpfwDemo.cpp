@@ -40,6 +40,7 @@
 
 #include "egpfw/egpfw.h"
 #include "../../project/VS2015/egpfw/RenderPath.h"
+#include "../../project/VS2015/egpfw/RenderNetgraph.h"
 
 
 //-----------------------------------------------------------------------------
@@ -231,6 +232,7 @@ const float moonDistance = 4.0f;
 const float moonSize = 0.27f;
 
 RenderPath globalRenderPath;
+RenderNetgraph globalRenderNetgraph(fbo, vao + fsqModel, glslPrograms, glslCommonUniforms[testTextureProgramIndex]);
 
 
 //-----------------------------------------------------------------------------
@@ -1037,10 +1039,20 @@ void setupRenderPaths()
 		case bloomRenderMethod:
 			setupScenePathBloom();
 			setupEffectPathBloom();
+			globalRenderNetgraph.clearFBOList();
+			globalRenderNetgraph.addFBO(sceneFBO);
+			globalRenderNetgraph.addFBO(brightFBO_d2);
+			globalRenderNetgraph.addFBO(vblurFBO_d2);
+			globalRenderNetgraph.addFBO(vblurFBO_d4);
+			globalRenderNetgraph.addFBO(vblurFBO_d8);
+			globalRenderNetgraph.addFBO(compositeFBO);
 			break;
 		case deferredRenderMethod:
 			setupScenePathDeferred();
 			setupEffectPathDeferred();
+			globalRenderNetgraph.clearFBOList();
+			globalRenderNetgraph.addFBO(gbufferSceneFBO);
+			globalRenderNetgraph.addFBO(deferredShadingFBO);
 			break;
 		case numRenderMethods:
 		default: 
@@ -1500,6 +1512,9 @@ void renderGameState()
 		else
 			egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
 		egpDrawActiveVAO();
+
+		//woooo
+		globalRenderNetgraph.render(glslCommonUniforms[testTextureProgramIndex][unif_mvp], tex);
 
 		// done with textures
 		glBindTexture(GL_TEXTURE_2D, 0);
