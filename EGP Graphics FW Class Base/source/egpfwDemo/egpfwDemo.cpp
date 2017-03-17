@@ -144,7 +144,7 @@ int currentProgramIndex = 0;
 egpFrameBufferObjectDescriptor fbo[fboCount], *fboFinalDisplay = fbo;
 cbmath::vec2 pixelSizeInv[fboCount];
 int testDrawAxes = 0;
-int displayMode = 0;
+int displayMode = compositeFBO;
 
 
 
