@@ -1032,20 +1032,74 @@ void setupEffectPathBloom()
 
 void setupScenePathDeferred()
 {
+	currentUniformSet = glslCommonUniforms[gbufferProgramIndex];
 	RenderPass earthPass(fbo, glslPrograms), moonPass(fbo, glslPrograms), marsPass(fbo, glslPrograms), groundPass(fbo, glslPrograms);
 
+	earthPass.setProgram(gbufferProgramIndex);
+	earthPass.setPipelineStage(gbufferSceneFBO);
+	earthPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
+	earthPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &earthModelMatrix));
+	earthPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &earthAtlasMatrix));
+	earthPass.setVAO(vao + sphereHiResObjModel);
+
+	moonPass.setProgram(gbufferProgramIndex);
+	moonPass.setPipelineStage(gbufferSceneFBO);
+	moonPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
+	moonPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &moonModelMatrix));
+	moonPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &moonAtlasMatrix));
+	moonPass.setVAO(vao + sphereLowResObjModel);
+
+	marsPass.setProgram(gbufferProgramIndex);
+	marsPass.setPipelineStage(gbufferSceneFBO);
+	marsPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
+	marsPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &marsModelMatrix));
+	marsPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &marsAtlasMatrix));
+	marsPass.setVAO(vao + sphereLowResObjModel);
+
+	groundPass.setProgram(gbufferProgramIndex);
+	groundPass.setPipelineStage(gbufferSceneFBO);
+	groundPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
+	groundPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &groundModelMatrix));
+	groundPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &groundAtlasMatrix));
+	groundPass.setVAO(vao + fsqModel);
+
+	globalRenderPath.addRenderPasses({ earthPass, moonPass, marsPass, groundPass });
 }
 
 void setupEffectPathDeferred()
 {
+	RenderPass deferredPass(fbo, glslPrograms);
+
+	deferredPass.setProgram(deferredShadingProgramIndex);
+	deferredPass.setPipelineStage(deferredShadingFBO);
+	currentUniformSet = glslCommonUniforms[deferredShadingProgramIndex];
+
+	deferredPass.addDepthTarget(FBOTargetDepthTexture(gbufferSceneFBO, 7));
+	deferredPass.addColorTarget(FBOTargetColorTexture(gbufferSceneFBO, 6, 2));
+	deferredPass.addColorTarget(FBOTargetColorTexture(gbufferSceneFBO, 5, 1));
+	deferredPass.addColorTarget(FBOTargetColorTexture(gbufferSceneFBO, 4, 0));
+
+	deferredPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE1, tex[atlas_specular]));
+	deferredPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE0, tex[atlas_diffuse]));
+
+	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, { &cameraPosWorld.x, &cameraPosWorld.y, &cameraPosWorld.z, &cameraPosWorld.w }));
 	
+	//COME BACK TO THIS!!
+	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightColor], UNIF_VEC4, numLightsShading, { &lightColor[0].x, &lightColor[0].y, &lightColor[0].z, &lightColor[0].w }));
+	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightPos], UNIF_VEC4, numLightsShading, { &lightPos_world[0].x, &lightPos_world[0].y, &lightPos_world[0].z, &lightPos_world[0].w }));
+
+	deferredPass.setVAO(vao + fsqModel);
+
+	globalRenderPath.addRenderPass(deferredPass);
 }
 
 void setupRenderPaths()
 {
 	globalRenderPath.clearAllPasses();
-	setupScenePathBloom();
-	setupEffectPathBloom();
+	//setupScenePathBloom();
+	//setupEffectPathBloom();
+	//setupScenePathDeferred();
+//	setupEffectPathDeferred();
 }
 
 void deleteFramebuffers()
@@ -1337,22 +1391,56 @@ void updateGameState(float dt)
 // skybox clear
 void renderSkybox()
 {
-	currentProgramIndex = testTextureProgramIndex;
-	currentProgram = glslPrograms + currentProgramIndex;
-	currentUniformSet = glslCommonUniforms[currentProgramIndex];
-	egpActivateProgram(currentProgram);
+	if (fboFinalDisplay < fbo + gbufferSceneFBO)
+	{
+		currentProgramIndex = testTextureProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
 
-	// draw skybox instead of clearing
-	glCullFace(GL_FRONT);
-	glDepthFunc(GL_ALWAYS);
-	glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);
+		// draw skybox instead of clearing
+		glCullFace(GL_FRONT);
+		glDepthFunc(GL_ALWAYS);
+		glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);
 
-	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, skyboxModelViewProjectionMatrix.m);
-	egpActivateVAO(vao + skyboxModel);
-	egpDrawActiveVAO();
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, skyboxModelViewProjectionMatrix.m);
+		egpActivateVAO(vao + skyboxModel);
+		egpDrawActiveVAO();
 
-	glDepthFunc(GL_LESS);
-	glCullFace(GL_BACK);
+		glDepthFunc(GL_LESS);
+		glCullFace(GL_BACK);
+	}
+	else
+	{
+		/**/
+		egpfwActivateFBO(fbo + gbufferSceneFBO);
+		currentProgramIndex = gbufferProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+
+		// send common uniforms first
+		egpSendUniformFloatMatrix(currentUniformSet[unif_viewprojMat], UNIF_MAT4, 1, 0, viewProjMat.m);
+
+		// background
+		{
+			// normal scaling adjustment values
+			const float normalScale[2] = { -1.0f, +1.0f };
+
+			glCullFace(GL_FRONT);
+			glDepthFunc(GL_ALWAYS);
+			egpSendUniformFloat(currentUniformSet[unif_normalScale], UNIF_FLOAT, 1, normalScale);	// invert
+
+			egpSendUniformFloatMatrix(currentUniformSet[unif_modelMat], UNIF_MAT4, 1, 0, skyboxModelMatrix.m);
+			egpSendUniformFloatMatrix(currentUniformSet[unif_atlasMat], UNIF_MAT4, 1, 0, skyboxAtlasMatrix.m);
+			egpActivateVAO(vao + skyboxModel);
+			egpDrawActiveVAO();
+
+			egpSendUniformFloat(currentUniformSet[unif_normalScale], UNIF_FLOAT, 1, normalScale + 1);
+			glDepthFunc(GL_LESS);
+			glCullFace(GL_BACK);
+		}
+	}
 }
 
 // draw scene objects
@@ -1445,6 +1533,9 @@ void renderGameState()
 		currentProgramIndex = testTexturePassthruProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
+
+		/*displayMode = deferredShadingFBO;
+		fboFinalDisplay = fbo + deferredShadingFBO;*/
 
 		// bind scene texture
 		if (displayMode != fboCount)
