@@ -1260,8 +1260,11 @@ void handleInputState()
 
 	if (egpKeyboardIsKeyPressed(keybd, 'm'))
 	{
-		if (currentRenderMode == bloomRenderMethod) 
+		if (currentRenderMode == bloomRenderMethod)
+		{
 			currentRenderMode = deferredRenderMethod;
+			displayMode = deferredShadingFBO;
+		}
 		else
 		{
 			currentRenderMode = bloomRenderMethod;
@@ -1282,7 +1285,6 @@ void handleInputState()
 			if (egpKeyboardIsKeyPressed(keybd, c))
 			{
 				displayMode = i;
-				fboFinalDisplay = fbo + i;
 			}
 	}
 
@@ -1473,6 +1475,33 @@ void renderSceneObjects()
 	}
 }
 
+void setupFinalBackbufferTexture()
+{
+	if (currentRenderMode == bloomRenderMethod)
+	{
+		fboFinalDisplay = fbo + displayMode;
+		egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
+	}
+	else if (currentRenderMode == deferredRenderMethod)
+	{
+		int target;
+		switch (displayMode)
+		{
+			case 0:
+			case 1:
+			case 2:
+				fboFinalDisplay = fbo + gbufferSceneFBO;
+				target = displayMode;
+				break;
+			default:
+				fboFinalDisplay = fbo + deferredShadingFBO;
+				target = 0;
+				break;
+		}
+
+		egpfwBindColorTargetTexture(fboFinalDisplay, 0, target);
+	}
+}
 
 // draw frame
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
@@ -1519,16 +1548,7 @@ void renderGameState()
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
 
-		if (currentRenderMode == deferredRenderMethod)
-			displayMode = deferredShadingFBO;
-
-		fboFinalDisplay = fbo + displayMode;
-
-		// bind scene texture
-		if (displayMode != fboCount)
-			egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
-		else
-			egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
+		setupFinalBackbufferTexture();
 		egpDrawActiveVAO();
 
 		//woooo
