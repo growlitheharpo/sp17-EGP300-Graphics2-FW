@@ -84,8 +84,16 @@ cbtk::cbmath::vec4 cameraPosWorld(1.0f, -2.0f, -cameraDistance, 1.0f), deltaCamP
 
 float CONST_ZERO_FLOAT = 0.0f;
 
-bool useTheBrokenOne = false;
+enum RenderMethod
+{
+	bloomRenderMethod,
+	deferredRenderMethod,
 
+	//------------------------
+	numRenderMethods
+};
+
+RenderMethod currentRenderMode = bloomRenderMethod;
 
 //-----------------------------------------------------------------------------
 // graphics-related data and handles
@@ -1094,10 +1102,22 @@ void setupEffectPathDeferred()
 void setupRenderPaths()
 {
 	globalRenderPath.clearAllPasses();
-	//setupScenePathBloom();
-	//setupEffectPathBloom();
-	//setupScenePathDeferred();
-//	setupEffectPathDeferred();
+
+	switch (currentRenderMode)
+	{
+		case bloomRenderMethod:
+			setupScenePathBloom();
+			setupEffectPathBloom();
+			break;
+		case deferredRenderMethod:
+			setupScenePathDeferred();
+			setupEffectPathDeferred();
+			break;
+		case numRenderMethods:
+		default: 
+			break;
+	}
+
 }
 
 void deleteFramebuffers()
@@ -1280,8 +1300,16 @@ void handleInputState()
 		testDrawAxes = 1 - testDrawAxes;
 
 	if (egpKeyboardIsKeyPressed(keybd, 'm'))
-		useTheBrokenOne = !useTheBrokenOne;
-
+	{
+		if (currentRenderMode == bloomRenderMethod) 
+			currentRenderMode = deferredRenderMethod;
+		else
+		{
+			currentRenderMode = bloomRenderMethod;
+			displayMode = compositeFBO;
+		}
+		setupRenderPaths();
+	}
 
 	// toggle pipeline stage
 	if (egpKeyboardIsKeyPressed(keybd, '0'))
@@ -1389,7 +1417,7 @@ void updateGameState(float dt)
 // skybox clear
 void renderSkybox()
 {
-	if (fboFinalDisplay < fbo + gbufferSceneFBO)
+	if (currentRenderMode == bloomRenderMethod)
 	{
 		currentProgramIndex = testTextureProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
@@ -1532,8 +1560,10 @@ void renderGameState()
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
 
-		/*displayMode = deferredShadingFBO;
-		fboFinalDisplay = fbo + deferredShadingFBO;*/
+		if (currentRenderMode == deferredRenderMethod)
+			displayMode = deferredShadingFBO;
+
+		fboFinalDisplay = fbo + displayMode;
 
 		// bind scene texture
 		if (displayMode != fboCount)
