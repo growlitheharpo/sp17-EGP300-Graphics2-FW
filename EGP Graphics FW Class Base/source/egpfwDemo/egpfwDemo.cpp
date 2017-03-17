@@ -969,6 +969,20 @@ void setupEffectPathBloom()
 	globalRenderPath.addRenderPasses({ brightPass, hblur1, vblur1, hblur2, vblur2, hblur3, vblur3, composite });
 }
 
+void setupNetgraphPathBloom()
+{
+	globalRenderNetgraph.clearFBOList();
+
+	globalRenderNetgraph.addFBOs({
+		FBOTargetColorTexture(sceneFBO, 0, 0),
+		FBOTargetColorTexture(brightFBO_d2, 0, 0),
+		FBOTargetColorTexture(vblurFBO_d2, 0, 0),
+		FBOTargetColorTexture(vblurFBO_d4, 0, 0),
+		FBOTargetColorTexture(vblurFBO_d8, 0, 0),
+		FBOTargetColorTexture(compositeFBO, 0, 0),
+	});
+}
+
 void setupScenePathDeferred()
 {
 	currentUniformSet = glslCommonUniforms[gbufferProgramIndex];
@@ -1030,6 +1044,18 @@ void setupEffectPathDeferred()
 	globalRenderPath.addRenderPass(deferredPass);
 }
 
+void setupNetgraphPathDeferred()
+{
+	globalRenderNetgraph.clearFBOList();
+
+	globalRenderNetgraph.addFBOs({
+		FBOTargetColorTexture(gbufferSceneFBO, 0, 0),
+		FBOTargetColorTexture(gbufferSceneFBO, 0, 1),
+		FBOTargetColorTexture(gbufferSceneFBO, 0, 2),
+		FBOTargetColorTexture(deferredShadingFBO, 0, 0),
+	});
+}
+
 void setupRenderPaths()
 {
 	globalRenderPath.clearAllPasses();
@@ -1039,20 +1065,12 @@ void setupRenderPaths()
 		case bloomRenderMethod:
 			setupScenePathBloom();
 			setupEffectPathBloom();
-			globalRenderNetgraph.clearFBOList();
-			globalRenderNetgraph.addFBO(sceneFBO);
-			globalRenderNetgraph.addFBO(brightFBO_d2);
-			globalRenderNetgraph.addFBO(vblurFBO_d2);
-			globalRenderNetgraph.addFBO(vblurFBO_d4);
-			globalRenderNetgraph.addFBO(vblurFBO_d8);
-			globalRenderNetgraph.addFBO(compositeFBO);
+			setupNetgraphPathBloom();
 			break;
 		case deferredRenderMethod:
 			setupScenePathDeferred();
 			setupEffectPathDeferred();
-			globalRenderNetgraph.clearFBOList();
-			globalRenderNetgraph.addFBO(gbufferSceneFBO);
-			globalRenderNetgraph.addFBO(deferredShadingFBO);
+			setupNetgraphPathDeferred();
 			break;
 		case numRenderMethods:
 		default: 

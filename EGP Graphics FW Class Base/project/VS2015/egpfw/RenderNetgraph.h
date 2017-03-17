@@ -13,7 +13,7 @@ class RenderNetgraph
 		egpVertexArrayObjectDescriptor* mQuadModel;
 		egpFrameBufferObjectDescriptor* mFBOArray;
 		egpProgram* mProgramArray;
-		std::vector<FBOIndex> mFBOsToDraw;
+		std::vector<FBOTargetColorTexture> mFBOsToDraw;
 
 		std::vector<cbmath::mat4> mQuadMVPs;
 
@@ -27,8 +27,8 @@ class RenderNetgraph
 		~RenderNetgraph() = default;
 
 		void clearFBOList();
-		void addFBO(FBOIndex fbo);
-		void addFBOs(std::initializer_list<FBOIndex> fbos);
+		void addFBO(FBOTargetColorTexture fbo);
+		void addFBOs(std::initializer_list<FBOTargetColorTexture> fbos);
 
 		void render(int mvpLane, unsigned int* tex);
 };

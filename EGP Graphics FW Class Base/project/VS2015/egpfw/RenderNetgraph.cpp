@@ -32,7 +32,6 @@ void RenderNetgraph::generateMVPs()
 void RenderNetgraph::setupRenderPasses()
 {
 	mInternalRenderPath.clearAllPasses();
-
 	generateMVPs();
 
 	for (size_t i = 0; i < mFBOsToDraw.size(); i++)
@@ -40,7 +39,7 @@ void RenderNetgraph::setupRenderPasses()
 		RenderPass p(mFBOArray, mProgramArray);
 
 		p.setProgram(testTextureProgramIndex);
-		p.addColorTarget(FBOTargetColorTexture(mFBOsToDraw[i], 0, 0));
+		p.addColorTarget(mFBOsToDraw[i]);
 		p.addUniform(render_pass_uniform_float_matrix(
 			mTextureProgramUniforms[unif_mvp], 1, 0, &mQuadMVPs[i]));
 		p.setVAO(mQuadModel);
@@ -63,35 +62,25 @@ void RenderNetgraph::clearFBOList()
 	mInternalRenderPath.clearAllPasses();
 }
 
-void RenderNetgraph::addFBO(FBOIndex fbo)
+void RenderNetgraph::addFBO(FBOTargetColorTexture fbo)
 {
+	fbo.glBinding = 0;
 	mFBOsToDraw.push_back(fbo);
 	setupRenderPasses();
 }
 
-void RenderNetgraph::addFBOs(std::initializer_list<FBOIndex> fbos)
+void RenderNetgraph::addFBOs(std::initializer_list<FBOTargetColorTexture> fbos)
 {
 	for (auto fbo : fbos)
+	{
+		fbo.glBinding = 0;
 		mFBOsToDraw.push_back(fbo);
+	}
 
 	setupRenderPasses();
 }
 
 void RenderNetgraph::render(int mvpLane, unsigned int* tex) 
 {
-	//uhhh...
-	//Let's start simple-ish.
-	/*
-	cbmath::mat4 matrix = cbmath::m4Identity;
-	matrix = cbmath::makeTranslation4(0.75f, -0.75f, 0.0f) * cbmath::makeScale4(0.25f);
-
-	egpActivateProgram(&mProgramArray[testTextureProgramIndex]);
-
-	egpfwBindColorTargetTexture(mFBOArray + mFBOsToDraw[0], 0, 0);
-
-	egpSendUniformFloatMatrix(mvpLane, UNIF_MAT4, 1, 0, matrix.m);
-
-	egpActivateVAO(mQuadModel);
-	egpDrawActiveVAO();*/
 	mInternalRenderPath.render();
 }
