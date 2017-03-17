@@ -95,6 +95,7 @@ enum RenderMethod
 };
 
 RenderMethod currentRenderMode = bloomRenderMethod;
+bool displayNetgraphToggle = true;
 
 //-----------------------------------------------------------------------------
 // graphics-related data and handles
@@ -1273,6 +1274,9 @@ void handleInputState()
 		setupRenderPaths();
 	}
 
+	if (egpKeyboardIsKeyPressed(keybd, 'n'))
+		displayNetgraphToggle = !displayNetgraphToggle;
+
 	// toggle pipeline stage
 	if (egpKeyboardIsKeyPressed(keybd, '0'))
 	{
@@ -1550,9 +1554,9 @@ void renderGameState()
 
 		setupFinalBackbufferTexture();
 		egpDrawActiveVAO();
-
-		//woooo
-		globalRenderNetgraph.render(glslCommonUniforms[testTextureProgramIndex][unif_mvp], tex);
+		
+		if (displayNetgraphToggle)
+			globalRenderNetgraph.render(glslCommonUniforms[testTextureProgramIndex][unif_mvp], tex);
 
 		// done with textures
 		glBindTexture(GL_TEXTURE_2D, 0);
