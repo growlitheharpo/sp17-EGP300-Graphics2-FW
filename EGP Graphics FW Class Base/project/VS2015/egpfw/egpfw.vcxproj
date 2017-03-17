@@ -28,6 +28,7 @@
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="QuaternionTest.h" />
     <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="RenderPassData.h" />
     <ClInclude Include="RenderPath.h" />
     <ClInclude Include="render_enums.h" />
     <ClInclude Include="TStack.h" />

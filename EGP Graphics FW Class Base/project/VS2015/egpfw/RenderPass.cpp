@@ -9,6 +9,8 @@ RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* program
 
 	mProgram = GLSLProgramCount;
 	mPipelineStage = fboCount;
+
+	mAssociatedVAO = nullptr;
 }
 
 RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo)
@@ -18,21 +20,33 @@ RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* program
 
 	mProgram = program;
 	mPipelineStage = fbo;
+
+	mAssociatedVAO = nullptr;
 }
 
-void RenderPass::addUniform(const uniform_int& i)
+void RenderPass::addUniform(const render_pass_uniform_int& i)
 {
 	mIntUniforms.push_back(i);
 }
 
-void RenderPass::addUniform(const uniform_float& f)
+void RenderPass::addUniform(const render_pass_uniform_float& f)
 {
 	mFloatUniforms.push_back(f);
 }
 
-void RenderPass::addUniform(const uniform_float_matrix& fm)
+void RenderPass::addUniform(const render_pass_uniform_float_matrix& fm)
 {
 	mFloatMatrixUniforms.push_back(fm);
+}
+
+void RenderPass::addTexture(const RenderPassTextureData& t)
+{
+	mTextures.push_back(t);
+}
+
+void RenderPass::setVAO(egpVertexArrayObjectDescriptor* vao)
+{
+	mAssociatedVAO = vao;
 }
 
 void RenderPass::setProgram(GLSLProgramIndex p)
@@ -60,7 +74,14 @@ void RenderPass::sendData() const
 		egpSendUniformFloat(data.location, data.type, data.count, fetchVals(data.values).data());
 
 	for (auto data : mFloatMatrixUniforms)
-		egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, fetchVals(data.values).data());
+		egpSendUniformFloatMatrix(data.location, UNIF_MAT4, data.count, data.transpose, data.value->m);
+		//egpSendUniformFloatMatrix(data.location, data.type, data.count, data.transpose, fetchVals(data.values).data());
+
+	for (auto data : mTextures)
+	{
+		glActiveTexture(data.textureLane);
+		glBindTexture(data.textureType, data.textureHandle);
+	}
 }
 
 void RenderPass::activate() const
@@ -71,4 +92,7 @@ void RenderPass::activate() const
 	egpActivateProgram(mProgramArray + mProgram);
 
 	egpfwActivateFBO(mFBOArray + mPipelineStage);
+
+	if (mAssociatedVAO != nullptr)
+		egpActivateVAO(mAssociatedVAO);
 }
