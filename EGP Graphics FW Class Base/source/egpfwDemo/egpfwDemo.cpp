@@ -217,9 +217,65 @@ cbmath::mat4 skyboxModelViewMatrix, skyboxModelViewProjectionMatrix;
 cbmath::mat4 earthModelMatrix, earthModelViewProjectionMatrix, earthModelInverseMatrix;
 cbmath::mat4 moonModelMatrix, moonModelViewProjectionMatrix, moonModelInverseMatrix;
 
+// transformation matrices
+cbmath::mat4 skyboxModelMatrix, skyboxAtlasMatrix;
+cbmath::mat4 earthAtlasMatrix;
+cbmath::mat4 moonAtlasMatrix;
+cbmath::mat4 marsModelMatrix, marsAtlasMatrix;
+cbmath::mat4 groundModelMatrix, groundAtlasMatrix;
+
+
+// light positions and colors
+// for the colors, let the xyz components represent color in rgb, and 
+//	the w component represent the radius of the light volume
+const unsigned int numLights = 16, numLightsShading = 4;
+cbmath::vec4 lightPos_world[numLights] = {
+	cbmath::vec4(0.0f, 0.0f, 0.0f, 1.0f),
+	cbmath::vec4(10.0f, 0.0f, 0.0f, 1.0f),
+	cbmath::vec4(0.0f, 10.0f, 10.0f, 1.0f),
+	cbmath::vec4(50.0f, 50.0f, 50.0f, 1.0f),
+
+	cbmath::vec4(-6.0f, -4.0f, -3.0f, 1.0f),
+	cbmath::vec4(-2.0f, -4.0f, -3.0f, 1.0f),
+	cbmath::vec4(+2.0f, -4.0f, -3.0f, 1.0f),
+	cbmath::vec4(+6.0f, -4.0f, -3.0f, 1.0f),
+
+	cbmath::vec4(-6.0f, -4.0f, 0.0f, 1.0f),
+	cbmath::vec4(-2.0f, -4.0f, 0.0f, 1.0f),
+	cbmath::vec4(+2.0f, -4.0f, 0.0f, 1.0f),
+	cbmath::vec4(+6.0f, -4.0f, 0.0f, 1.0f),
+
+	cbmath::vec4(-6.0f, -4.0f, +3.0f, 1.0f),
+	cbmath::vec4(-2.0f, -4.0f, +3.0f, 1.0f),
+	cbmath::vec4(+2.0f, -4.0f, +3.0f, 1.0f),
+	cbmath::vec4(+6.0f, -4.0f, +3.0f, 1.0f),
+};
+cbmath::vec4 lightColor[numLights] = {
+	cbmath::vec4(0.0f, 1.0f, 1.0f, 10.0f),
+	cbmath::vec4(1.0f, 1.0f, 0.0f, 10.0f),
+	cbmath::vec4(1.0f, 0.0f, 1.0f, 20.0f),
+	cbmath::vec4(1.0f, 1.0f, 1.0f, 20.0f),
+
+	cbmath::vec4(1.0f, 0.0f, 0.0f, 2.0f),
+	cbmath::vec4(1.0f, 0.5f, 0.0f, 2.0f),
+	cbmath::vec4(1.0f, 1.0f, 0.0f, 2.0f),
+	cbmath::vec4(0.5f, 1.0f, 0.0f, 2.0f),
+
+	cbmath::vec4(0.0f, 1.0f, 0.0f, 2.0f),
+	cbmath::vec4(0.0f, 1.0f, 0.5f, 2.0f),
+	cbmath::vec4(0.0f, 1.0f, 1.0f, 2.0f),
+	cbmath::vec4(0.0f, 0.5f, 1.0f, 2.0f),
+
+	cbmath::vec4(0.0f, 0.0f, 1.0f, 2.0f),
+	cbmath::vec4(0.5f, 0.0f, 1.0f, 2.0f),
+	cbmath::vec4(1.0f, 0.0f, 1.0f, 2.0f),
+	cbmath::vec4(1.0f, 0.0f, 0.5f, 2.0f),
+};
+
+
 
 // light and camera for shading
-cbmath::vec4 lightPos_world(10.0f, 10.0f, 20.0f, 1.0f), lightPos_object, eyePos_object;
+cbmath::vec4 lightPos_object, eyePos_object;
 
 
 // raw animation values: 
@@ -402,6 +458,16 @@ void setupGeometry()
 	}
 	egpfwCreateVAOFromOBJ(obj, vao + sphereHiResObjModel, vbo + sphereHiResObjModel);
 	egpfwReleaseOBJ(obj);
+
+	// geometry-related constants
+	groundModelMatrix = cbmath::makeTranslation4(0.0f, -5.0f, 0.0f) * cbmath::makeRotationX4(Deg2Rad(-90.0f)) * cbmath::makeScale4(10.0f, 10.0f, 1.0f);
+
+	skyboxAtlasMatrix = groundAtlasMatrix = cbmath::makeScale4(0.125f, 0.125f, 0.0f);
+	earthAtlasMatrix = moonAtlasMatrix = marsAtlasMatrix = cbmath::makeScale4(0.5f, 0.25f, 0.0f);
+	earthAtlasMatrix.c3.y = 0.75f;
+	moonAtlasMatrix.c3.y = 0.5f;
+	marsAtlasMatrix.c3.y = 0.25f;
+	groundAtlasMatrix.c3.y = 0.125f;
 }
 
 void deleteGeometry()
@@ -659,6 +725,41 @@ void setupShaders()
 					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
 					currentProgramIndex = bloomBlendProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+			}
+			// some deferred parts should use this vertex shader!
+			{
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/deferredShading_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = deferredShadingProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/deferredComposite_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = deferredCompositeProgramIndex;
 					currentProgram = glslPrograms + currentProgramIndex;
 
 					*currentProgram = egpCreateProgram();
@@ -1179,6 +1280,7 @@ void updateGameState(float dt)
 		//	we remove the translation (which makes the background seem 
 		//	infinitely far away), and scale up instead
 
+		/*
 		// multiply view matrix with scale matrix to make modelview
 		skyboxModelViewMatrix = viewMatrix * cbtk::cbmath::makeScale4(minClipDist);
 
@@ -1186,7 +1288,12 @@ void updateGameState(float dt)
 		skyboxModelViewMatrix.c3 = cbmath::v4w;
 
 		// concatenate with proj to get mvp
-		skyboxModelViewProjectionMatrix = projectionMatrix * skyboxModelViewMatrix;
+		skyboxModelViewProjectionMatrix = projectionMatrix * skyboxModelViewMatrix;*/
+
+		skyboxModelMatrix = cbtk::cbmath::makeScaleTranslate(minClipDist, cameraPosWorld.xyz);
+
+		// concatenate with proj to get mvp
+		skyboxModelViewProjectionMatrix = viewProjMat * skyboxModelMatrix;
 	}
 
 	// earth: 
@@ -1214,8 +1321,15 @@ void updateGameState(float dt)
 		moonModelMatrix = cbmath::makeRotationZ4(moonTilt) * cbmath::makeRotationY4(moonOrbit) * cbmath::makeScale4(moonSize);
 		moonModelMatrix.c3.x = earthModelMatrix.c3.x + cosf(moonOrbit) * moonDistance;
 		moonModelMatrix.c3.z = earthModelMatrix.c3.z - sinf(moonOrbit) * moonDistance;
+
 		moonModelViewProjectionMatrix = viewProjMat * moonModelMatrix;
 		moonModelInverseMatrix = cbmath::transformInverseNoScale(moonModelMatrix);
+	}
+
+	// mars: 
+	{
+		marsModelMatrix = moonModelMatrix;
+		marsModelMatrix.c3.y += 2.0f;
 	}
 }
 
@@ -1282,7 +1396,7 @@ void renderSceneObjects()
 		egpActivateVAO(vao + sphereHiResObjModel);
 		egpDrawActiveVAO();*/
 		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
-		lightPos_object = earthModelInverseMatrix * lightPos_world;
+		lightPos_object = earthModelInverseMatrix * lightPos_world[0];
 	}
 }
 
