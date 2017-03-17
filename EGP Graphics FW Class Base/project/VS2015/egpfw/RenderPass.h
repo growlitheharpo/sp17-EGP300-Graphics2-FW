@@ -16,6 +16,7 @@ class RenderPass
 
 		std::vector<render_pass_uniform_int> mIntUniforms;
 		std::vector<render_pass_uniform_float> mFloatUniforms;
+		std::vector<render_pass_uniform_float_complex> mComplexFloatUniforms;
 		std::vector<render_pass_uniform_float_matrix> mFloatMatrixUniforms;
 
 		std::vector<FBOTargetColorTexture> mColorTargets;
@@ -34,6 +35,7 @@ class RenderPass
 
 		void addUniform(const render_pass_uniform_int& i);
 		void addUniform(const render_pass_uniform_float& f);
+		void addUniform(const render_pass_uniform_float_complex& f);
 		void addUniform(const render_pass_uniform_float_matrix& fm);
 		
 		void addColorTarget(const FBOTargetColorTexture& ct) { mColorTargets.push_back(ct); }

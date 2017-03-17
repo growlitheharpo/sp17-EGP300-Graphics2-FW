@@ -965,8 +965,8 @@ void setupScenePathBloom()
 	earthPass.setPipelineStage(sceneFBO);
 	earthPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE1, tex[earthTexHandle_sm]));
 	earthPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE0, tex[earthTexHandle_dm]));
-	earthPass.addUniform(render_pass_uniform_float(glslCommonUniforms[phongProgramIndex][unif_eyePos], UNIF_VEC4, 1, { &eyePos_object.x, &eyePos_object.y, &eyePos_object.z, &eyePos_object.w }));
-	earthPass.addUniform(render_pass_uniform_float(glslCommonUniforms[phongProgramIndex][unif_lightPos], UNIF_VEC4, 1, { &lightPos_object.x, &lightPos_object.y, &lightPos_object.z, &lightPos_object.w }));
+	earthPass.addUniform(render_pass_uniform_float(glslCommonUniforms[phongProgramIndex][unif_eyePos], UNIF_VEC4, 1, eyePos_object.v));
+	earthPass.addUniform(render_pass_uniform_float(glslCommonUniforms[phongProgramIndex][unif_lightPos], UNIF_VEC4, 1, lightPos_object.v));
 	earthPass.addUniform(render_pass_uniform_float_matrix(glslCommonUniforms[phongProgramIndex][unif_mvp], 1, 0, &earthModelViewProjectionMatrix));
 	earthPass.setVAO(vao + sphereHiResObjModel);
 
@@ -991,32 +991,32 @@ void setupEffectPathBloom()
 	hblur1.setProgram(bloomBlurProgramIndex);
 	hblur1.setPipelineStage(hblurFBO_d2);
 	hblur1.addColorTarget(FBOTargetColorTexture(brightFBO_d2, 0, 0));
-	hblur1.addUniform(render_pass_uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[brightFBO_d2].x, &CONST_ZERO_FLOAT }));
+	hblur1.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[brightFBO_d2].x, &CONST_ZERO_FLOAT }));
 
 	vblur1.setProgram(bloomBlurProgramIndex);
 	vblur1.setPipelineStage(vblurFBO_d2);
 	vblur1.addColorTarget(FBOTargetColorTexture(hblurFBO_d2, 0, 0));
-	vblur1.addUniform(render_pass_uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d2].y }));
+	vblur1.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d2].y }));
 
 	hblur2.setProgram(bloomBlurProgramIndex);
 	hblur2.setPipelineStage(hblurFBO_d4);
 	hblur2.addColorTarget(FBOTargetColorTexture(vblurFBO_d2, 0, 0));
-	hblur2.addUniform(render_pass_uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d2].x, &CONST_ZERO_FLOAT }));
+	hblur2.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d2].x, &CONST_ZERO_FLOAT }));
 
 	vblur2.setProgram(bloomBlurProgramIndex);
 	vblur2.setPipelineStage(vblurFBO_d4);
 	vblur2.addColorTarget(FBOTargetColorTexture(hblurFBO_d4, 0, 0));
-	vblur2.addUniform(render_pass_uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d4].y }));
+	vblur2.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d4].y }));
 
 	hblur3.setProgram(bloomBlurProgramIndex);
 	hblur3.setPipelineStage(hblurFBO_d8);
 	hblur3.addColorTarget(FBOTargetColorTexture(vblurFBO_d4, 0, 0));
-	hblur3.addUniform(render_pass_uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d4].x, &CONST_ZERO_FLOAT }));
+	hblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d4].x, &CONST_ZERO_FLOAT }));
 
 	vblur3.setProgram(bloomBlurProgramIndex);
 	vblur3.setPipelineStage(vblurFBO_d8);
 	vblur3.addColorTarget(FBOTargetColorTexture(hblurFBO_d8, 0, 0));
-	vblur3.addUniform(render_pass_uniform_float(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
+	vblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
 
 	RenderPass composite(fbo, glslPrograms);
 	composite.setProgram(bloomBlendProgramIndex);
@@ -1081,12 +1081,10 @@ void setupEffectPathDeferred()
 
 	deferredPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE1, tex[atlas_specular]));
 	deferredPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE0, tex[atlas_diffuse]));
+	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, cameraPosWorld.v));
 
-	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, { &cameraPosWorld.x, &cameraPosWorld.y, &cameraPosWorld.z, &cameraPosWorld.w }));
-	
-	//COME BACK TO THIS!!
-	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightColor], UNIF_VEC4, numLightsShading, { &lightColor[0].x, &lightColor[0].y, &lightColor[0].z, &lightColor[0].w }));
-	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightPos], UNIF_VEC4, numLightsShading, { &lightPos_world[0].x, &lightPos_world[0].y, &lightPos_world[0].z, &lightPos_world[0].w }));
+	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightColor], UNIF_VEC4, numLightsShading, lightColor->v));
+	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightPos], UNIF_VEC4, numLightsShading, lightPos_world->v));
 
 	deferredPass.setVAO(vao + fsqModel);
 

@@ -5,15 +5,27 @@
 #include <cbmath/cbtkMatrix.h>
 
 template <typename E, typename T>
-struct UniformData
+struct UniformDataSimple
+{
+	int location;
+	E type;
+	unsigned int count;
+	T* values;
+
+	UniformDataSimple(int l, E t, unsigned int c, T* v) : location(l), type(t), count(c), values(v) {}
+};
+
+template <typename E, typename T>
+struct UniformDataComplex
 {
 	int location;
 	E type;
 	unsigned int count;
 	std::vector<T*> values;
 
-	UniformData(int l, E t, unsigned int c, std::initializer_list<T*> v) : location(l), type(t), count(c), values(v) {}
+	UniformDataComplex(int l, E t, unsigned int c, std::initializer_list<T*> v) : location(l), type(t), count(c), values(v) {}
 };
+
 
 struct UniformMatrixData
 {
@@ -51,6 +63,7 @@ struct RenderPassTextureData
 	RenderPassTextureData(GLenum type, GLuint lane, GLuint handle) : textureType(type), textureLane(lane), textureHandle(handle) {}
 };
 
-typedef UniformData<egpUniformIntType, int> render_pass_uniform_int;
-typedef UniformData<egpUniformFloatType, float> render_pass_uniform_float;
+typedef UniformDataSimple<egpUniformIntType, int> render_pass_uniform_int;
+typedef UniformDataSimple<egpUniformFloatType, float> render_pass_uniform_float;
+typedef UniformDataComplex<egpUniformFloatType, float> render_pass_uniform_float_complex;
 typedef UniformMatrixData render_pass_uniform_float_matrix;

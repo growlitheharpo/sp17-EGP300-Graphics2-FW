@@ -34,6 +34,11 @@ void RenderPass::addUniform(const render_pass_uniform_float& f)
 	mFloatUniforms.push_back(f);
 }
 
+void RenderPass::addUniform(const render_pass_uniform_float_complex& f)
+{
+	mComplexFloatUniforms.push_back(f);
+}
+
 void RenderPass::addUniform(const render_pass_uniform_float_matrix& fm)
 {
 	mFloatMatrixUniforms.push_back(fm);
@@ -68,9 +73,12 @@ void RenderPass::sendData() const
 		egpfwBindDepthTargetTexture(mFBOArray + target.fboIndex, target.glBinding);
 
 	for (auto data : mIntUniforms)
-		egpSendUniformInt(data.location, data.type, data.count, fetchVals(data.values).data());
+		egpSendUniformInt(data.location, data.type, data.count, data.values);//fetchVals(data.values).data());
 	
 	for (auto data : mFloatUniforms)
+		egpSendUniformFloat(data.location, data.type, data.count, data.values);// (data.values).data());
+
+	for (auto data : mComplexFloatUniforms)
 		egpSendUniformFloat(data.location, data.type, data.count, fetchVals(data.values).data());
 
 	for (auto data : mFloatMatrixUniforms)
