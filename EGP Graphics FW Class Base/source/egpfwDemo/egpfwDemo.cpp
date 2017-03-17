@@ -1484,7 +1484,7 @@ void renderSceneObjects()
 		egpActivateVAO(vao + sphereHiResObjModel);
 		egpDrawActiveVAO();*/
 		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
-		lightPos_object = earthModelInverseMatrix * lightPos_world[0];
+		lightPos_object = earthModelInverseMatrix * lightPos_world[3];
 	}
 }
 
