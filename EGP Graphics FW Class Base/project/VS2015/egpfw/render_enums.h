@@ -22,6 +22,15 @@ enum GLSLProgramIndex
 	projectiveTextureProgram,
 	shadowMapProgram,
 
+
+	// deferred rendering
+	gbufferProgramIndex,
+	// deferred shading
+	deferredShadingProgramIndex,
+	// deferred lighting
+	deferredLightPassProgramIndex,
+	deferredCompositeProgramIndex,
+
 	//-----------------------------
 	GLSLProgramCount
 };
@@ -41,6 +50,14 @@ enum FBOIndex
 	hblurFBO_d8,
 	vblurFBO_d8,
 	compositeFBO,
+
+	// deferred rendering
+	gbufferSceneFBO,
+	// deferred shading
+	deferredShadingFBO,
+	// deferred lighting
+	lightPassFBO,
+	deferredLightingCompositeFBO,
 
 	// shadow map
 	shadowFBO,

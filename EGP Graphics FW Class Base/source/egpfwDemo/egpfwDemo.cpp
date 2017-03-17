@@ -119,6 +119,9 @@ enum TextureIndex
 	earthTexHandle_dm, earthTexHandle_sm,
 	moonTexHandle_dm,
 
+	atlas_diffuse,
+	atlas_specular,
+
 	//-----------------------------
 	textureCount
 };
@@ -147,6 +150,7 @@ enum GLSLCommonUniformIndex
 {
 	unif_mvp,
 
+	unif_lightColor,
 	unif_lightPos,
 	unif_eyePos,
 
@@ -158,6 +162,19 @@ enum GLSLCommonUniformIndex
 	unif_img1, 
 	unif_img2, 
 	unif_img3, 
+
+
+	// deferred rendering
+	unif_modelMat,
+	unif_viewprojMat,
+	unif_atlasMat,
+	unif_normalScale,
+	unif_img_position,
+	unif_img_normal,
+	unif_img_texcoord,
+	unif_img_depth,
+	unif_img_light_diffuse,
+	unif_img_light_specular,
 
 //-----------------------------
 	GLSLCommonUniformCount
@@ -414,6 +431,8 @@ void setupTextures()
 		(char *)("../../../../resource/tex/earth/2k/earth_dm_2k.png"),
 		(char *)("../../../../resource/tex/earth/2k/earth_sm_2k.png"),
 		(char *)("../../../../resource/tex/moon/2k/moon_dm_2k.png"),
+		(char *)("../../../../resource/tex/atlas/atlas_diffuse.png"),
+		(char *)("../../../../resource/tex/atlas/atlas_specular.png"),
 	};
 
 	// load
@@ -469,6 +488,17 @@ void setupTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+	// atlas textures
+	glBindTexture(GL_TEXTURE_2D, tex[atlas_diffuse]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// pixelated for demonstration purposes
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, tex[atlas_specular]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// disable textures
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -491,6 +521,7 @@ void setupShaders()
 	// array of common uniform names
 	const char *commonUniformName[] = {
 		(const char *)("mvp"),
+		(const char *)("lightColor"),
 		(const char *)("lightPos"),
 		(const char *)("eyePos"),
 		(const char *)("tex_dm"),
@@ -500,6 +531,16 @@ void setupShaders()
 		(const char *)("img1"),
 		(const char *)("img2"),
 		(const char *)("img3"),
+		(const char *)("modelMat"),
+		(const char *)("viewprojMat"),
+		(const char *)("atlasMat"),
+		(const char *)("normalScale"),
+		(const char *)("img_position"),
+		(const char *)("img_normal"),
+		(const char *)("img_texcoord"),
+		(const char *)("img_depth"),
+		(const char *)("img_light_diffuse"),
+		(const char *)("img_light_specular"),
 	};
 
 	const int imageLocations[] = {
@@ -663,6 +704,48 @@ void setupShaders()
 		egpReleaseFileContents(files + 1);
 	}
 
+	// deferred rendering
+	{
+		currentProgramIndex = gbufferProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_deferred/passAttribs_world_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/drawGBuffers_fs4x.glsl");
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		*currentProgram = egpCreateProgram();
+		egpAttachShaderToProgram(currentProgram, shaders + 0);
+		egpAttachShaderToProgram(currentProgram, shaders + 1);
+		egpLinkProgram(currentProgram);
+		egpValidateProgram(currentProgram);
+
+		egpReleaseShader(shaders + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 0);
+		egpReleaseFileContents(files + 1);
+	}
+	{
+		currentProgramIndex = deferredLightPassProgramIndex;
+		currentProgram = glslPrograms + currentProgramIndex;
+
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_deferred/passPosition_clip_vs4x.glsl");
+		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/phong_deferred_pointLight_fs4x.glsl");
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+		*currentProgram = egpCreateProgram();
+		egpAttachShaderToProgram(currentProgram, shaders + 0);
+		egpAttachShaderToProgram(currentProgram, shaders + 1);
+		egpLinkProgram(currentProgram);
+		egpValidateProgram(currentProgram);
+
+		egpReleaseShader(shaders + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 0);
+		egpReleaseFileContents(files + 1);
+	}
+
 
 	// configure all uniforms at once
 	for (currentProgramIndex = 0; currentProgramIndex < GLSLProgramCount; ++currentProgramIndex)
@@ -683,6 +766,14 @@ void setupShaders()
 		egpSendUniformInt(currentUniformSet[unif_img1], UNIF_INT, 1, imageLocations + 1);
 		egpSendUniformInt(currentUniformSet[unif_img2], UNIF_INT, 1, imageLocations + 2);
 		egpSendUniformInt(currentUniformSet[unif_img3], UNIF_INT, 1, imageLocations + 3);
+
+		egpSendUniformInt(currentUniformSet[unif_img_light_diffuse], UNIF_INT, 1, imageLocations + 2);
+		egpSendUniformInt(currentUniformSet[unif_img_light_specular], UNIF_INT, 1, imageLocations + 3);
+
+		egpSendUniformInt(currentUniformSet[unif_img_position], UNIF_INT, 1, imageLocations + 4);
+		egpSendUniformInt(currentUniformSet[unif_img_normal], UNIF_INT, 1, imageLocations + 5);
+		egpSendUniformInt(currentUniformSet[unif_img_texcoord], UNIF_INT, 1, imageLocations + 6);
+		egpSendUniformInt(currentUniformSet[unif_img_depth], UNIF_INT, 1, imageLocations + 7);
 	}
 
 
@@ -704,40 +795,59 @@ void deleteShaders()
 void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 {
 	// prepare framebuffers in one simple call
-	const unsigned int frameWidth_d2 = frameWidth / 2;
-	const unsigned int frameWidth_d4 = frameWidth / 4;
-	const unsigned int frameWidth_d8 = frameWidth / 8;
-	const unsigned int frameHeight_d2 = frameHeight / 2;
-	const unsigned int frameHeight_d4 = frameHeight / 4;
-	const unsigned int frameHeight_d8 = frameHeight / 8;
-	unsigned int i;
 
-	// one for the scene
-	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_D32, SMOOTH_NOWRAP);
+	{ //BLOOM
+		const unsigned int frameWidth_d2 = frameWidth / 2;
+		const unsigned int frameWidth_d4 = frameWidth / 4;
+		const unsigned int frameWidth_d8 = frameWidth / 8;
+		const unsigned int frameHeight_d2 = frameHeight / 2;
+		const unsigned int frameHeight_d4 = frameHeight / 4;
+		const unsigned int frameHeight_d8 = frameHeight / 8;
+		unsigned int i;
 
-	// bright pass
-	fbo[brightFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		// one for the scene
+		fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_D32, SMOOTH_NOWRAP);
 
-	// blur passes
-	fbo[hblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
-	fbo[vblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
-	fbo[hblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
-	fbo[vblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
-	fbo[hblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
-	fbo[vblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		// bright pass
+		fbo[brightFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
 
-	// composite pass
-	fbo[compositeFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		// blur passes
+		fbo[hblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		fbo[vblurFBO_d2] = egpfwCreateFBO(frameWidth_d2, frameHeight_d2, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		fbo[hblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		fbo[vblurFBO_d4] = egpfwCreateFBO(frameWidth_d4, frameHeight_d4, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		fbo[hblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+		fbo[vblurFBO_d8] = egpfwCreateFBO(frameWidth_d8, frameHeight_d8, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+		// composite pass
+		fbo[compositeFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGBA16, DEPTH_DISABLE, SMOOTH_NOWRAP);
 
 
-	// get inverted frame sizes
-	// this represents the size of one pixel within SCREEN SPACE
-	// since screen space is within [0, 1], one pixel = 1/size
-	for (i = 0; i < fboCount; ++i)
-		pixelSizeInv[i].set(
-			1.0f / (float)(fbo + i)->frameWidth, 
-			1.0f / (float)(fbo + i)->frameHeight
-		);
+		// get inverted frame sizes
+		// this represents the size of one pixel within SCREEN SPACE
+		// since screen space is within [0, 1], one pixel = 1/size
+		for (i = 0; i < fboCount; ++i)
+			pixelSizeInv[i].set(
+				1.0f / (float)(fbo + i)->frameWidth,
+				1.0f / (float)(fbo + i)->frameHeight
+			);
+	}
+
+	{ //DEFERRED
+		const egpColorFormat colorFormat = COLOR_RGBA32F;
+
+		// one for the scene geometry (MRT, one for each attrib)
+		fbo[gbufferSceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 3, colorFormat, DEPTH_D32, SMOOTH_NOWRAP);
+
+		// deferred shading
+		fbo[deferredShadingFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+		// light pre-pass (MRT, one for diffuse, one for specular lighting)
+		fbo[lightPassFBO] = egpfwCreateFBO(frameWidth, frameHeight, 2, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP);
+
+		// deferred lighting composite pass
+		fbo[deferredLightingCompositeFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP); 
+	}
 }
 
 void setupScenePathBloom()
@@ -817,6 +927,17 @@ void setupEffectPathBloom()
 	
 	//globalRenderPath.clearAllPasses();
 	globalRenderPath.addRenderPasses({ brightPass, hblur1, vblur1, hblur2, vblur2, hblur3, vblur3, composite });
+}
+
+void setupScenePathDeferred()
+{
+	RenderPass earthPass(fbo, glslPrograms), moonPass(fbo, glslPrograms), marsPass(fbo, glslPrograms), groundPass(fbo, glslPrograms);
+
+}
+
+void setupEffectPathDeferred()
+{
+	
 }
 
 void setupRenderPaths()
