@@ -29,29 +29,45 @@ class RenderPass
 		static std::vector<T> fetchVals(std::vector<T*>& refs);
 
 	public:
+		/**
+		* \brief Create a RenderPass.
+		* \param fbos Pointer to the global FBO array.
+		* \param programs Pointer to the global GLSLProgram array. */
 		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs);
-		RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo);
 		~RenderPass() = default;
+
+		/**
+		 * \brief Set the VAO that this RenderPass should activate.
+		 * \param vao Pointer to the appropriate VAO. If set to nullptr, the RenderPass will use whatever VAO was last active. */
+		void setVAO(egpVertexArrayObjectDescriptor* vao);
+		/**
+		 * \brief Set the GLSL program that this RenderPass should use. 
+		 * \param p Index of the program to use. If set to GLSLProgramCount, the RenderPass will use whatever program was last active. */
+		void setProgram(GLSLProgramIndex p);
+		/**
+		* \brief Set the FBO that this RenderPass should use.
+		* \param i Index of the FBO to use. If set to fboCount, the RenderPass will use whatever FBO was last active. */
+		void setPipelineStage(FBOIndex i);
 
 		void addUniform(const render_pass_uniform_int& i);
 		void addUniform(const render_pass_uniform_float& f);
 		void addUniform(const render_pass_uniform_float_complex& f);
 		void addUniform(const render_pass_uniform_float_matrix& fm);
-		
+
 		void addColorTarget(const FBOTargetColorTexture& ct) { mColorTargets.push_back(ct); }
 		void addDepthTarget(const FBOTargetDepthTexture& dt) { mDepthTargets.push_back(dt); }
-
 		void addTexture(const RenderPassTextureData& t);
-		void setVAO(egpVertexArrayObjectDescriptor* vao);
 
-		void setProgram(GLSLProgramIndex p);
-		void setPipelineStage(FBOIndex i);
-
+		/**
+		 * \brief Prepare to render by sending all of this RenderPass's data to OpenGL using the egp helper functions. */
 		void sendData() const;
+		/**
+		 * \brief Prepare to render by activating our GLSL Program, FBO, and VAO. */
 		void activate() const;
-
 };
 
+/**
+ * \brief Used with complex pass data. Fetches simple data at arbitrary memory addresses and builds them into one final buffer. */
 template <typename T>
 inline std::vector<T> RenderPass::fetchVals(std::vector<T*>& refs)
 {

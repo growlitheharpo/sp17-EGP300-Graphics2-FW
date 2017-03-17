@@ -1,26 +1,15 @@
 #include "RenderPass.h"
 #include <stdexcept>
-#include <iostream>
 
 RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs)
 {
 	mFBOArray = fbos;
 	mProgramArray = programs;
 
+	//Set our activation data to the defaults 
+	//i.e., if someone activates us now, we won't do any damage (or anything at all).
 	mProgram = GLSLProgramCount;
 	mPipelineStage = fboCount;
-
-	mAssociatedVAO = nullptr;
-}
-
-RenderPass::RenderPass(egpFrameBufferObjectDescriptor* fbos, egpProgram* programs, int program, int fbo)
-{
-	mFBOArray = fbos;
-	mProgramArray = programs;
-
-	mProgram = program;
-	mPipelineStage = fbo;
-
 	mAssociatedVAO = nullptr;
 }
 
@@ -66,6 +55,8 @@ void RenderPass::setPipelineStage(FBOIndex i)
 
 void RenderPass::sendData() const
 {
+	//Loop through all of our data and send it to OpenGL using the appropriate EGP helper functions.
+
 	for (auto target : mColorTargets)
 		egpfwBindColorTargetTexture(mFBOArray + target.fboIndex, target.glBinding, target.targetIndex);
 
@@ -73,10 +64,10 @@ void RenderPass::sendData() const
 		egpfwBindDepthTargetTexture(mFBOArray + target.fboIndex, target.glBinding);
 
 	for (auto data : mIntUniforms)
-		egpSendUniformInt(data.location, data.type, data.count, data.values);//fetchVals(data.values).data());
+		egpSendUniformInt(data.location, data.type, data.count, data.values);
 	
 	for (auto data : mFloatUniforms)
-		egpSendUniformFloat(data.location, data.type, data.count, data.values);// (data.values).data());
+		egpSendUniformFloat(data.location, data.type, data.count, data.values);
 
 	for (auto data : mComplexFloatUniforms)
 		egpSendUniformFloat(data.location, data.type, data.count, fetchVals(data.values).data());
@@ -93,15 +84,15 @@ void RenderPass::sendData() const
 
 void RenderPass::activate() const
 {
-	if (mFBOArray == nullptr || mProgramArray == nullptr)
-		throw std::invalid_argument("Did not initailize RenderPass");
-
+	//Activate our program (if we have one)
 	if (mProgram != GLSLProgramCount)
 		egpActivateProgram(mProgramArray + mProgram);
 
+	//Activate our target FBO (if we have one)
 	if (mPipelineStage != fboCount)
 		egpfwActivateFBO(mFBOArray + mPipelineStage);
 
+	//Activate our target VAO (if we have one)
 	if (mAssociatedVAO != nullptr)
 		egpActivateVAO(mAssociatedVAO);
 }
