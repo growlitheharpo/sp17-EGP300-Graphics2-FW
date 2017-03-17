@@ -891,6 +891,14 @@ void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 	}
 }
 
+void deleteFramebuffers()
+{
+	// how convenient
+	for (unsigned int i = 0; i < fboCount; ++i)
+		egpfwReleaseFBO(fbo + i);
+}
+
+// setup the different render paths
 void setupScenePathBloom()
 {
 	RenderPass moonPass(fbo, glslPrograms), earthPass(fbo, glslPrograms);
@@ -1078,13 +1086,6 @@ void setupRenderPaths()
 			break;
 	}
 
-}
-
-void deleteFramebuffers()
-{
-	// how convenient
-	for (unsigned int i = 0; i < fboCount; ++i)
-		egpfwReleaseFBO(fbo + i);
 }
 
 
