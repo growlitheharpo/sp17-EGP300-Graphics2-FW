@@ -8,21 +8,19 @@ void RenderNetgraph::generateMVPs()
 	//Do some magic number stuff to calculate our scale and position.
 	float scale = 0.5f / mFBOsToDraw.size();
 
-	const float START = 0.0f + scale / 2.0f;
-	const float END = 1.0f + scale / 2.0f;
+	const float XPOS_START = 0.0f + scale / 2.0f;
+	const float XPOS_END = 1.0f + scale / 2.0f;
 
 	//Some magic numbers that look pretty good most of time.
 	float yPos = (-1.0f + scale * 1.25f);
 	if (yPos < -0.75f)
 		yPos = -0.75f;
 
-	float xPos;
-
 	//Loop through and generate a transformation matrix for each quad.
 	for (size_t i = 0; i < mFBOsToDraw.size(); i++)
 	{
 		float t = static_cast<float>(i) / static_cast<float>(mFBOsToDraw.size());
-		xPos = START + (END - START) * t;
+		float xPos = XPOS_START + (XPOS_END - XPOS_START) * t;
 
 		mQuadMVPs.push_back(cbmath::makeTranslation4(xPos, yPos, 0.0f) * cbmath::makeScale4(scale));
 	}
