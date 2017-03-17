@@ -1530,7 +1530,7 @@ void renderGameState()
 		egpDrawActiveVAO();
 		
 		if (displayNetgraphToggle)
-			globalRenderNetgraph.render(glslCommonUniforms[testTextureProgramIndex][unif_mvp], tex);
+			globalRenderNetgraph.render();
 
 		// done with textures
 		glBindTexture(GL_TEXTURE_2D, 0);

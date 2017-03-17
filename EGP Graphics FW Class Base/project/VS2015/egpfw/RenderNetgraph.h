@@ -1,25 +1,29 @@
 ﻿#pragma once
-#include "render_enums.h"
 #include "egpfw/egpfw/egpfwFrameBuffer.h"
 #include "egpfw/egpfw/utils/egpfwVertexBufferUtils.h"
 #include "egpfw/egpfw/utils/egpfwShaderProgramUtils.h"
-#include <vector>
 #include "RenderPath.h"
+#include <vector>
 
 class RenderNetgraph
 {
 	private:
+		RenderPath mInternalRenderPath;
+
 		int* mTextureProgramUniforms;
 		egpVertexArrayObjectDescriptor* mQuadModel;
 		egpFrameBufferObjectDescriptor* mFBOArray;
 		egpProgram* mProgramArray;
+		
 		std::vector<FBOTargetColorTexture> mFBOsToDraw;
-
 		std::vector<cbmath::mat4> mQuadMVPs;
 
-		RenderPath mInternalRenderPath;
 
+		/**
+		 * \brief Using the current list of FBO targets, creates an array of matrices to be used for their transformation. */
 		void generateMVPs();
+		/**
+		 * \brief Sets up the internal render path based on the current list of FBO targets. */
 		void setupRenderPasses();
 
 	public:
@@ -30,5 +34,5 @@ class RenderNetgraph
 		void addFBO(FBOTargetColorTexture fbo);
 		void addFBOs(std::initializer_list<FBOTargetColorTexture> fbos);
 
-		void render(int mvpLane, unsigned int* tex);
+		void render();
 };
