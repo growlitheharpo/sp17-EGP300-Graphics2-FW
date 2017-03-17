@@ -33,6 +33,8 @@ class RenderNetgraph
 		void clearFBOList();
 		void addFBO(FBOTargetColorTexture fbo);
 		void addFBOs(std::initializer_list<FBOTargetColorTexture> fbos);
+		
+		FBOTargetColorTexture getFBOAtIndex(unsigned i);
 
 		void render();
 };

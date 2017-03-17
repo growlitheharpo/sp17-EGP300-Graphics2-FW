@@ -81,6 +81,14 @@ void RenderNetgraph::addFBOs(std::initializer_list<FBOTargetColorTexture> fbos)
 	setupRenderPasses();
 }
 
+FBOTargetColorTexture RenderNetgraph::getFBOAtIndex(unsigned i)
+{
+	if (i >= mFBOsToDraw.size() - 1)
+		i = mFBOsToDraw.size() - 1;
+
+	return mFBOsToDraw[i];
+}
+
 void RenderNetgraph::render() 
 {
 	//Ready to render? Just call our internal render path.

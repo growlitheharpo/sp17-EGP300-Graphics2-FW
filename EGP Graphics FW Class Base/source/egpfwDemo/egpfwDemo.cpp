@@ -1469,46 +1469,15 @@ void renderSkybox()
 	}
 }
 
-void setupFinalBackbufferTexture()
-{
-	//Choose the target texture we want to display on the screen
-
-	if (currentRenderMode == bloomRenderMethod)
-	{
-		fboFinalDisplay = fbo + displayMode;
-		egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
-	}
-	else if (currentRenderMode == deferredRenderMethod)
-	{
-		int target;
-		switch (displayMode)
-		{
-			case 0:
-			case 1:
-			case 2:
-				fboFinalDisplay = fbo + gbufferSceneFBO;
-				target = displayMode;
-				break;
-			default:
-				fboFinalDisplay = fbo + deferredShadingFBO;
-				target = 0;
-				break;
-		}
-
-		egpfwBindColorTargetTexture(fboFinalDisplay, 0, target);
-	}
-}
-
 // draw frame
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
 void renderGameState()
 {
 	// first pass: scene
-	// draw scene objects off-screen
 
 	renderSkybox(); //We "hardcode" this because it requires special GL calls that the RenderPass can't handle.
 
-	// Complete our currently selected render path.
+	// Complete our currently selected render path (draws all objects, and whatever other passes are needed).
 	globalRenderPath.render();
 
 	//-----------------------------------------------------------------------------
@@ -1526,7 +1495,9 @@ void renderGameState()
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
 
-		setupFinalBackbufferTexture();
+		// Get the fbo we want by grabbing it directly from the netgraph (whether it's visible or not).
+		FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
+		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
 		egpDrawActiveVAO();
 		
 		if (displayNetgraphToggle)
