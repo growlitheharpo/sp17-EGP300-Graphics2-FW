@@ -1,20 +1,29 @@
 ﻿#include "RenderNetgraph.h"
 #include "vector3.h"
 #include "transformMatrix.h"
-#include <cbmath/cbtkMatrix.h>
 #include <GL/glew.h>
+#include <cbmath/cbtkMathUtils.h>
 
 void RenderNetgraph::generateMVPs()
 {
 	mQuadMVPs.clear();
 
 	float scale = 0.5f / mFBOsToDraw.size();
-	float pos;
+	float xPos;
+
+	const float START = 0.0f + (scale / 2.0f);
+	const float END = 1.0f + scale / 2.0f;// -(scale / 2.0f);
+
+	float yPos = (-1.0f + scale * 1.25f);
+	if (yPos < -0.75f)
+		yPos = -0.75f;
 
 	for (size_t i = 0; i < mFBOsToDraw.size(); i++)
 	{
-		pos = (i * scale);
-		cbmath::mat4 newMatrix = cbmath::makeTranslation4(pos, -pos, 0.0f) * cbmath::makeScale4(scale);
+		float t = (float)i / (float)mFBOsToDraw.size();
+		xPos = START + (END - START) * t;
+
+		cbmath::mat4 newMatrix = cbmath::makeTranslation4(xPos, yPos, 0.0f) * cbmath::makeScale4(scale);
 
 		mQuadMVPs.push_back(newMatrix);
 	}
