@@ -901,72 +901,94 @@ void deleteFramebuffers()
 // setup the different render paths
 void setupScenePathBloom()
 {
+	//Create a pass to render the moon and earth (skybox is handled somewhere else).
 	RenderPass moonPass(fbo, glslPrograms), earthPass(fbo, glslPrograms);
 
+	//Copy the same settings from before for the rendering.
 	moonPass.setProgram(testTextureProgramIndex);
 	moonPass.setPipelineStage(sceneFBO);
+	moonPass.setVAO(vao + sphere8x6Model);
 	moonPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE0, tex[moonTexHandle_dm]));
 	moonPass.addUniform(render_pass_uniform_float_matrix(glslCommonUniforms[testTextureProgramIndex][unif_mvp], 1, 0, &moonModelViewProjectionMatrix));
-	moonPass.setVAO(vao + sphere8x6Model);
 
 	earthPass.setProgram(phongProgramIndex);
 	earthPass.setPipelineStage(sceneFBO);
+	earthPass.setVAO(vao + sphereHiResObjModel);
 	earthPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE1, tex[earthTexHandle_sm]));
 	earthPass.addTexture(RenderPassTextureData(GL_TEXTURE_2D, GL_TEXTURE0, tex[earthTexHandle_dm]));
 	earthPass.addUniform(render_pass_uniform_float(glslCommonUniforms[phongProgramIndex][unif_eyePos], UNIF_VEC4, 1, eyePos_object.v));
 	earthPass.addUniform(render_pass_uniform_float(glslCommonUniforms[phongProgramIndex][unif_lightPos], UNIF_VEC4, 1, lightPos_object.v));
 	earthPass.addUniform(render_pass_uniform_float_matrix(glslCommonUniforms[phongProgramIndex][unif_mvp], 1, 0, &earthModelViewProjectionMatrix));
-	earthPass.setVAO(vao + sphereHiResObjModel);
 
+	//Add them to the global render path.
 	globalRenderPath.addRenderPass(moonPass);
 	globalRenderPath.addRenderPass(earthPass);
 }
 
 void setupEffectPathBloom()
 {
+	//Create passes for all the individual steps for bloom.
 	RenderPass brightPass(fbo, glslPrograms),
 		hblur1(fbo, glslPrograms), vblur1(fbo, glslPrograms),
 		hblur2(fbo, glslPrograms), vblur2(fbo, glslPrograms),
-		hblur3(fbo, glslPrograms), vblur3(fbo, glslPrograms);
-	
+		hblur3(fbo, glslPrograms), vblur3(fbo, glslPrograms), 
+		composite(fbo, glslPrograms);
+
+	//If you look at it too long, this all blurs together (ba dum tss) but basically it
+	//just sets up the different steps for bloom. Nothing here is different
+	//than from how it was when it was in the renderScene function.
+
+	//NOTE: The blurs use render_pass_uniform_float_complex because they are referencing variables
+	//that don't actually exist; they need a VEC2 with one component in an actual stored vector, and 
+	//the other component set to 0. We give it a "source" of sorts that the RenderPass will use
+	//later on to create an actual VEC2 to be passed as a uniform.
+	//	...a simpler solution would've been to just make pixelSizeInvHorizontal and pixelSizeInvVertical variables...
+
+	//Bright pass
 	brightPass.setProgram(bloomBrightProgramIndex);
-	brightPass.setPipelineStage(brightFBO_d2);
-	brightPass.addColorTarget(FBOTargetColorTexture(sceneFBO, 0, 0));/**/
 	brightPass.setVAO(vao + fsqModel);
+	brightPass.setPipelineStage(brightFBO_d2);
+	brightPass.addColorTarget(FBOTargetColorTexture(sceneFBO, 0, 0));
 
 	currentUniformSet = glslCommonUniforms[bloomBlurProgramIndex];
 
+	//First horizontal blur
 	hblur1.setProgram(bloomBlurProgramIndex);
 	hblur1.setPipelineStage(hblurFBO_d2);
 	hblur1.addColorTarget(FBOTargetColorTexture(brightFBO_d2, 0, 0));
 	hblur1.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[brightFBO_d2].x, &CONST_ZERO_FLOAT }));
 
+	//First vertical blur
 	vblur1.setProgram(bloomBlurProgramIndex);
 	vblur1.setPipelineStage(vblurFBO_d2);
 	vblur1.addColorTarget(FBOTargetColorTexture(hblurFBO_d2, 0, 0));
 	vblur1.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d2].y }));
 
+	//Second horizontal blur
 	hblur2.setProgram(bloomBlurProgramIndex);
 	hblur2.setPipelineStage(hblurFBO_d4);
 	hblur2.addColorTarget(FBOTargetColorTexture(vblurFBO_d2, 0, 0));
 	hblur2.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d2].x, &CONST_ZERO_FLOAT }));
 
+	//Second vertical blur
 	vblur2.setProgram(bloomBlurProgramIndex);
 	vblur2.setPipelineStage(vblurFBO_d4);
 	vblur2.addColorTarget(FBOTargetColorTexture(hblurFBO_d4, 0, 0));
 	vblur2.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d4].y }));
 
+	//Third horizontal blur
 	hblur3.setProgram(bloomBlurProgramIndex);
 	hblur3.setPipelineStage(hblurFBO_d8);
 	hblur3.addColorTarget(FBOTargetColorTexture(vblurFBO_d4, 0, 0));
 	hblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d4].x, &CONST_ZERO_FLOAT }));
 
+	//Third vertical blur
 	vblur3.setProgram(bloomBlurProgramIndex);
 	vblur3.setPipelineStage(vblurFBO_d8);
 	vblur3.addColorTarget(FBOTargetColorTexture(hblurFBO_d8, 0, 0));
 	vblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
 
-	RenderPass composite(fbo, glslPrograms);
+	//Finally, composite them all together with the last pass.
 	composite.setProgram(bloomBlendProgramIndex);
 	composite.setPipelineStage(compositeFBO);
 	composite.addColorTarget(FBOTargetColorTexture(sceneFBO, 0, 0));
@@ -974,7 +996,7 @@ void setupEffectPathBloom()
 	composite.addColorTarget(FBOTargetColorTexture(vblurFBO_d4, 2, 0));
 	composite.addColorTarget(FBOTargetColorTexture(vblurFBO_d8, 3, 0));
 	
-	//globalRenderPath.clearAllPasses();
+	//Add them all to the render path.
 	globalRenderPath.addRenderPasses({ brightPass, hblur1, vblur1, hblur2, vblur2, hblur3, vblur3, composite });
 }
 
@@ -982,6 +1004,7 @@ void setupNetgraphPathBloom()
 {
 	globalRenderNetgraph.clearFBOList();
 
+	//For the Bloom netgraph, we display the scene, bright, vertical blurs, and composite.
 	globalRenderNetgraph.addFBOs({
 		FBOTargetColorTexture(sceneFBO, 0, 0),
 		FBOTargetColorTexture(brightFBO_d2, 0, 0),
@@ -994,48 +1017,54 @@ void setupNetgraphPathBloom()
 
 void setupScenePathDeferred()
 {
+	//Create passes to render the individual objects in the scene.
 	currentUniformSet = glslCommonUniforms[gbufferProgramIndex];
 	RenderPass earthPass(fbo, glslPrograms), moonPass(fbo, glslPrograms), marsPass(fbo, glslPrograms), groundPass(fbo, glslPrograms);
 
 	earthPass.setProgram(gbufferProgramIndex);
 	earthPass.setPipelineStage(gbufferSceneFBO);
+	earthPass.setVAO(vao + sphereHiResObjModel);
 	earthPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
 	earthPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &earthModelMatrix));
 	earthPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &earthAtlasMatrix));
-	earthPass.setVAO(vao + sphereHiResObjModel);
 
 	moonPass.setProgram(gbufferProgramIndex);
 	moonPass.setPipelineStage(gbufferSceneFBO);
+	moonPass.setVAO(vao + sphereLowResObjModel);
 	moonPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
 	moonPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &moonModelMatrix));
 	moonPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &moonAtlasMatrix));
-	moonPass.setVAO(vao + sphereLowResObjModel);
 
 	marsPass.setProgram(gbufferProgramIndex);
 	marsPass.setPipelineStage(gbufferSceneFBO);
+	marsPass.setVAO(vao + sphereLowResObjModel);
 	marsPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
 	marsPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &marsModelMatrix));
 	marsPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &marsAtlasMatrix));
-	marsPass.setVAO(vao + sphereLowResObjModel);
 
 	groundPass.setProgram(gbufferProgramIndex);
 	groundPass.setPipelineStage(gbufferSceneFBO);
+	groundPass.setVAO(vao + fsqModel);
 	groundPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_viewprojMat], 1, 0, &viewProjMat));
 	groundPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_modelMat], 1, 0, &groundModelMatrix));
 	groundPass.addUniform(render_pass_uniform_float_matrix(currentUniformSet[unif_atlasMat], 1, 0, &groundAtlasMatrix));
-	groundPass.setVAO(vao + fsqModel);
 
+	//Add them to the actual render path.
 	globalRenderPath.addRenderPasses({ earthPass, moonPass, marsPass, groundPass });
 }
 
 void setupEffectPathDeferred()
 {
+	//Create a pass for the actual deferred shading.
 	RenderPass deferredPass(fbo, glslPrograms);
 
 	deferredPass.setProgram(deferredShadingProgramIndex);
 	deferredPass.setPipelineStage(deferredShadingFBO);
+	deferredPass.setVAO(vao + fsqModel);
+
 	currentUniformSet = glslCommonUniforms[deferredShadingProgramIndex];
 
+	//Add all the uniforms and textures
 	deferredPass.addDepthTarget(FBOTargetDepthTexture(gbufferSceneFBO, 7));
 	deferredPass.addColorTarget(FBOTargetColorTexture(gbufferSceneFBO, 6, 2));
 	deferredPass.addColorTarget(FBOTargetColorTexture(gbufferSceneFBO, 5, 1));
@@ -1048,8 +1077,7 @@ void setupEffectPathDeferred()
 	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightColor], UNIF_VEC4, numLightsShading, lightColor->v));
 	deferredPass.addUniform(render_pass_uniform_float(currentUniformSet[unif_lightPos], UNIF_VEC4, numLightsShading, lightPos_world->v));
 
-	deferredPass.setVAO(vao + fsqModel);
-
+	//Add it to the actual render path.
 	globalRenderPath.addRenderPass(deferredPass);
 }
 
@@ -1057,6 +1085,7 @@ void setupNetgraphPathDeferred()
 {
 	globalRenderNetgraph.clearFBOList();
 
+	//For the Deferred netgraph, we display the different channels in the scene gbuffer and the final result
 	globalRenderNetgraph.addFBOs({
 		FBOTargetColorTexture(gbufferSceneFBO, 0, 0),
 		FBOTargetColorTexture(gbufferSceneFBO, 0, 1),
@@ -1358,6 +1387,10 @@ void updateGameState(float dt)
 
 		// update inverse
 		earthModelInverseMatrix = cbmath::transformInverseNoScale(earthModelMatrix);
+
+		// variables used for the bloom path
+		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
+		lightPos_object = earthModelInverseMatrix * lightPos_world[3];
 	}
 
 	// moon: 
@@ -1385,6 +1418,7 @@ void renderSkybox()
 {
 	if (currentRenderMode == bloomRenderMethod)
 	{
+		egpfwActivateFBO(fbo + sceneFBO);
 		currentProgramIndex = testTextureProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		currentUniformSet = glslCommonUniforms[currentProgramIndex];
@@ -1435,53 +1469,10 @@ void renderSkybox()
 	}
 }
 
-// draw scene objects
-void renderSceneObjects()
-{
-	/**/
-	// draw textured moon
-
-	/*{
-		currentProgramIndex = testTextureProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex[moonTexHandle_dm]);
-
-		// retained
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, moonModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + sphere8x6Model);
-		egpDrawActiveVAO();
-	}
-*/
-	// draw shaded earth
-	{/*
-		currentProgramIndex = phongProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_sm]);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex[earthTexHandle_dm]);
-
-		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
-		lightPos_object = earthModelInverseMatrix * lightPos_world;
-		egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, eyePos_object.v);
-		egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, 1, lightPos_object.v);
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, earthModelViewProjectionMatrix.m);
-		egpActivateVAO(vao + sphereHiResObjModel);
-		egpDrawActiveVAO();*/
-		eyePos_object = earthModelInverseMatrix * cameraPosWorld;
-		lightPos_object = earthModelInverseMatrix * lightPos_world[3];
-	}
-}
-
 void setupFinalBackbufferTexture()
 {
+	//Choose the target texture we want to display on the screen
+
 	if (currentRenderMode == bloomRenderMethod)
 	{
 		fboFinalDisplay = fbo + displayMode;
@@ -1512,31 +1503,13 @@ void setupFinalBackbufferTexture()
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
 void renderGameState()
 {
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-	// BLOOM ALGORITHM: 
-	//	1. draw scene
-	//	2. bright pass scene output
-	//	3. blur bright pass output
-	//		(repeat h/v, repeat for more bloom)
-	//	4. composite
-
-	cbmath::vec2 pixSzInv;
-	int currentPipelineStage, lastPipelineStage;
-
-
 	// first pass: scene
 	// draw scene objects off-screen
-	currentPipelineStage = sceneFBO;
-	egpfwActivateFBO(fbo + currentPipelineStage);
-	renderSkybox();
-	renderSceneObjects();
 
+	renderSkybox(); //We "hardcode" this because it requires special GL calls that the RenderPass can't handle.
 
-	// only drawing full-screen now
-	//egpActivateVAO(vao + fsqModel);
+	// Complete our currently selected render path.
 	globalRenderPath.render();
-
 
 	//-----------------------------------------------------------------------------
 	//-----------------------------------------------------------------------------
