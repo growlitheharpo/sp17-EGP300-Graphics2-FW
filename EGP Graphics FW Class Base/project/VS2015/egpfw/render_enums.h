@@ -35,6 +35,41 @@ enum GLSLProgramIndex
 	GLSLProgramCount
 };
 
+enum GLSLCommonUniformIndex
+{
+	unif_mvp,
+
+	unif_lightColor,
+	unif_lightPos,
+	unif_eyePos,
+
+	unif_dm,
+	unif_sm,
+
+	unif_pixelSizeInv,
+	unif_img,
+	unif_img1,
+	unif_img2,
+	unif_img3,
+
+
+	// deferred rendering
+	unif_modelMat,
+	unif_viewprojMat,
+	unif_atlasMat,
+	unif_normalScale,
+	unif_img_position,
+	unif_img_normal,
+	unif_img_texcoord,
+	unif_img_depth,
+	unif_img_light_diffuse,
+	unif_img_light_specular,
+
+	//-----------------------------
+	GLSLCommonUniformCount
+};
+
+
 // framebuffer objects (FBOs)
 enum FBOIndex
 {
