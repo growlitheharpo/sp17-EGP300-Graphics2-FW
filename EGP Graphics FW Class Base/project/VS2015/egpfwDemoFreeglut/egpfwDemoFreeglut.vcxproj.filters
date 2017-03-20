@@ -43,6 +43,9 @@
     <Filter Include="Resource Files\glsl\4x\fs_shadow">
       <UniqueIdentifier>{aee0df81-846e-455e-91a8-23848438fa71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\glsl\4x\gs">
+      <UniqueIdentifier>{49a6c7fd-6613-44cd-8fff-6abc4cd1c01d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -130,6 +133,12 @@
     </None>
     <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_projtex_fs4x.glsl">
       <Filter>Resource Files\glsl\4x\fs_shadow</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\drawSolid_fs4x.glsl">
+      <Filter>Resource Files\glsl\4x\fs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_gs4x.glsl">
+      <Filter>Resource Files\glsl\4x\gs</Filter>
     </None>
   </ItemGroup>
 </Project>
