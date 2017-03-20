@@ -21,5 +21,8 @@
 #include "egpfw/egpfw/egpfwOBJLoader.h"
 #include "egpfw/egpfw/egpfwFrameBuffer.h"
 
+#include "egpfw/egpfw/egpfwInterpolation.h"
+#include "egpfw/egpfw/egpfwKeyframeController.h"
+
 
 #endif	// __EGPFW_H

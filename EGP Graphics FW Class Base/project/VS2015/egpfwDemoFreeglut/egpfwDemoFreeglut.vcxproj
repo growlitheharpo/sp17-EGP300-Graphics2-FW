@@ -323,6 +323,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\resource\glsl\4x\fs\drawColor_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\drawSolid_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs\drawTexture_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs\phong_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl" />
@@ -334,6 +335,7 @@
     <None Include="..\..\..\resource\glsl\4x\fs_deferred\phong_deferred_pointLight_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_projtex_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_shadowmap_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_gs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passColor_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_vs4x.glsl" />

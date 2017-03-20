@@ -52,7 +52,7 @@ unsigned int win_x = 0;
 unsigned int win_y = 0;
 unsigned int win_w = 1280;
 unsigned int win_h = 720;
-const unsigned int viewport_b = 8;
+const unsigned int viewport_b = 0;
 const unsigned int viewport_tb = viewport_b + viewport_b;
 const int viewport_nb = -(int)viewport_b;
 unsigned int viewport_tw = win_w + viewport_tb;
@@ -89,9 +89,8 @@ enum ModelIndex
 	fsqModel,
 	boxModel, sphere8x6Model, sphere32x24Model,
 
-	// loaded models
-	sphereLowResObjModel,
-	sphereHiResObjModel,
+	// curve drawing
+	pointModel, 
 
 //-----------------------------
 	modelCount
@@ -104,10 +103,6 @@ egpVertexBufferObjectDescriptor vbo[modelCount] = { 0 };
 enum TextureIndex
 {
 	skyboxTexHandle,
-	booleanTexHandle, 
-
-	atlas_diffuse,
-	atlas_specular,
 
 //-----------------------------
 	textureCount
@@ -120,13 +115,12 @@ unsigned int tex[textureCount] = { 0 };
 enum GLSLProgramIndex
 {
 	testColorProgramIndex,
+	testSolidColorProgramIndex, 
 	testTextureProgramIndex,
 	testTexturePassthruProgramIndex,
-	testTransformProgramIndex, 
 
-	// shadow mapping and projective texturing
-	projectiveTextureProgram, 
-	shadowMapProgram, 
+	// curve drawing program
+	drawCurveProgram, 
 
 //-----------------------------
 	GLSLProgramCount
@@ -134,39 +128,28 @@ enum GLSLProgramIndex
 enum GLSLCommonUniformIndex
 {
 	unif_mvp,
-
-	unif_lightColor,
-	unif_lightPos,
-	unif_eyePos,
-
-	unif_atlasMat,
-	unif_normalScale,
-
+	unif_color, 
 	unif_dm,
-	unif_sm,
-	unif_bool, 
 
-	// shadow mapping
-	unif_mvp_projector, 
-	unif_projtex, 
-	unif_shadowmap, 
+	// curve drawing uniforms
+	unif_waypoint, 
+	unif_waypointCount, 
+	unif_curveMode, 
+	unif_useWaypoints, 
 
 //-----------------------------
 	GLSLCommonUniformCount
 };
 const char *commonUniformName[] = {
 	(const char *)("mvp"),
-	(const char *)("lightColor"),
-	(const char *)("lightPos"),
-	(const char *)("eyePos"),
-	(const char *)("atlasMat"),
-	(const char *)("normalScale"),
+	(const char *)("color"),
 	(const char *)("tex_dm"),
-	(const char *)("tex_sm"),
-	(const char *)("tex_bool"),
-	(const char *)("mvp_projector"),
-	(const char *)("projtex"),
-	(const char *)("shadowmap"),
+
+	// curve drawing
+	(const char *)("waypoint"),
+	(const char *)("waypointCount"),
+	(const char *)("curveMode"),
+	(const char *)("useWaypoints"),
 };
 egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
 int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
@@ -179,8 +162,8 @@ enum FBOIndex
 	// scene
 	sceneFBO, 
 
-	// shadow map
-	shadowFBO, 
+	// curve drawing
+	curvesFBO, 
 
 //-----------------------------
 	fboCount
@@ -189,14 +172,11 @@ enum DisplayMode
 {
 	displayScene, 
 	displaySceneDepth, 
-	displaySceneProjTex, 
-	displaySceneShadowMap, 
-	displayShadowMap, 
 };
 egpFrameBufferObjectDescriptor fbo[fboCount], *fboFinalDisplay = fbo;
 int displayMode = displayScene;
 int displayColor = 1;
-int testDrawAxes = 0;
+int testDrawAxes = 1;
 
 
 
@@ -214,66 +194,55 @@ cbmath::vec4 cameraPos_world[numCameras] = {
 }, cameraPos_obj[numCameras], deltaCamPos;
 
 
-// light positions and colors
-// for the colors, let the xyz components represent color in rgb, and 
-//	the w component represent the radius of the light volume
-const unsigned int numLights = 1;
-cbmath::vec4 lightPos_world[numLights] = {
-	cbmath::vec4(10.0f, 20.0f, 5.0f, 1.0f),
-}, lightPos_obj[numLights];
-cbmath::vec4 lightColor[numLights] = {
-	cbmath::vec4(1.0f, 1.0f, 1.0f, 100.0f),
-};
-
-// bias matrix for using light as viewer
-const cbmath::mat4 bias(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f);
-
-// projection matrix for light as a viewer
-const float lightNearZ = 10.0f, lightFarZ = 100.0f;
-const cbmath::mat4 lightProjMat = cbmath::makePerspective(-lightNearZ, lightNearZ, -lightNearZ, lightNearZ, lightNearZ, lightFarZ);
-
-
-// raw animation values: 
-float earthDaytime = 0.0f;
-float earthOrbit = 0.0f;
-const float earthAnimateRate = 100.0f;
-const float earthDaytimePeriod = earthAnimateRate / 24.0f;
-const float earthOrbitPeriod = earthDaytimePeriod / 365.25f;
-const float earthTilt = Deg2Rad(23.44f);
-const float earthDistance = 6.0f;
-
-float moonOrbit = 0.0f;
-const float moonOrbitPeriod = earthDaytimePeriod / 27.32f;
-const float moonTilt = Deg2Rad(6.69f);
-const float moonDistance = 4.0f;
-const float moonSize = 0.27f;
-
-
-
 // list of scene objects and respective matrices
 enum SceneObjects
 {
 	skyboxObject,
-	groundObject,
-	moonObject,
-	marsObject,
-	earthObject,
+	pathFollowingObject, 
 //-----------------------------
 	sceneObjectCount,
 //-----------------------------
 	cameraObjects = sceneObjectCount,
-	lightObjects = cameraObjects + numCameras,
 //-----------------------------
-	sceneObjectTotalCount = lightObjects + numLights
+	sceneObjectTotalCount = sceneObjectCount + numCameras
 };
 
 // transformation matrices
 cbmath::mat4 modelMatrix[sceneObjectTotalCount];
 cbmath::mat4 modelMatrixInv[sceneObjectTotalCount];
 cbmath::mat4 viewProjectionMatrix[sceneObjectTotalCount];
-cbmath::mat4 atlasMatrix[sceneObjectCount];
 
 cbmath::mat4 boxModelViewProjectionMatrix;
+
+
+
+// curve drawing
+const int waypoint_max = 16;
+int waypointCount = 0;
+cbmath::vec4 waypoint[waypoint_max];
+
+enum DrawCurveMode
+{
+	CURVE_LINES, 
+	CURVE_BEZIER, 
+	CURVE_CATMULLROM, 
+	CURVE_HERMITE, 
+};
+int curveMode = CURVE_LINES;
+int useWaypoints = 0;
+
+// projection matrix for the curve sketching view
+cbmath::mat4 curveDrawingProjectionMatrix;
+
+// model matrix for waypoints (spheres)
+cbmath::mat4 waypointModelMatrix = cbmath::makeScale4(4.0f);
+
+// path follower tracking: 
+//	where is it and which path segment is it on, and interpolation parameter
+cbmath::vec4 pathFollowerPosition = cbmath::v4w;
+unsigned int pathFollowerSegment = 0;
+float pathFollowerParam = 0.0f;
+float pathFollowerParamRate = 1.0f;
 
 
 
@@ -409,66 +378,15 @@ void setupGeometry()
 	vao[sphere32x24Model] = egpCreateVAOInterleaved(PRIM_TRIANGLES, attribs, 4, egpGetSphere32x24VertexCount(), (vbo + sphere32x24Model), 0);
 
 	// full-screen quad
-	{
-		const float tmpNormalData[] = {
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
-		};
-
-		attribs[0].data = egpfwGetUnitQuadPositions();
-		attribs[1].data = egpfwGetUnitQuadColors();
-		attribs[2].data = tmpNormalData;
-		attribs[3].data = egpfwGetUnitQuadTexcoords();
-		vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 4, 4, (vbo + fsqModel), 0);
-	}
+	attribs[0].data = egpfwGetUnitQuadPositions();
+	attribs[1] = egpCreateAttributeDescriptor(ATTRIB_TEXCOORD, ATTRIB_VEC2, egpfwGetUnitQuadTexcoords());
+	vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 2, 4, (vbo + fsqModel), 0);
 
 
-	// loaded models
-	// attempt to load binary first; if failed, load object and save binary
-	// binary save/load is not necessary, but it is very fast
-	egpTriOBJDescriptor obj[1];
-
-	// low-res sphere
-	*obj = egpfwLoadBinaryOBJ("sphere8x6_bin.txt");
-	if (!obj->data)
-	{
-		*obj = egpfwLoadTriangleOBJ("../../../../resource/obj/sphere8x6.obj", NORMAL_LOAD, 1.0);
-		egpfwSaveBinaryOBJ(obj, "sphere8x6_bin.txt");
-	}
-	egpfwCreateVAOFromOBJ(obj, vao + sphereLowResObjModel, vbo + sphereLowResObjModel);
-	egpfwReleaseOBJ(obj);
-
-	// high-res sphere
-	*obj = egpfwLoadBinaryOBJ("sphere32x24_bin.txt");
-	if (!obj->data)
-	{
-		*obj = egpfwLoadTriangleOBJ("../../../../resource/obj/sphere32x24.obj", NORMAL_LOAD, 1.0);
-		egpfwSaveBinaryOBJ(obj, "sphere32x24_bin.txt");
-	}
-	egpfwCreateVAOFromOBJ(obj, vao + sphereHiResObjModel, vbo + sphereHiResObjModel);
-	egpfwReleaseOBJ(obj);
-
-
-	// geometry-related constants
-	modelMatrix[groundObject] = cbmath::makeTranslation4(0.0f, -5.0f, 0.0f) * cbmath::makeScale4(10.0f, 0.1f, 10.0f);
-	modelMatrixInv[groundObject] = cbmath::transformInverse(modelMatrix[groundObject]);
-
-	atlasMatrix[skyboxObject] = atlasMatrix[groundObject] = cbmath::makeScale4(0.125f, 0.125f, 0.0f);
-	atlasMatrix[earthObject] = atlasMatrix[moonObject] = atlasMatrix[marsObject] = cbmath::makeScale4(0.5f, 0.25f, 0.0f);
-	atlasMatrix[earthObject].c3.y = 0.75f;
-	atlasMatrix[moonObject].c3.y = 0.5f;
-	atlasMatrix[marsObject].c3.y = 0.25f;
-	atlasMatrix[groundObject].c3.y = 0.125f;
-
-	// lights
-	for (unsigned int i = 0, j = lightObjects; i < numLights; ++i, ++j)
-	{
-		modelMatrix[j] = cbmath::makeFrenet4(lightPos_world[i].xyz, cbmath::v3zero, cbmath::v3y);
-		modelMatrixInv[j] = cbmath::transformInverseNoScale(modelMatrix[j]);
-		viewProjectionMatrix[j] = lightProjMat * modelMatrixInv[j];
-	}
+	// curve: pass a single point that represents nothing
+	// need a vertex to trigger vertex shader!
+	attribs[0].data = cbmath::v3zero.v;
+	vao[pointModel] = egpCreateVAOInterleaved(PRIM_POINT, attribs, 1, 1, (vbo + pointModel), 0);
 }
 
 void deleteGeometry()
@@ -495,9 +413,6 @@ void setupTextures()
 	// files
 	char *imgFiles[] = {
 		(char *)("../../../../resource/tex/bg/sky_clouds.png"),
-		(char *)("../../../../resource/tex/logic/bool.png"),
-		(char *)("../../../../resource/tex/atlas/atlas_diffuse.png"),
-		(char *)("../../../../resource/tex/atlas/atlas_specular.png"),
 	};
 
 	// load
@@ -532,27 +447,6 @@ void setupTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);		// texture repeats on horiz axis
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	// boolean ramp
-	glBindTexture(GL_TEXTURE_2D, tex[booleanTexHandle]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-
-	// atlas textures
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_diffuse]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// pixelated for demonstration purposes
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_specular]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-
 	// disable textures
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -580,32 +474,79 @@ void setupShaders()
 	egpActivateVAO(vao + sphere8x6Model);
 
 
-	// test color program
+	// color programs
 	{
-		// load files
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passColor_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
+		// shared: varying color fragment shader
+		files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
+		shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
-		// create shaders
+		// pass from attribute
+		{
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passColor_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+			currentProgramIndex = testColorProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 2);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			egpReleaseShader(shaders + 0);
+			egpReleaseFileContents(files + 0);
+		}
+
+
+		// shared: transform vertex
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
-		currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
+		// draw curve using geometry shader
+		{
+			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/gs/drawCurve_gs4x.glsl");
+			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_GEOMETRY, files[1].contents);
 
-		// create, link and validate program
-		*currentProgram = egpCreateProgram();
-		egpAttachShaderToProgram(currentProgram, shaders + 0);
-		egpAttachShaderToProgram(currentProgram, shaders + 1);
-		egpLinkProgram(currentProgram);
-		egpValidateProgram(currentProgram);
+			currentProgramIndex = drawCurveProgram;
+			currentProgram = glslPrograms + currentProgramIndex;
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 1);
+			egpAttachShaderToProgram(currentProgram, shaders + 2);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
 
-		// release shaders and files
+			egpReleaseShader(shaders + 1);
+			egpReleaseFileContents(files + 1);
+		}
+
+		// done with varying color fs
+		egpReleaseShader(shaders + 2);
+		egpReleaseFileContents(files + 2);
+
+
+		// draw solid color (uniform)
+		{
+			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawSolid_fs4x.glsl");
+			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+			currentProgramIndex = testSolidColorProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 1);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			egpReleaseShader(shaders + 1);
+			egpReleaseFileContents(files + 1);
+		}
+
+		// done with transform vs
 		egpReleaseShader(shaders + 0);
-		egpReleaseShader(shaders + 1);
 		egpReleaseFileContents(files + 0);
-		egpReleaseFileContents(files + 1);
 	}
+
 
 	// test texture program
 	// example of shared shader
@@ -658,70 +599,6 @@ void setupShaders()
 		egpReleaseFileContents(files + 1);
 	}
 
-	// transform, no FS
-	{
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
-		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-
-		currentProgramIndex = testTransformProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-
-		*currentProgram = egpCreateProgram();
-		egpAttachShaderToProgram(currentProgram, shaders + 0);
-		egpLinkProgram(currentProgram);
-		egpValidateProgram(currentProgram);
-
-		egpReleaseShader(shaders + 0);
-		egpReleaseFileContents(files + 0);
-	}
-
-	// shadow mapping and projective texturing
-	{
-		// load shared shader
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_shadow/phong_passAltClip_vs4x.glsl");
-		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-
-		// projective
-		{
-			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_shadow/phong_projtex_fs4x.glsl");
-			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
-
-			currentProgramIndex = projectiveTextureProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-
-			*currentProgram = egpCreateProgram();
-			egpAttachShaderToProgram(currentProgram, shaders + 0);
-			egpAttachShaderToProgram(currentProgram, shaders + 1);
-			egpLinkProgram(currentProgram);
-			egpValidateProgram(currentProgram);
-
-			egpReleaseShader(shaders + 1);
-			egpReleaseFileContents(files + 1);
-		}
-
-		// shadow
-		{
-			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_shadow/phong_shadowmap_fs4x.glsl");
-			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
-
-			currentProgramIndex = shadowMapProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-
-			*currentProgram = egpCreateProgram();
-			egpAttachShaderToProgram(currentProgram, shaders + 0);
-			egpAttachShaderToProgram(currentProgram, shaders + 1);
-			egpLinkProgram(currentProgram);
-			egpValidateProgram(currentProgram);
-
-			egpReleaseShader(shaders + 1);
-			egpReleaseFileContents(files + 1);
-		}
-
-		// release shared
-		egpReleaseShader(shaders + 0);
-		egpReleaseFileContents(files + 0);
-	}
-
 
 	// configure all uniforms at once
 	for (currentProgramIndex = 0; currentProgramIndex < GLSLProgramCount; ++currentProgramIndex)
@@ -736,10 +613,6 @@ void setupShaders()
 		// bind constant uniform locations, if they exist, because they never change
 		// e.g. image bindings
 		egpSendUniformInt(currentUniformSet[unif_dm], UNIF_INT, 1, imageLocations);
-		egpSendUniformInt(currentUniformSet[unif_sm], UNIF_INT, 1, imageLocations + 1);
-		egpSendUniformInt(currentUniformSet[unif_bool], UNIF_INT, 1, imageLocations + 2);
-		egpSendUniformInt(currentUniformSet[unif_shadowmap], UNIF_INT, 1, imageLocations + 3);
-		egpSendUniformInt(currentUniformSet[unif_projtex], UNIF_INT, 1, imageLocations + 4);
 	}
 
 
@@ -762,13 +635,12 @@ void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 {
 	// prepare framebuffers in one simple call
 	const egpColorFormat colorFormat = COLOR_RGBA16;
-	const unsigned int shadowMapSize = 2048;
 
-	// one for the scene
+	// scene
 	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_D32, SMOOTH_NOWRAP);
 
-	// one for the shadow map, depth only!
-	fbo[shadowFBO] = egpfwCreateFBO(shadowMapSize, shadowMapSize, 0, COLOR_DISABLE, DEPTH_D32, WRAP_DISABLE);
+	// curve drawing
+	fbo[curvesFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP);
 }
 
 void deleteFramebuffers()
@@ -914,7 +786,9 @@ void displayControls()
 	printf("\n l = real-time reload all shaders");
 	printf("\n x = toggle coordinate axes post-draw");
 
-	printf("\n 1-5 = toggle pipeline stage to be displayed");
+	printf("\n 1-4 = toggle curve mode");
+	printf("\n y = reset waypoints");
+	printf("\n u = toggle use waypoints/test curve");
 
 	printf("\n-------------------------------------------------------");
 }
@@ -949,36 +823,71 @@ void handleInputState()
 		testDrawAxes = 1 - testDrawAxes;
 
 
-	// toggle pipeline stage
+	// curve mode
 	if (egpKeyboardIsKeyPressed(keybd, '1'))
+	{
+		curveMode = CURVE_LINES;
+		pathFollowerSegment = 0;
+		pathFollowerParam = 0.0f;
+	}
+	else if (egpKeyboardIsKeyPressed(keybd, '2'))
+	{
+		curveMode = CURVE_BEZIER;
+		pathFollowerSegment = 0;
+		pathFollowerParam = 0.0f;
+	}
+	else if (egpKeyboardIsKeyPressed(keybd, '3'))
+	{
+		curveMode = CURVE_CATMULLROM;
+		pathFollowerSegment = 0;
+		pathFollowerParam = 0.0f;
+	}
+	else if (egpKeyboardIsKeyPressed(keybd, '4'))
+	{
+		curveMode = CURVE_HERMITE;
+		pathFollowerSegment = 0;
+		pathFollowerParam = 0.0f;
+	}
+
+	// reset waypoints
+	if (egpKeyboardIsKeyPressed(keybd, 'y'))
+	{
+		waypointCount = 0;
+		pathFollowerSegment = 0;
+		pathFollowerParam = 0.0f;
+	}
+
+	// toggle waypoints/test
+	if (egpKeyboardIsKeyPressed(keybd, 'u'))
+		useWaypoints = 1 - useWaypoints;
+
+/*
+	// toggle pipeline stage
+	if (egpKeyboardIsKeyPressed(keybd, '9'))
 	{
 		displayMode = displayScene;
 		displayColor = 1;
 		fboFinalDisplay = fbo + sceneFBO;
 	}
-	else if (egpKeyboardIsKeyPressed(keybd, '2'))
+	else if (egpKeyboardIsKeyPressed(keybd, '0'))
 	{
 		displayMode = displaySceneDepth;
 		displayColor = 0;
 		fboFinalDisplay = fbo + sceneFBO;
 	}
-	else if (egpKeyboardIsKeyPressed(keybd, '3'))
+*/
+
+
+	// place waypoints
+	if (waypointCount < waypoint_max && 
+		egpMouseIsButtonPressed(mouse, 0))
 	{
-		displayMode = displaySceneProjTex;
-		displayColor = 1;
-		fboFinalDisplay = fbo + sceneFBO;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '4'))
-	{
-		displayMode = displaySceneShadowMap;
-		displayColor = 1;
-		fboFinalDisplay = fbo + sceneFBO;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '5'))
-	{
-		displayMode = displayShadowMap;
-		displayColor = 0;
-		fboFinalDisplay = fbo + shadowFBO;
+		waypoint[waypointCount].set(
+			(float)(egpMouseX(mouse)), 
+			(float)(win_h - egpMouseY(mouse)), 
+			0.0f, 
+			1.0f);
+		++waypointCount;
 	}
 
 
@@ -1009,49 +918,110 @@ void updateGameState(float dt)
 	dt *= (float)(playrate * playing) * 0.01f;
 
 	// update objects here
-
-	// SKYBOX TRANSFORM: 
 	{
-		// easy way: exact same as the camera's transform (view), but 
-		//	we remove the translation (which makes the background seem 
-		//	infinitely far away), and scale up instead
+		// skybox
+		{
+			// easy way: exact same as the camera's transform (view), but 
+			//	we remove the translation (which makes the background seem 
+			//	infinitely far away), and scale up instead
 
-		// multiply view matrix with scale matrix to make modelview
-		modelMatrix[skyboxObject] = cbmath::makeScaleTranslate(minClipDist, cameraPos_world[activeCamera].xyz);
-		modelMatrixInv[skyboxObject] = cbmath::transformInverseUniformScale(modelMatrix[skyboxObject]);
+			// multiply view matrix with scale matrix to make modelview
+			modelMatrix[skyboxObject] = cbmath::makeScaleTranslate(minClipDist, cameraPos_world[activeCamera].xyz);
+			modelMatrixInv[skyboxObject] = cbmath::transformInverseUniformScale(modelMatrix[skyboxObject]);
 
-		// concatenate with proj to get mvp
-		boxModelViewProjectionMatrix = modelMatrixInv[controlCamera] * modelMatrix[skyboxObject];
-	}
+			// concatenate with proj to get mvp
+			boxModelViewProjectionMatrix = viewProjectionMatrix[controlCamera] * modelMatrix[skyboxObject];
+		}
 
-	// earth: 
-	{
-		// animate daytime and orbit
-		earthDaytime += dt * earthDaytimePeriod;
-		earthOrbit += dt * earthOrbitPeriod;
+		// path following object
+		{
+			int i0, i1, di, n;
+			cbmath::vec4 p0, p1, p2, p3, pPrev, pNext, m0, m1;
 
-		// calculate model matrix
-		modelMatrix[earthObject] = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
-		modelMatrix[earthObject].c3.x = cosf(earthOrbit) * earthDistance;
-		modelMatrix[earthObject].c3.z = -sinf(earthOrbit) * earthDistance;
-		modelMatrixInv[earthObject] = cbmath::transformInverseNoScale(modelMatrix[earthObject]);
-	}
+			switch (curveMode)
+			{
+			case CURVE_LINES:
+				// follow the current path segment
+				di = 1;
+				i0 = pathFollowerSegment - pathFollowerSegment%di;
+				i1 = i0 + di;
+				n = waypointCount - di;
+				p0 = waypoint[i0];
+				p1 = waypoint[i1];
+				pathFollowerPosition.x = egpfwLerp(p0.x, p1.x, pathFollowerParam);
+				pathFollowerPosition.y = egpfwLerp(p0.y, p1.y, pathFollowerParam);
+				break;
+			case CURVE_BEZIER:
+				// every 3 waypoints used for a single Bezier curve of degree 3
+				di = 3;
+				i0 = pathFollowerSegment - pathFollowerSegment%di;
+				i1 = i0 + di;
+				n = waypointCount - di;
+				p0 = waypoint[i0];
+				p1 = waypoint[i0+1];
+				p2 = waypoint[i0+2];
+				p3 = waypoint[i1];
+				if (n > 0)
+				{
+					pathFollowerPosition.x = egpfwBezier3(p0.x, p1.x, p2.x, p3.x, pathFollowerParam);
+					pathFollowerPosition.y = egpfwBezier3(p0.y, p1.y, p2.y, p3.y, pathFollowerParam);
+				}
+				break;
+			case CURVE_CATMULLROM:
+				di = 1;
+				i0 = pathFollowerSegment - pathFollowerSegment%di;
+				i1 = i0 + di;
+				n = waypointCount - di;
+				p0 = waypoint[i0];
+				p1 = waypoint[i1];
+				if (i0 > 0 && i0 < n - 1)
+				{
+					pPrev = waypoint[i0 - 1];
+					pNext = waypoint[i1 + 1];
+					pathFollowerPosition.x = egpfwCatmullRom(pPrev.x, p0.x, p1.x, pNext.x, pathFollowerParam);
+					pathFollowerPosition.y = egpfwCatmullRom(pPrev.y, p0.y, p1.y, pNext.y, pathFollowerParam);
+				}
+				else
+				{
+					pathFollowerPosition.x = egpfwLerp(p0.x, p1.x, pathFollowerParam);
+					pathFollowerPosition.y = egpfwLerp(p0.y, p1.y, pathFollowerParam);
+				}
+				break;
+			case CURVE_HERMITE:
+				di = 2;
+				i0 = pathFollowerSegment - pathFollowerSegment%di;
+				i1 = i0 + di;
+				n = waypointCount - di;
+				p0 = waypoint[i0];
+				m0 = waypoint[i0 + 1] - p0;	// bi-directional tangents
+			//	m0 = p0 - waypoint[i0 + 1];	// single-direction tangents
+				p1 = waypoint[i1];
+				m1 = waypoint[i1 + 1] - p1;
+				if (n > 1)
+				{
+					pathFollowerPosition.x = egpfwCubicHermite(p0.x, m0.x, p1.x, m1.x, pathFollowerParam);
+					pathFollowerPosition.y = egpfwCubicHermite(p0.y, m0.y, p1.y, m1.y, pathFollowerParam);
+				}
+				break;
+			};
 
-	// moon: 
-	{
-		moonOrbit += dt * moonOrbitPeriod;
 
-		modelMatrix[moonObject] = cbmath::makeRotationZ4(moonTilt) * cbmath::makeRotationY4(moonOrbit) * cbmath::makeScale4(moonSize);
-		modelMatrix[moonObject].c3.x = modelMatrix[earthObject].c3.x + cosf(moonOrbit) * moonDistance;
-		modelMatrix[moonObject].c3.z = modelMatrix[earthObject].c3.z - sinf(moonOrbit) * moonDistance;
-		modelMatrixInv[moonObject] = cbmath::transformInverseNoScale(modelMatrix[moonObject]);
-	}
+			if (waypointCount > di)
+			{
+				// update interpolation parameter
+				pathFollowerParam += pathFollowerParamRate*dt;
+				if (pathFollowerParam > 1.0f)
+				{
+					// next segment
+					pathFollowerParam -= 1.0f;
+					pathFollowerSegment = i1 % n;
+				}
 
-	// mars: 
-	{
-		modelMatrix[marsObject] = modelMatrix[moonObject];
-		modelMatrix[marsObject].c3.y += 2.0f;
-		modelMatrixInv[marsObject] = cbmath::transformInverseNoScale(modelMatrix[marsObject]);
+				// update model matrix for object
+				modelMatrix[pathFollowingObject] = cbmath::makeScale4(10.0f);
+				modelMatrix[pathFollowingObject].c3 = pathFollowerPosition;
+			}
+		}
 	}
 }
 
@@ -1078,119 +1048,66 @@ void renderSkybox()
 }
 
 
-// update and draw scene objects
-void updateObjectMVPs(const cbmath::mat4 modelMat, const cbmath::mat4 biasMat, 
-	const cbmath::mat4 *vp, cbmath::mat4 *mvp_out, const unsigned int numMatrices)
+// draw curves
+void renderCurve()
 {
-	unsigned int i;
-	for (i = 0; i < numMatrices; ++i, ++vp, ++mvp_out)
-		*mvp_out = biasMat * (*vp * modelMat);
-}
+	const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
+	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
 
-void updateObjectSpacePoint(const cbmath::mat4 modelMatInv,
-	const cbmath::vec4 *point_world, cbmath::vec4 *point_obj, const unsigned int numPoints)
-{
-	unsigned int i;
-	for (i = 0; i < numPoints; ++i, ++point_world, ++point_obj)
-		*point_obj = modelMatInv * *point_world;
-}
+	int i;
+	cbmath::vec4 *waypointPtr;
+	cbmath::mat4 waypointMVP;
 
-void updateSendLightsCamera(const cbmath::mat4 modelInv)
-{
-	// light position(s) in object space
-	updateObjectSpacePoint(modelInv, lightPos_world, lightPos_obj, numLights);
-	egpSendUniformFloat(currentUniformSet[unif_lightPos], UNIF_VEC4, numLights, lightPos_obj->v);
+	// clear
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	// camera position(s) in object space
-	updateObjectSpacePoint(modelInv, cameraPos_world + activeCamera, cameraPos_obj + activeCamera, 1);
-	egpSendUniformFloat(currentUniformSet[unif_eyePos], UNIF_VEC4, 1, cameraPos_obj[activeCamera].v);
-}
 
-void sendObjectMatrices(const cbmath::mat4 *mvp_main, const cbmath::mat4 *mvp_other, const cbmath::mat4 *atlas,
-	const unsigned int numOtherMatrices, int mvpMainLocation, int mvpOtherLocation, int atlasLocation)
-{
-	egpSendUniformFloatMatrix(currentUniformSet[mvpMainLocation], UNIF_MAT4, 1, 0, mvp_main->m);
-	if (mvp_other && numOtherMatrices)
-		egpSendUniformFloatMatrix(currentUniformSet[mvpOtherLocation], UNIF_MAT4, numOtherMatrices, 0, mvp_other->m);
-	if (atlas)
-		egpSendUniformFloatMatrix(currentUniformSet[atlasLocation], UNIF_MAT4, 1, 0, atlas->m);
-}
+	// draw curve
+	currentProgramIndex = drawCurveProgram;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, curveDrawingProjectionMatrix.m);
 
-void renderSceneObjects(const cbmath::mat4 *mvp_main, const cbmath::mat4 *mvp_other, const cbmath::mat4 *atlas,
-	const unsigned int numOtherMatrices, const unsigned int numSceneObjects, int lighting, int cullBack)
-{
-	// light colors for all
-	if (lighting)
-		egpSendUniformFloat(currentUniformSet[unif_lightColor], UNIF_VEC4, numLights, lightColor->v);
+	// ship waypoint data to program, where it will be received by GS
+	egpSendUniformFloat(currentUniformSet[unif_waypoint], UNIF_VEC4, waypointCount, waypoint->v);
+	egpSendUniformInt(currentUniformSet[unif_waypointCount], UNIF_INT, 1, &waypointCount);
+	egpSendUniformInt(currentUniformSet[unif_curveMode], UNIF_INT, 1, &curveMode);
+	egpSendUniformInt(currentUniformSet[unif_useWaypoints], UNIF_INT, 1, &useWaypoints);
 
-	// background
+	egpActivateVAO(vao + pointModel);
+	egpDrawActiveVAO();
+
+
+	// draw waypoints using solid color program and sphere model
+	currentProgramIndex = testSolidColorProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, waypointColor.v);
+
+	egpActivateVAO(vao + sphere8x6Model);
+
+	// draw waypoints
+	for (i = 0, waypointPtr = waypoint; i < waypointCount; ++i, ++waypointPtr)
 	{
-		// normal scaling adjustment values
-		const float normalScale[2] = { -1.0f, +1.0f };
-
-		glCullFace(GL_FRONT);
-		glDepthFunc(GL_ALWAYS);
-		egpSendUniformFloat(currentUniformSet[unif_normalScale], UNIF_FLOAT, 1, normalScale);	// invert
-
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[skyboxObject]);
-		sendObjectMatrices(mvp_main, mvp_other, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpActivateVAO(vao + boxModel);
-		egpDrawActiveVAO();
-
-		egpSendUniformFloat(currentUniformSet[unif_normalScale], UNIF_FLOAT, 1, normalScale + 1);
-		glDepthFunc(GL_LESS);
-
-		// leave culling inverted for shadows
-		if (cullBack)
-			glCullFace(GL_BACK);
-	}
-
-
-	// ground
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[groundObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpDrawActiveVAO();
-	}
-
-	// moon
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[moonObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-	//	egpActivateVAO(vao + sphereLowResObjModel);
-		egpActivateVAO(vao + sphere8x6Model);
-		egpDrawActiveVAO();
-	}
-
-	// mars
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[marsObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		egpDrawActiveVAO();
-	}
-
-	// earth
-	{
-		if (lighting)
-			updateSendLightsCamera(modelMatrixInv[earthObject]);
-		sendObjectMatrices(mvp_main += numSceneObjects, mvp_other += numSceneObjects, (atlas ? atlas++ : 0),
-			numOtherMatrices, unif_mvp, unif_mvp_projector, unif_atlasMat);
-		//	egpActivateVAO(vao + sphereHiResObjModel);
-		egpActivateVAO(vao + sphere32x24Model);
+		// set position, update MVP for this waypoint and draw
+		waypointModelMatrix.c3 = *waypointPtr;
+		waypointMVP = curveDrawingProjectionMatrix * waypointModelMatrix;
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
 		egpDrawActiveVAO();
 	}
 
 
-	// done
-	glCullFace(GL_BACK);
+	// draw path follower
+	waypointMVP = curveDrawingProjectionMatrix * modelMatrix[pathFollowingObject];
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
+	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, objectColor.v);
+	egpDrawActiveVAO();
+
+
+	// reset model matrix position
+	waypointModelMatrix.c3 = cbmath::v4w;
 }
 
 
@@ -1198,115 +1115,17 @@ void renderSceneObjects(const cbmath::mat4 *mvp_main, const cbmath::mat4 *mvp_ot
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
 void renderGameState()
 {
-	const unsigned int controlCamera = cameraObjects + activeCamera;
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-	// PROJECTIVE TEXTURING ALGORITHM: 
-	//	1. draw scene with main and alternative clipping pipeline (mvp)
-	//		-> perform shadow test in frag shader, apply texture
-
-	// DEFERRED LIGHTING ALGORITHM: 
-	//	1. draw scene to depth-only target from light's point of view
-	//	2. draw scene with main and alternative clipping pipeline (mvp)
-	//		-> perform shadow test in frag shader, apply shadow
+	
+	// draw skybox
+	egpfwActivateFBO(fbo + sceneFBO);
+	renderSkybox();
 
 
-	int currentPipelineStage, lastPipelineStage;
-
-	// each object has one matrix per camera and per light
-	const unsigned int numMVPsPerObject = (numCameras + numLights);
-	const unsigned int numMVPs = numMVPsPerObject * sceneObjectCount;
-	cbmath::mat4 mvp[numMVPs];
-	cbmath::mat4 mvpb[numMVPs];
-
-	// update all MVP matrices once
-	{
-		cbmath::mat4 *mvpPtr = mvp, *mvpbPtr = mvpb;
-		const cbmath::mat4 *modelMatPtr = modelMatrix, *viewprojMatPtr = viewProjectionMatrix + cameraObjects;
-		unsigned int i;
-		for (i = 0; i < sceneObjectCount; ++i, ++modelMatPtr, mvpPtr += numMVPsPerObject, mvpbPtr += numMVPsPerObject)
-		{
-			updateObjectMVPs(*modelMatPtr, cbmath::m4Identity, viewprojMatPtr, mvpPtr, numMVPsPerObject);
-			updateObjectMVPs(*modelMatPtr, bias, viewprojMatPtr, mvpbPtr, numMVPsPerObject);
-		}
-	}
-
-
-	// bind atlases
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, tex[booleanTexHandle]);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_specular]);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex[atlas_diffuse]);
-
-
-	switch (displayMode)
-	{
-	case displayScene: 
-	case displaySceneDepth:
-		// draw scene, just output colors
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		renderSceneObjects(mvp, 0, 0, 0, numMVPsPerObject, 0, 1);
-		break;
-	case displaySceneProjTex: 
-		// draw scene with projective texturing
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = projectiveTextureProgram;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, tex[skyboxTexHandle]);	// using texture to project
-		renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
-		break;
-	case displaySceneShadowMap: 
-	case displayShadowMap: 
-		// draw scene to shadow map target
-		currentPipelineStage = shadowFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = testTransformProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		renderSceneObjects(mvp + numCameras, 0, 0, 0, numMVPsPerObject, 0, 0);	// reverse culling
-
-		// draw scene with shadow mapping
-		lastPipelineStage = currentPipelineStage;
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = shadowMapProgram;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-		egpfwBindDepthTargetTexture(fbo + lastPipelineStage, 3);	// using shadow map
-		renderSceneObjects(mvp, mvpb + numCameras, atlasMatrix, numLights, numMVPsPerObject, 1, 1);
-		break;
-	}
-
-
-/*	
-	// DEBUGGING: add object to final output
-	{
-		currentPipelineStage = sceneFBO;
-		egpfwActivateFBO(fbo + currentPipelineStage);
-		currentProgramIndex = testColorProgramIndex;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
-
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjectionMatrix[cameraObjects].m);
-		egpActivateVAO(vao + sphere32x24Model);
-		egpDrawActiveVAO();
-	}
-*/
+	// draw curve stuff
+	egpfwActivateFBO(fbo + curvesFBO);
+	renderCurve();
 
 
 //-----------------------------------------------------------------------------
@@ -1325,33 +1144,41 @@ void renderGameState()
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
 
-		// bind scene texture
-		if (displayColor)
-			egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
-		else
-			egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
+	//	// bind scene texture
+	//	if (displayColor)
+	//		egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
+	//	else
+	//		egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
+
+		// display curves FBO
+		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
+
+		// draw fsq
 		egpDrawActiveVAO();
 
 		// TEST DRAW: coordinate axes at center of spaces
 		//	and other line objects
-		if (testDrawAxes && displayMode != displayShadowMap)
+		if (testDrawAxes)
 		{
-			cbmath::mat4 t = viewProjectionMatrix[controlCamera];
-
-			egpActivateVAO(vao + axesModel);
 			currentProgramIndex = testColorProgramIndex;
 			currentProgram = glslPrograms + currentProgramIndex;
 			currentUniformSet = glslCommonUniforms[currentProgramIndex];
 			egpActivateProgram(currentProgram);
 
+			// axes
+			egpActivateVAO(vao + axesModel);
+
 			// center of world
 			// (this is useful to see where the origin is and how big one unit is)
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, t.m);
-			egpDrawActiveVAO();
+		//	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjectionMatrix[cameraObjects + activeCamera].m);
 
-			// light source
-			t = t * modelMatrix[lightObjects];
-			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, t.m);
+			// origin of viewport for orthographic view
+			{
+				cbmath::mat4 orthoMVP = curveDrawingProjectionMatrix * waypointModelMatrix;
+				egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, orthoMVP.m);
+			}
+
+			// draw axes
 			egpDrawActiveVAO();
 		}
 
@@ -1434,6 +1261,20 @@ void onResizeWindow(int w, int h)
 	//	it's probably a good idea to tear down and remake the framebuffers...
 	deleteFramebuffers();
 	setupFramebuffers(viewport_tw, viewport_th);
+
+
+//-----------------------------------------------------------------------------
+	// setup curve drawing camera
+	// just an ortho projection matrix the same size as the window's viewport
+
+	{
+		const float tmpNF = 100.0f;
+		curveDrawingProjectionMatrix.m00 = 2.0f / (float)viewport_tw;
+		curveDrawingProjectionMatrix.m11 = 2.0f / (float)viewport_th;
+		curveDrawingProjectionMatrix.m22 = -1.0f / tmpNF;
+		curveDrawingProjectionMatrix.m30 = -(float)win_w / (float)viewport_tw;
+		curveDrawingProjectionMatrix.m31 = -(float)win_h / (float)viewport_th;
+	}
 }
 
 // window moved

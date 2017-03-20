@@ -42,6 +42,12 @@
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwFrameBuffer.h">
       <Filter>Header Files\egpfw</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwInterpolation.h">
+      <Filter>Header Files\egpfw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwKeyframeController.h">
+      <Filter>Header Files\egpfw</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -57,6 +63,12 @@
       <Filter>Source Files\c</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\egpfw\egpfwFrameBuffer.c">
+      <Filter>Source Files\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\egpfw\egpfwInterpolation.c">
+      <Filter>Source Files\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\egpfw\egpfwKeyframeController.c">
       <Filter>Source Files\c</Filter>
     </ClCompile>
   </ItemGroup>
