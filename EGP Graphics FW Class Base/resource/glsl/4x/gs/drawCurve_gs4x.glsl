@@ -10,7 +10,7 @@
 
 #define WAYPOINTS_MAX 16
 #define SAMPLES_PER_SEGMENT 16
-#define SAMPLES_MAX 256
+#define SAMPLES_MAX 128
 
 #define CURVE_LINES 0
 #define CURVE_BEZIER 1
@@ -22,6 +22,8 @@
 // layout qualifiers for geometry shader: 
 //	-> input primitive
 //	-> output primitive (max count optional)
+layout (points) in;
+layout (line_strip, max_vertices = SAMPLES_MAX) out;
 
 
 // uniforms
@@ -44,7 +46,7 @@ const vec4 GREEN = vec4(0.0, 1.0, 0.5, 1.0);
 // LERP
 vec4 lerp(in vec4 p0, in vec4 p1, const float t)
 {
-	return p0;
+	return p0 + (p1 - p0) * t;
 }
 
 // ****
@@ -57,29 +59,65 @@ vec4 sampleBezier0(in vec4 p0, const float t)
 }
 vec4 sampleBezier1(in vec4 p0, in vec4 p1, const float t)
 {
-	return p0;
+	return lerp(p0, p1, t);
 }
 vec4 sampleBezier2(in vec4 p0, in vec4 p1, in vec4 p2, const float t)
 {
-	return p0;
+	return lerp(lerp(p0, p1, t), lerp(p1, p2, t), t);
 }
 vec4 sampleBezier3(in vec4 p0, in vec4 p1, in vec4 p2, in vec4 p3, const float t)
 {
-	return p0;
+	vec4 p0p1 = lerp(p0, p1, t);
+	vec4 p1p2 = lerp(p1, p2, t);
+	vec4 p2p3 = lerp(p2, p3, t);
+
+	return lerp(lerp(p0p1, p1p2, t), lerp(p1p2, p2p3, t), t);
 }
 
 // ****
 // Catmull-Rom spline interpolation
 vec4 sampleCatmullRom(in vec4 pPrev, in vec4 p0, in vec4 p1, in vec4 pNext, const float t)
 {
-	return p0;
+	float t2 = t * t;
+	float t3 = t2 * t;
+
+	mat4 catmullMat = transpose(mat4(
+			0.0f, -1.0f, 2.0f, -1.0f,
+			2.0f, 0.0f, -5.0f, 3.0f,
+			0.0f, 1.0f, 4.0f, -3.0f,
+			0.0f, 0.0f, -1.0f, 1.0f));
+
+	vec4 tVals = vec4(1.0f, t, t2, t3);
+
+	vec4 cat = catmullMat * tVals;
+	mat4 points = mat4(pPrev, p0, p1, pNext);
+
+	vec4 result = points * cat;
+
+	return 0.5f * result;
 }
 
 // ****
 // cubic Hermite spline interpolation
 vec4 sampleCubicHermite(in vec4 p0, in vec4 m0, in vec4 p1, in vec4 m1, const float t)
 {
-	return p0;
+	float t2 = t * t;
+	float t3 = t2 * t;
+
+	mat4 hermiteMat = transpose(mat4(
+			1.0f, 0.0f, -3.0f, 2.0f,
+			0.0f, 1.0f, -2.0f, 1.0f,
+			0.0f, 0.0f, 3.0f, -2.0f,
+			0.0f, 0.0f, -1.0f, 1.0f));
+
+	vec4 tVals = vec4(1.0f, t, t2, t3);
+
+	vec4 cat = hermiteMat * tVals;
+	mat4 points = mat4(p0, m0, p1, m1);
+
+	vec4 result = points * cat;
+
+	return result;
 }
 
 
@@ -91,11 +129,25 @@ void drawLine(in vec4 p0, in vec4 p1, const int samples, const float dt)
 	// but to prove that lerp works...
 	int i = 0;
 	float t = 0.0;
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * lerp(p0, p1, t);
+		EmitVertex();
+		t += dt;
+	}
+
+	EndPrimitive();
 }
 
 // ****
 void drawLineFull(in vec4 p0, in vec4 p1)
 {
+	gl_Position = mvp * p0;
+	EmitVertex();
+
+	gl_Position = mvp * p1;
+	EmitVertex();
+	EndPrimitive();
 }
 
 // ****
@@ -104,21 +156,62 @@ void drawBezierCurve0(in vec4 p0, const int samples, const float dt)
 {
 	int i = 0;
 	float t = 0.0;
+
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * sampleBezier0(p0, t);
+		EmitVertex();
+
+		t += dt;
+	}
+
+	EndPrimitive();
 }
 void drawBezierCurve1(in vec4 p0, in vec4 p1, const int samples, const float dt)
 {
 	int i = 0;
 	float t = 0.0;
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * sampleBezier1(p0, p1, t);
+		EmitVertex();
+
+		t += dt;
+	}
+
+	EndPrimitive();
 }
+
 void drawBezierCurve2(in vec4 p0, in vec4 p1, in vec4 p2, const int samples, const float dt)
 {
 	int i = 0;
 	float t = 0.0;
+
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * sampleBezier2(p0, p1, p2, t);
+		EmitVertex();
+
+		t += dt;
+	}
+
+	EndPrimitive();
 }
+
 void drawBezierCurve3(in vec4 p0, in vec4 p1, in vec4 p2, in vec4 p3, const int samples, const float dt)
 {
 	int i = 0;
 	float t = 0.0;
+	
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * sampleBezier3(p0, p1, p2, p3, t);
+		EmitVertex();
+
+		t += dt;
+	}
+
+	EndPrimitive();
 }
 
 // ****
@@ -127,6 +220,16 @@ void drawCatmullRomSplineSegment(in vec4 pPrev, in vec4 p0, in vec4 p1, in vec4 
 {
 	int i = 0;
 	float t = 0.0;
+	
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * sampleCatmullRom(pPrev, p0, p1, pNext, t);
+		EmitVertex();
+
+		t += dt;
+	}
+
+	EndPrimitive();
 }
 
 // ****
@@ -135,6 +238,16 @@ void drawCubicHermiteSplineSegment(in vec4 p0, in vec4 m0, in vec4 p1, in vec4 m
 {
 	int i = 0;
 	float t = 0.0;
+	
+	for (i; i <= samples; i++)
+	{
+		gl_Position = mvp * sampleCubicHermite(p0, m0, p1, m1, t);
+		EmitVertex();
+
+		t += dt;
+	}
+
+	EndPrimitive();
 }
 
 
@@ -279,4 +392,14 @@ void main()
 		drawCurve(samples, dt);
 	else
 		testCurve(samples, dt);
+
+	passColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	gl_Position = mvp * vec4(100, 100, 0, 1);
+	EmitVertex();
+
+	passColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+	gl_Position = mvp * vec4(200, 200, 0, 1);
+	EmitVertex();
+
+	EndPrimitive();
 }
