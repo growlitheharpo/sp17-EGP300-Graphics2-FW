@@ -1110,7 +1110,8 @@ void setupEffectPathDOF()
 	RenderPass
 		hblur1(fbo, glslPrograms), vblur1(fbo, glslPrograms),
 		hblur2(fbo, glslPrograms), vblur2(fbo, glslPrograms),
-		hblur3(fbo, glslPrograms), vblur3(fbo, glslPrograms);
+		hblur3(fbo, glslPrograms), vblur3(fbo, glslPrograms),
+		dofComposite(fbo, glslPrograms);
 
 	currentUniformSet = glslCommonUniforms[bloomBlurProgramIndex];
 
@@ -1146,7 +1147,11 @@ void setupEffectPathDOF()
 	vblur3.addColorTarget(FBOTargetColorTexture(hblurFBO_d8, 0, 0));
 	vblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
 
-	globalRenderPath.addRenderPasses({ hblur1, vblur1, hblur2, vblur2, hblur3, vblur3 });
+	dofComposite.setPipelineStage(compositeFBO);
+	dofComposite.setProgram(testTexturePassthruProgramIndex);
+	dofComposite.addDepthTarget(FBOTargetDepthTexture(sceneFBO, 0));
+
+	globalRenderPath.addRenderPasses({ hblur1, vblur1, hblur2, vblur2, hblur3, vblur3, dofComposite });
 }
 
 void setupNetgraphPathDOF()
@@ -1157,6 +1162,7 @@ void setupNetgraphPathDOF()
 		FBOTargetColorTexture(vblurFBO_d2, 0, 0),
 		FBOTargetColorTexture(vblurFBO_d4, 0, 0),
 		FBOTargetColorTexture(vblurFBO_d8, 0, 0),
+		FBOTargetColorTexture(compositeFBO, 0, 0),
 	});
 }
 
@@ -1182,7 +1188,7 @@ void setupRenderPaths()
 			setupScenePathBloom();
 			setupEffectPathDOF();
 			setupNetgraphPathDOF();
-			displayMode = sceneFBO;
+			displayMode = compositeFBO;
 			break;
 		case numRenderMethods:
 		default: 
