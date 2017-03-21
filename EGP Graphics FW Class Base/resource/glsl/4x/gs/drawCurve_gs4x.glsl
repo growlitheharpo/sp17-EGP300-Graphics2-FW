@@ -393,13 +393,5 @@ void main()
 	else
 		testCurve(samples, dt);
 
-	passColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	gl_Position = mvp * vec4(100, 100, 0, 1);
-	EmitVertex();
-
-	passColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);
-	gl_Position = mvp * vec4(200, 200, 0, 1);
-	EmitVertex();
-
 	EndPrimitive();
 }
