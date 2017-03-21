@@ -1107,7 +1107,46 @@ void setupNetgraphPathDeferred()
 
 void setupEffectPathDOF()
 {
-	
+	RenderPass
+		hblur1(fbo, glslPrograms), vblur1(fbo, glslPrograms),
+		hblur2(fbo, glslPrograms), vblur2(fbo, glslPrograms),
+		hblur3(fbo, glslPrograms), vblur3(fbo, glslPrograms);
+
+	currentUniformSet = glslCommonUniforms[bloomBlurProgramIndex];
+
+	//First horizontal blur
+	hblur1.setProgram(bloomBlurProgramIndex);
+	hblur1.setVAO(vao + fsqModel);
+	hblur1.setPipelineStage(hblurFBO_d2);
+	hblur1.addColorTarget(FBOTargetColorTexture(sceneFBO, 0, 0));
+	hblur1.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[brightFBO_d2].x, &CONST_ZERO_FLOAT }));
+
+	//First vertical blur
+	vblur1.setPipelineStage(vblurFBO_d2);
+	vblur1.addColorTarget(FBOTargetColorTexture(hblurFBO_d2, 0, 0));
+	vblur1.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d2].y }));
+
+	//Second horizontal blur
+	hblur2.setPipelineStage(hblurFBO_d4);
+	hblur2.addColorTarget(FBOTargetColorTexture(vblurFBO_d2, 0, 0));
+	hblur2.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d2].x, &CONST_ZERO_FLOAT }));
+
+	//Second vertical blur
+	vblur2.setPipelineStage(vblurFBO_d4);
+	vblur2.addColorTarget(FBOTargetColorTexture(hblurFBO_d4, 0, 0));
+	vblur2.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d4].y }));
+
+	//Third horizontal blur
+	hblur3.setPipelineStage(hblurFBO_d8);
+	hblur3.addColorTarget(FBOTargetColorTexture(vblurFBO_d4, 0, 0));
+	hblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &pixelSizeInv[vblurFBO_d4].x, &CONST_ZERO_FLOAT }));
+
+	//Third vertical blur
+	vblur3.setPipelineStage(vblurFBO_d8);
+	vblur3.addColorTarget(FBOTargetColorTexture(hblurFBO_d8, 0, 0));
+	vblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
+
+	globalRenderPath.addRenderPasses({ hblur1, vblur1, hblur2, vblur2, hblur3, vblur3 });
 }
 
 void setupNetgraphPathDOF()
@@ -1115,6 +1154,9 @@ void setupNetgraphPathDOF()
 	globalRenderNetgraph.clearFBOList();
 	globalRenderNetgraph.addFBOs({
 		FBOTargetColorTexture(sceneFBO, 0, 0),
+		FBOTargetColorTexture(vblurFBO_d2, 0, 0),
+		FBOTargetColorTexture(vblurFBO_d4, 0, 0),
+		FBOTargetColorTexture(vblurFBO_d8, 0, 0),
 	});
 }
 
