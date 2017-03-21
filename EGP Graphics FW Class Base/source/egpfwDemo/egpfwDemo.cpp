@@ -87,12 +87,23 @@ float CONST_ZERO_FLOAT = 0.0f;
 
 enum RenderMethod
 {
-	bloomRenderMethod,
+	bloomRenderMethod = 0,
 	deferredRenderMethod,
+	depthOfFieldRenderMethod,
 
 	//------------------------
 	numRenderMethods
 };
+
+RenderMethod& operator++(RenderMethod& a)
+{
+	int tmp = a;
+	if (tmp == (numRenderMethods - 1))
+		tmp = -1;
+
+	a = static_cast<RenderMethod>(tmp + 1);
+	return a;
+}
 
 RenderMethod currentRenderMode = bloomRenderMethod;
 bool displayNetgraphToggle = true;
@@ -1094,6 +1105,19 @@ void setupNetgraphPathDeferred()
 	});
 }
 
+void setupEffectPathDOF()
+{
+	
+}
+
+void setupNetgraphPathDOF()
+{
+	globalRenderNetgraph.clearFBOList();
+	globalRenderNetgraph.addFBOs({
+		FBOTargetColorTexture(sceneFBO, 0, 0),
+	});
+}
+
 void setupRenderPaths()
 {
 	globalRenderPath.clearAllPasses();
@@ -1104,11 +1128,19 @@ void setupRenderPaths()
 			setupScenePathBloom();
 			setupEffectPathBloom();
 			setupNetgraphPathBloom();
+			displayMode = deferredShadingFBO;
 			break;
 		case deferredRenderMethod:
 			setupScenePathDeferred();
 			setupEffectPathDeferred();
 			setupNetgraphPathDeferred();
+			displayMode = compositeFBO;
+			break;
+		case depthOfFieldRenderMethod:
+			setupScenePathBloom();
+			setupEffectPathDOF();
+			setupNetgraphPathDOF();
+			displayMode = sceneFBO;
 			break;
 		case numRenderMethods:
 		default: 
@@ -1291,16 +1323,7 @@ void handleInputState()
 
 	if (egpKeyboardIsKeyPressed(keybd, 'm'))
 	{
-		if (currentRenderMode == bloomRenderMethod)
-		{
-			currentRenderMode = deferredRenderMethod;
-			displayMode = deferredShadingFBO;
-		}
-		else
-		{
-			currentRenderMode = bloomRenderMethod;
-			displayMode = compositeFBO;
-		}
+		++currentRenderMode;
 		setupRenderPaths();
 	}
 
@@ -1416,7 +1439,7 @@ void updateGameState(float dt)
 // skybox clear
 void renderSkybox()
 {
-	if (currentRenderMode == bloomRenderMethod)
+	if (currentRenderMode == bloomRenderMethod || currentRenderMode == depthOfFieldRenderMethod)
 	{
 		egpfwActivateFBO(fbo + sceneFBO);
 		currentProgramIndex = testTextureProgramIndex;
@@ -1498,6 +1521,7 @@ void renderGameState()
 		// Get the fbo we want by grabbing it directly from the netgraph (whether it's visible or not).
 		FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
 		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
+		egpActivateVAO(vao + fsqModel);
 		egpDrawActiveVAO();
 		
 		if (displayNetgraphToggle)
