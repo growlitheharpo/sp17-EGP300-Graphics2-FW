@@ -527,6 +527,31 @@ void deleteTextures()
 	glDeleteTextures(textureCount, tex);
 }
 
+// array of common uniform names
+const char *commonUniformName[] = {
+	(const char *)("mvp"),
+	(const char *)("lightColor"),
+	(const char *)("lightPos"),
+	(const char *)("eyePos"),
+	(const char *)("tex_dm"),
+	(const char *)("tex_sm"),
+	(const char *)("pixelSizeInv"),
+	(const char *)("img"),
+	(const char *)("img1"),
+	(const char *)("img2"),
+	(const char *)("img3"),
+	(const char *)("img4"),
+	(const char *)("modelMat"),
+	(const char *)("viewprojMat"),
+	(const char *)("atlasMat"),
+	(const char *)("normalScale"),
+	(const char *)("img_position"),
+	(const char *)("img_normal"),
+	(const char *)("img_texcoord"),
+	(const char *)("img_depth"),
+	(const char *)("img_light_diffuse"),
+	(const char *)("img_light_specular"),
+};
 
 // setup and delete shaders
 void setupShaders()
@@ -535,30 +560,6 @@ void setupShaders()
 	egpFileInfo files[4];
 	egpShader shaders[4];
 
-	// array of common uniform names
-	const char *commonUniformName[] = {
-		(const char *)("mvp"),
-		(const char *)("lightColor"),
-		(const char *)("lightPos"),
-		(const char *)("eyePos"),
-		(const char *)("tex_dm"),
-		(const char *)("tex_sm"),
-		(const char *)("pixelSizeInv"),
-		(const char *)("img"),
-		(const char *)("img1"),
-		(const char *)("img2"),
-		(const char *)("img3"),
-		(const char *)("modelMat"),
-		(const char *)("viewprojMat"),
-		(const char *)("atlasMat"),
-		(const char *)("normalScale"),
-		(const char *)("img_position"),
-		(const char *)("img_normal"),
-		(const char *)("img_texcoord"),
-		(const char *)("img_depth"),
-		(const char *)("img_light_diffuse"),
-		(const char *)("img_light_specular"),
-	};
 
 	const int imageLocations[] = {
 		0, 1, 2, 3, 4, 5, 6, 7
@@ -722,6 +723,22 @@ void setupShaders()
 					egpReleaseShader(shaders + 2);
 					egpReleaseFileContents(files + 2);
 				}
+				{
+					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/depthofFieldComposite_fs4x.glsl");
+					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+					currentProgramIndex = depthOfFieldCompositeProgramIndex;
+					currentProgram = glslPrograms + currentProgramIndex;
+
+					*currentProgram = egpCreateProgram();
+					egpAttachShaderToProgram(currentProgram, shaders + 0);
+					egpAttachShaderToProgram(currentProgram, shaders + 2);
+					egpLinkProgram(currentProgram);
+					egpValidateProgram(currentProgram);
+
+					egpReleaseShader(shaders + 2);
+					egpReleaseFileContents(files + 2);
+				}
 			}
 
 			// done with passthru vs
@@ -818,6 +835,7 @@ void setupShaders()
 		egpSendUniformInt(currentUniformSet[unif_img1], UNIF_INT, 1, imageLocations + 1);
 		egpSendUniformInt(currentUniformSet[unif_img2], UNIF_INT, 1, imageLocations + 2);
 		egpSendUniformInt(currentUniformSet[unif_img3], UNIF_INT, 1, imageLocations + 3);
+		egpSendUniformInt(currentUniformSet[unif_img4], UNIF_INT, 1, imageLocations + 4);
 
 		egpSendUniformInt(currentUniformSet[unif_img_light_diffuse], UNIF_INT, 1, imageLocations + 2);
 		egpSendUniformInt(currentUniformSet[unif_img_light_specular], UNIF_INT, 1, imageLocations + 3);
@@ -1104,7 +1122,7 @@ void setupNetgraphPathDeferred()
 		FBOTargetColorTexture(deferredShadingFBO, 0, 0),
 	});
 }
-
+#include <iostream>
 void setupEffectPathDOF()
 {
 	RenderPass
@@ -1147,9 +1165,16 @@ void setupEffectPathDOF()
 	vblur3.addColorTarget(FBOTargetColorTexture(hblurFBO_d8, 0, 0));
 	vblur3.addUniform(render_pass_uniform_float_complex(currentUniformSet[unif_pixelSizeInv], UNIF_VEC2, 1, { &CONST_ZERO_FLOAT, &pixelSizeInv[hblurFBO_d8].y }));
 
+	currentUniformSet = glslCommonUniforms[depthOfFieldCompositeProgramIndex];
+
 	dofComposite.setPipelineStage(compositeFBO);
-	dofComposite.setProgram(testTexturePassthruProgramIndex);
+	dofComposite.setProgram(depthOfFieldCompositeProgramIndex);
+
 	dofComposite.addDepthTarget(FBOTargetDepthTexture(sceneFBO, 0));
+	dofComposite.addColorTarget(FBOTargetColorTexture(sceneFBO, 1, 0));
+	dofComposite.addColorTarget(FBOTargetColorTexture(vblurFBO_d2, 2, 0));
+	dofComposite.addColorTarget(FBOTargetColorTexture(vblurFBO_d4, 3, 0));
+	dofComposite.addColorTarget(FBOTargetColorTexture(vblurFBO_d8, 4, 0));
 
 	globalRenderPath.addRenderPasses({ hblur1, vblur1, hblur2, vblur2, hblur3, vblur3, dofComposite });
 }

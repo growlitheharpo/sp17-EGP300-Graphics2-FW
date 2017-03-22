@@ -31,6 +31,8 @@ enum GLSLProgramIndex
 	deferredLightPassProgramIndex,
 	deferredCompositeProgramIndex,
 
+	depthOfFieldCompositeProgramIndex,
+
 	//-----------------------------
 	GLSLProgramCount
 };
@@ -51,7 +53,7 @@ enum GLSLCommonUniformIndex
 	unif_img1,
 	unif_img2,
 	unif_img3,
-
+	unif_img4,
 
 	// deferred rendering
 	unif_modelMat,
