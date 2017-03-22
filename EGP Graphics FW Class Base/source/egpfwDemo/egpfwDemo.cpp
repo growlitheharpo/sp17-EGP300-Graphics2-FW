@@ -918,6 +918,12 @@ void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 		// deferred lighting composite pass
 		fbo[deferredLightingCompositeFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP); 
 	}
+
+	{ //Depth of Field
+		const egpColorFormat colorFormat = COLOR_RGBA32F;
+
+		fbo[depthOfFieldOutputFBO] = egpfwCreateFBO(frameWidth, frameHeight, 2, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	}
 }
 
 void deleteFramebuffers()
@@ -1122,7 +1128,7 @@ void setupNetgraphPathDeferred()
 		FBOTargetColorTexture(deferredShadingFBO, 0, 0),
 	});
 }
-#include <iostream>
+
 void setupEffectPathDOF()
 {
 	RenderPass
@@ -1167,7 +1173,7 @@ void setupEffectPathDOF()
 
 	currentUniformSet = glslCommonUniforms[depthOfFieldCompositeProgramIndex];
 
-	dofComposite.setPipelineStage(compositeFBO);
+	dofComposite.setPipelineStage(depthOfFieldOutputFBO);
 	dofComposite.setProgram(depthOfFieldCompositeProgramIndex);
 
 	dofComposite.addDepthTarget(FBOTargetDepthTexture(sceneFBO, 0));
@@ -1187,7 +1193,8 @@ void setupNetgraphPathDOF()
 		FBOTargetColorTexture(vblurFBO_d2, 0, 0),
 		FBOTargetColorTexture(vblurFBO_d4, 0, 0),
 		FBOTargetColorTexture(vblurFBO_d8, 0, 0),
-		FBOTargetColorTexture(compositeFBO, 0, 0),
+		FBOTargetColorTexture(depthOfFieldOutputFBO, 0, 1),
+		FBOTargetColorTexture(depthOfFieldOutputFBO, 0, 0),
 	});
 }
 

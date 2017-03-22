@@ -96,6 +96,8 @@ enum FBOIndex
 	lightPassFBO,
 	deferredLightingCompositeFBO,
 
+	depthOfFieldOutputFBO,
+
 	// shadow map
 	shadowFBO,
 

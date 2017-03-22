@@ -27,6 +27,7 @@ uniform sampler2D img4;
 // ****
 // target
 layout (location = 0) out vec4 fragColor;
+layout (location = 1) out vec4 fragDep;
 
 float lerp(in float v0, in float v1, in float t)
 {
@@ -68,7 +69,7 @@ void main()
 	depthVal *= depthVal;
 	depthVal *= depthVal;
 
-	float depthLookup = depthDiff;
+	float depthLookup = depthDiff; //depthVal;
 
 	//fragColor = lerpVec(noblurSample, allblurSample, depthVal);
 	if (depthLookup < 0.25)
@@ -80,6 +81,5 @@ void main()
 	else
 		fragColor = blur8Sample;
 		
-	//fragColor = vec4(depthVal, depthVal, depthVal, 1);
-	//fragColor = vec4(depthDiff, depthDiff, depthDiff, 1);
+	fragDep = vec4(depthLookup, depthLookup, depthLookup, 1);
 }
