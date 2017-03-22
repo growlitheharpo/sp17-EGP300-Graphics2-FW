@@ -55,26 +55,31 @@ void main()
 	fragColor = diffuseSample*diffuseShading + specularSample*specularShading;*/
 
 	float depthVal = texture(img_depth_sample, passTexcoord).x;
-
-	depthVal *= depthVal;
-	depthVal *= depthVal;
-	depthVal *= depthVal;
-	//fragColor = vec4(depthVal, depthVal, depthVal, 1);
-
-	fragColor = lerpVec(vec4(0, 0, 0, 1), vec4(1, 1, 1, 1), depthVal);
-
 	vec4 blur0Sample = texture(img1, passTexcoord);
 	vec4 blur2Sample = texture(img2, passTexcoord);
 	vec4 blur4Sample = texture(img3, passTexcoord);
 	vec4 blur8Sample = texture(img4, passTexcoord);
 
+	float focusDepth = texture(img_depth_sample, vec2(0.5, 0.5)).x;
+
+	float depthDiff = abs(depthVal - focusDepth);
+
+	depthVal *= depthVal;
+	depthVal *= depthVal;
+	depthVal *= depthVal;
+
+	float depthLookup = depthDiff;
+
 	//fragColor = lerpVec(noblurSample, allblurSample, depthVal);
-	if (depthVal < 0.25)
-		fragColor = lerpVec(blur0Sample, blur2Sample, depthVal / 0.25);
-	else if (depthVal < 0.5)
-		fragColor = lerpVec(blur2Sample, blur4Sample, (depthVal - 0.25) / 0.25);
-	else if (depthVal < 0.75)
-		fragColor = lerpVec(blur4Sample, blur8Sample, (depthVal - 0.5) / 0.25);
+	if (depthLookup < 0.25)
+		fragColor = lerpVec(blur0Sample, blur2Sample, depthLookup / 0.25);
+	else if (depthLookup < 0.5)
+		fragColor = lerpVec(blur2Sample, blur4Sample, (depthLookup - 0.25) / 0.25);
+	else if (depthLookup < 0.75)
+		fragColor = lerpVec(blur4Sample, blur8Sample, (depthLookup - 0.5) / 0.25);
 	else
 		fragColor = blur8Sample;
+		
+	//fragColor = vec4(depthVal, depthVal, depthVal, 1);
+	//fragColor = vec4(depthDiff, depthDiff, depthDiff, 1);
 }
