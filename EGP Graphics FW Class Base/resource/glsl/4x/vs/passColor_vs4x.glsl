@@ -15,7 +15,7 @@
 // format for a single attribute: 
 //		layout (location = <attribute index>) in <type> <name>;
 layout (location = 0) in vec4 position;
-layout (location = 3) in vec4 color;
+layout (location = 3) in vec4 colorAttr;
 
 
 // ****
@@ -50,5 +50,5 @@ void main()
 	// ****
 	// optional step: pass data along to next stage in pipeline
 	// this example: copy inbound color attribute directly to outbound varying
-	passColor = color;
+	passColor = colorAttr;
 }

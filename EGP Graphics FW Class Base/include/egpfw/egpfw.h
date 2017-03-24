@@ -22,6 +22,8 @@
 #include "egpfw/egpfw/egpfwFrameBuffer.h"
 
 #include "../../project/VS2015/egpfw/render_enums.h"
+#include "egpfw/egpfw/egpfwInterpolation.h"
+#include "egpfw/egpfw/egpfwKeyframeController.h"
 
 
 #endif	// __EGPFW_H

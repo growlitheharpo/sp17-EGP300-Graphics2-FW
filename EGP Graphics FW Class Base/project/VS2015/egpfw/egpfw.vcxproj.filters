@@ -86,6 +86,12 @@
     </ClInclude>
     <ClInclude Include="RenderNetgraph.h">
       <Filter>Source Files\week7</Filter>
+	</ClInclude>
+    <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwInterpolation.h">
+      <Filter>Header Files\egpfw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwKeyframeController.h">
+      <Filter>Header Files\egpfw</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -118,6 +124,12 @@
     </ClCompile>
     <ClCompile Include="vector3.cpp">
       <Filter>Source Files\week1</Filter>
+	</ClCompile>
+    <ClCompile Include="..\..\..\source\egpfw\egpfwInterpolation.c">
+      <Filter>Source Files\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\egpfw\egpfwKeyframeController.c">
+      <Filter>Source Files\c</Filter>
     </ClCompile>
     <ClCompile Include="RenderPass.cpp">
       <Filter>Source Files\week7</Filter>
