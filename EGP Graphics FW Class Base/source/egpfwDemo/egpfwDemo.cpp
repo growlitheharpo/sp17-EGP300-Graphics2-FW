@@ -126,6 +126,8 @@ enum ModelIndex
 	sphereLowResObjModel,
 	sphereHiResObjModel,
 
+	pointModel,
+
 //-----------------------------
 	modelCount
 };
@@ -173,6 +175,13 @@ cbmath::mat4 earthAtlasMatrix;
 cbmath::mat4 moonAtlasMatrix;
 cbmath::mat4 marsModelMatrix, marsAtlasMatrix;
 cbmath::mat4 groundModelMatrix, groundAtlasMatrix;
+
+int curveMode;
+const int waypoint_max = 16;
+int waypointCount = 0;
+int useWaypoints = 1;
+cbmath::vec4 waypoint[waypoint_max];
+cbmath::mat4 curveDrawingProjectionMatrix, waypointModelMatrix = cbmath::makeScale4(4.0f);
 
 
 // light positions and colors
@@ -384,6 +393,8 @@ void setupGeometry()
 	attribs[1].data = egpfwGetUnitQuadTexcoords();
 	vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 2, 4, (vbo + fsqModel), 0);
 
+	attribs[0].data = cbmath::v3zero.v;
+	vao[pointModel] = egpCreateVAOInterleaved(PRIM_POINT, attribs, 1, 1, (vbo + pointModel), 0);
 
 	// loaded models
 	// attempt to load binary first; if failed, load object and save binary
@@ -419,6 +430,7 @@ void setupGeometry()
 	moonAtlasMatrix.c3.y = 0.5f;
 	marsAtlasMatrix.c3.y = 0.25f;
 	groundAtlasMatrix.c3.y = 0.125f;
+
 }
 
 void deleteGeometry()
@@ -551,6 +563,11 @@ const char *commonUniformName[] = {
 	(const char *)("img_depth"),
 	(const char *)("img_light_diffuse"),
 	(const char *)("img_light_specular"),
+	(const char*)("waypoint"),
+	(const char*)("waypointCount"),
+	(const char*)("curveMode"),
+	(const char*)("useWaypoints"),
+	(const char *)("color"),
 };
 
 // setup and delete shaders
@@ -751,6 +768,54 @@ void setupShaders()
 		egpReleaseFileContents(files + 1);
 	}
 
+	{ //load the line stuff because I don't care about sharing things like above.
+		files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
+		shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
+
+		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
+		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+		// draw curve using geometry shader
+		{
+			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/gs/drawCurve_gs4x.glsl");
+			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_GEOMETRY, files[1].contents);
+
+			currentProgramIndex = drawCurveProgram;
+			currentProgram = glslPrograms + currentProgramIndex;
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 1);
+			egpAttachShaderToProgram(currentProgram, shaders + 2);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			egpReleaseShader(shaders + 1);
+			egpReleaseFileContents(files + 1);
+		}
+		{
+			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawSolid_fs4x.glsl");
+			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
+
+			currentProgramIndex = testSolidColorProgramIndex;
+			currentProgram = glslPrograms + currentProgramIndex;
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 1);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			egpReleaseShader(shaders + 1);
+			egpReleaseFileContents(files + 1);
+		}
+
+		egpReleaseShader(shaders + 0);
+		egpReleaseFileContents(files + 0);
+		egpReleaseShader(shaders + 1);
+		egpReleaseFileContents(files + 1);
+		egpReleaseShader(shaders + 2);
+		egpReleaseFileContents(files + 2);
+	}
+
 	// lighting
 	{
 		currentProgramIndex = phongProgramIndex;
@@ -923,6 +988,11 @@ void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 		const egpColorFormat colorFormat = COLOR_RGBA32F;
 
 		fbo[depthOfFieldOutputFBO] = egpfwCreateFBO(frameWidth, frameHeight, 2, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP);
+	}
+
+	{ //Curves
+		const egpColorFormat colorFormat = COLOR_RGBA32F;
+		fbo[curvesFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, COLOR_RGB16, DEPTH_DISABLE, SMOOTH_NOWRAP);
 	}
 }
 
@@ -1426,6 +1496,18 @@ void handleInputState()
 	}
 
 
+	// place waypoints
+	if (waypointCount < waypoint_max &&
+		egpMouseIsButtonPressed(mouse, 0))
+	{
+		waypoint[waypointCount].set(
+			(float)(egpMouseX(mouse)),
+			(float)(win_h - egpMouseY(mouse)),
+			0.0f,
+			1.0f);
+		++waypointCount;
+	}
+
 	// finish by updating input state
 	egpMouseUpdate(mouse);
 	egpKeyboardUpdate(keybd);
@@ -1436,7 +1518,7 @@ void handleInputState()
 void updateGameState(float dt)
 {
 	// update camera
-	updateCameraControlled(dt, mouse);
+	//updateCameraControlled(dt, mouse);
 //	updateCameraOrbit(dt);
 
 	// update view matrix
@@ -1572,6 +1654,61 @@ void renderSkybox()
 	}
 }
 
+
+// draw curves
+void renderCurve()
+{
+	const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
+	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
+
+	int i;
+	cbmath::vec4 *waypointPtr;
+	cbmath::mat4 waypointMVP;
+
+	// clear
+	glClear(GL_COLOR_BUFFER_BIT);
+
+
+	// draw curve
+	currentProgramIndex = drawCurveProgram;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, curveDrawingProjectionMatrix.m);
+
+	// ship waypoint data to program, where it will be received by GS
+	egpSendUniformFloat(currentUniformSet[unif_waypoint], UNIF_VEC4, waypointCount, waypoint->v);
+	egpSendUniformInt(currentUniformSet[unif_waypointCount], UNIF_INT, 1, &waypointCount);
+	egpSendUniformInt(currentUniformSet[unif_curveMode], UNIF_INT, 1, &curveMode);
+	egpSendUniformInt(currentUniformSet[unif_useWaypoints], UNIF_INT, 1, &useWaypoints);
+
+	egpActivateVAO(vao + pointModel);
+	egpDrawActiveVAO();
+
+	// draw waypoints using solid color program and sphere model
+	currentProgramIndex = testSolidColorProgramIndex;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, waypointColor.v);
+
+	egpActivateVAO(vao + sphere8x6Model);
+
+	// draw waypoints
+	for (i = 0, waypointPtr = waypoint; i < waypointCount; ++i, ++waypointPtr)
+	{
+		// set position, update MVP for this waypoint and draw
+		waypointModelMatrix.c3 = *waypointPtr;
+		waypointMVP = curveDrawingProjectionMatrix * waypointModelMatrix;
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
+		egpDrawActiveVAO();
+	}
+
+
+	// reset model matrix position
+	waypointModelMatrix.c3 = cbmath::v4w;
+}
+
 // draw frame
 // DRAWING AND UPDATING SHOULD BE SEPARATE (good practice)
 void renderGameState()
@@ -1582,6 +1719,9 @@ void renderGameState()
 
 	// Complete our currently selected render path (draws all objects, and whatever other passes are needed).
 	globalRenderPath.render();
+
+	egpfwActivateFBO(fbo + curvesFBO);
+	renderCurve();
 
 	//-----------------------------------------------------------------------------
 	//-----------------------------------------------------------------------------
@@ -1599,8 +1739,9 @@ void renderGameState()
 		egpActivateProgram(currentProgram);
 
 		// Get the fbo we want by grabbing it directly from the netgraph (whether it's visible or not).
-		FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
-		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
+		//FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
+		//egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
+		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
 		egpActivateVAO(vao + fsqModel);
 		egpDrawActiveVAO();
 		

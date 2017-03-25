@@ -33,6 +33,9 @@ enum GLSLProgramIndex
 
 	depthOfFieldCompositeProgramIndex,
 
+	drawCurveProgram, 
+	testSolidColorProgramIndex,
+
 	//-----------------------------
 	GLSLProgramCount
 };
@@ -67,6 +70,12 @@ enum GLSLCommonUniformIndex
 	unif_img_light_diffuse,
 	unif_img_light_specular,
 
+	unif_waypoint,
+	unif_waypointCount,
+	unif_curveMode,
+	unif_useWaypoints,
+	unif_color,
+
 	//-----------------------------
 	GLSLCommonUniformCount
 };
@@ -98,9 +107,19 @@ enum FBOIndex
 
 	depthOfFieldOutputFBO,
 
+	curvesFBO,
+
 	// shadow map
 	shadowFBO,
 
 	//-----------------------------
 	fboCount
+};
+
+enum DrawCurveMode
+{
+	CURVE_LINES,
+	CURVE_BEZIER,
+	CURVE_CATMULLROM,
+	CURVE_HERMITE,
 };
