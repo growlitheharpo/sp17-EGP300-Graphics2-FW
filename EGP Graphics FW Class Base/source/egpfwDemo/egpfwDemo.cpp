@@ -1846,6 +1846,20 @@ void onResizeWindow(int w, int h)
 	//	it's probably a good idea to tear down and remake the framebuffers...
 	deleteFramebuffers();
 	setupFramebuffers(viewport_tw, viewport_th);
+
+	//-----------------------------------------------------------------------------
+	// setup curve drawing camera
+	// just an ortho projection matrix the same size as the window's viewport
+
+	{
+		const float tmpNF = 100.0f;
+		curveDrawingProjectionMatrix = cbmath::m4Identity;
+		curveDrawingProjectionMatrix.m00 = 2.0f / (float)viewport_tw;
+		curveDrawingProjectionMatrix.m11 = 2.0f / (float)viewport_th;
+		curveDrawingProjectionMatrix.m22 = -1.0f / tmpNF;
+		curveDrawingProjectionMatrix.m30 = -(float)win_w / (float)viewport_tw;
+		curveDrawingProjectionMatrix.m31 = -(float)win_h / (float)viewport_th;
+	}
 }
 
 // window moved
