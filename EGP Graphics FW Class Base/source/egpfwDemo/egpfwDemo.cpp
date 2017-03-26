@@ -1518,7 +1518,7 @@ void handleInputState()
 void updateGameState(float dt)
 {
 	// update camera
-	//updateCameraControlled(dt, mouse);
+	updateCameraControlled(dt, mouse);
 //	updateCameraOrbit(dt);
 
 	// update view matrix
@@ -1739,9 +1739,9 @@ void renderGameState()
 		egpActivateProgram(currentProgram);
 
 		// Get the fbo we want by grabbing it directly from the netgraph (whether it's visible or not).
-		//FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
-		//egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
-		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
+		FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
+		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
+		//egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
 		egpActivateVAO(vao + fsqModel);
 		egpDrawActiveVAO();
 		
