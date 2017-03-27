@@ -46,6 +46,9 @@
     <Filter Include="Resource Files\glsl\4x\gs">
       <UniqueIdentifier>{49a6c7fd-6613-44cd-8fff-6abc4cd1c01d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\glsl\4x\vs_animation">
+      <UniqueIdentifier>{73b67242-eb32-4019-b7e2-a1380f03eb97}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -138,6 +141,15 @@
       <Filter>Resource Files\glsl\4x\fs</Filter>
     </None>
     <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_gs4x.glsl">
+      <Filter>Resource Files\glsl\4x\gs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_animation\morphing_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_animation</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_animation\morphing_passKeyframes_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_animation</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_morphing_gs4x.glsl">
       <Filter>Resource Files\glsl\4x\gs</Filter>
     </None>
   </ItemGroup>
