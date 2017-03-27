@@ -89,8 +89,8 @@ enum ModelIndex
 	fsqModel,
 	boxModel, sphere8x6Model, sphere32x24Model,
 
-	// curve drawing
-	pointModel, 
+	// morph targets
+	morphModel, 
 
 //-----------------------------
 	modelCount
@@ -119,8 +119,9 @@ enum GLSLProgramIndex
 	testTextureProgramIndex,
 	testTexturePassthruProgramIndex,
 
-	// curve drawing program
-	drawCurveProgram, 
+	// morph targets programs
+	morphTargetsProgram, 
+	morphTargetsDrawCurveProgram, 
 
 //-----------------------------
 	GLSLProgramCount
@@ -131,11 +132,9 @@ enum GLSLCommonUniformIndex
 	unif_color, 
 	unif_dm,
 
-	// curve drawing uniforms
-	unif_waypoint, 
-	unif_waypointCount, 
-	unif_curveMode, 
-	unif_useWaypoints, 
+	// morph target uniforms
+	unif_param, 
+	unif_index, 
 
 //-----------------------------
 	GLSLCommonUniformCount
@@ -145,11 +144,9 @@ const char *commonUniformName[] = {
 	(const char *)("color"),
 	(const char *)("tex_dm"),
 
-	// curve drawing
-	(const char *)("waypoint"),
-	(const char *)("waypointCount"),
-	(const char *)("curveMode"),
-	(const char *)("useWaypoints"),
+	// morph targets
+	(const char *)("param"),
+	(const char *)("index"),
 };
 egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
 int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
@@ -162,9 +159,6 @@ enum FBOIndex
 	// scene
 	sceneFBO, 
 
-	// curve drawing
-	curvesFBO, 
-
 //-----------------------------
 	fboCount
 };
@@ -176,7 +170,8 @@ enum DisplayMode
 egpFrameBufferObjectDescriptor fbo[fboCount], *fboFinalDisplay = fbo;
 int displayMode = displayScene;
 int displayColor = 1;
-int testDrawAxes = 1;
+int testDrawAxes = 0;
+int testDrawCurves = 0;
 
 
 
@@ -198,7 +193,7 @@ cbmath::vec4 cameraPos_world[numCameras] = {
 enum SceneObjects
 {
 	skyboxObject,
-	pathFollowingObject, 
+	morphTargetObject, 
 //-----------------------------
 	sceneObjectCount,
 //-----------------------------
@@ -216,33 +211,11 @@ cbmath::mat4 boxModelViewProjectionMatrix;
 
 
 
-// curve drawing
-const int waypoint_max = 16;
-int waypointCount = 0;
-cbmath::vec4 waypoint[waypoint_max];
-
-enum DrawCurveMode
-{
-	CURVE_LINES, 
-	CURVE_BEZIER, 
-	CURVE_CATMULLROM, 
-	CURVE_HERMITE, 
-};
-int curveMode = CURVE_LINES;
-int useWaypoints = 0;
-
-// projection matrix for the curve sketching view
-cbmath::mat4 curveDrawingProjectionMatrix;
-
-// model matrix for waypoints (spheres)
-cbmath::mat4 waypointModelMatrix = cbmath::makeScale4(4.0f);
-
-// path follower tracking: 
-//	where is it and which path segment is it on, and interpolation parameter
-cbmath::vec4 pathFollowerPosition = cbmath::v4w;
-unsigned int pathFollowerSegment = 0;
-float pathFollowerParam = 0.0f;
-float pathFollowerParamRate = 1.0f;
+// morph targets
+const int morphKeyframeCount = 4;
+int morphKeyframeIndex[morphKeyframeCount] = { 0, 1, 2, 3 };
+float morphInterpolationParam = 0.0f;
+float morphInterpolationParamRate = 1.0f;
 
 
 
@@ -383,10 +356,55 @@ void setupGeometry()
 	vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 2, 4, (vbo + fsqModel), 0);
 
 
-	// curve: pass a single point that represents nothing
-	// need a vertex to trigger vertex shader!
-	attribs[0].data = cbmath::v3zero.v;
-	vao[pointModel] = egpCreateVAOInterleaved(PRIM_POINT, attribs, 1, 1, (vbo + pointModel), 0);
+	// morphing: test shape will just be a quad with 4 built-in keyframe poses
+	{
+		// we will have 4 positions; if you want normals you need to add more
+		const unsigned int totalAttribs = morphKeyframeCount;
+		const unsigned int numVertices = 4;
+
+		// ****
+		// positions for pose 0: default quad
+		const float testMorphShapePosition0[numVertices * 3] = {
+			-1.0f, -1.0f,  0.0f, 
+			+1.0f, -1.0f,  0.0f, 
+			-1.0f, +1.0f,  0.0f, 
+			+1.0f, +1.0f,  0.0f, 
+		};
+		// positions for pose 1: move the bottom-left corner forward
+		const float testMorphShapePosition1[numVertices * 3] = {
+			-1.0f, -1.0f, +1.0f,
+			+1.0f, -1.0f,  0.0f,
+			-1.0f, +1.0f,  0.0f,
+			+1.0f, +1.0f,  0.0f,
+		};
+		// positions for pose 2: move the top-right corner backward
+		const float testMorphShapePosition2[numVertices * 3] = {
+			-1.0f, -1.0f,  0.0f,
+			+1.0f, -1.0f,  0.0f,
+			-1.0f, +1.0f,  0.0f,
+			+1.0f, +1.0f, -1.0f,
+		};
+		// positions for pose 3: stretch the bottom-right and top-left corners
+		const float testMorphShapePosition3[numVertices * 3] = {
+			-1.0f, -1.0f,  0.0f,
+			+2.0f, -2.0f,  0.0f,
+			-2.0f, +2.0f,  0.0f,
+			+1.0f, +1.0f,  0.0f,
+		};
+
+		// create morph target object: 
+		//	-> stuff all poses for position and other 
+		//		morphable attributes into a single VBO!
+		// demo case: let's just use the positions for now...
+		const egpAttributeDescriptor morphTargetModelAttribs[] = {
+			egpCreateAttributeDescriptor((egpAttributeName)0, ATTRIB_VEC3, testMorphShapePosition0),
+			egpCreateAttributeDescriptor((egpAttributeName)1, ATTRIB_VEC3, testMorphShapePosition1),
+			egpCreateAttributeDescriptor((egpAttributeName)2, ATTRIB_VEC3, testMorphShapePosition2),
+			egpCreateAttributeDescriptor((egpAttributeName)3, ATTRIB_VEC3, testMorphShapePosition3),
+		};
+		vao[morphModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, 
+			morphTargetModelAttribs, totalAttribs, numVertices, (vbo + morphModel), 0);
+	}
 }
 
 void deleteGeometry()
@@ -497,17 +515,31 @@ void setupShaders()
 			egpReleaseFileContents(files + 0);
 		}
 
-
-		// shared: transform vertex
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
-		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-
-		// draw curve using geometry shader
+		// draw morphing object
 		{
-			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/gs/drawCurve_gs4x.glsl");
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_animation/morphing_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+			currentProgramIndex = morphTargetsProgram;
+			currentProgram = glslPrograms + currentProgramIndex;
+			*currentProgram = egpCreateProgram();
+			egpAttachShaderToProgram(currentProgram, shaders + 0);
+			egpAttachShaderToProgram(currentProgram, shaders + 2);
+			egpLinkProgram(currentProgram);
+			egpValidateProgram(currentProgram);
+
+			egpReleaseShader(shaders + 0);
+			egpReleaseFileContents(files + 0);
+		}
+
+		// draw morphing object curves
+		{
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_animation/morphing_passKeyframes_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/gs/drawCurve_morphing_gs4x.glsl");
 			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_GEOMETRY, files[1].contents);
 
-			currentProgramIndex = drawCurveProgram;
+			currentProgramIndex = morphTargetsDrawCurveProgram;
 			currentProgram = glslPrograms + currentProgramIndex;
 			*currentProgram = egpCreateProgram();
 			egpAttachShaderToProgram(currentProgram, shaders + 0);
@@ -516,6 +548,8 @@ void setupShaders()
 			egpLinkProgram(currentProgram);
 			egpValidateProgram(currentProgram);
 
+			egpReleaseShader(shaders + 0);
+			egpReleaseFileContents(files + 0);
 			egpReleaseShader(shaders + 1);
 			egpReleaseFileContents(files + 1);
 		}
@@ -527,6 +561,8 @@ void setupShaders()
 
 		// draw solid color (uniform)
 		{
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
+			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawSolid_fs4x.glsl");
 			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
@@ -538,13 +574,11 @@ void setupShaders()
 			egpLinkProgram(currentProgram);
 			egpValidateProgram(currentProgram);
 
+			egpReleaseShader(shaders + 0);
+			egpReleaseFileContents(files + 0);
 			egpReleaseShader(shaders + 1);
 			egpReleaseFileContents(files + 1);
 		}
-
-		// done with transform vs
-		egpReleaseShader(shaders + 0);
-		egpReleaseFileContents(files + 0);
 	}
 
 
@@ -638,9 +672,6 @@ void setupFramebuffers(unsigned int frameWidth, unsigned int frameHeight)
 
 	// scene
 	fbo[sceneFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_D32, SMOOTH_NOWRAP);
-
-	// curve drawing
-	fbo[curvesFBO] = egpfwCreateFBO(frameWidth, frameHeight, 1, colorFormat, DEPTH_DISABLE, SMOOTH_NOWRAP);
 }
 
 void deleteFramebuffers()
@@ -786,9 +817,8 @@ void displayControls()
 	printf("\n l = real-time reload all shaders");
 	printf("\n x = toggle coordinate axes post-draw");
 
-	printf("\n 1-4 = toggle curve mode");
-	printf("\n y = reset waypoints");
-	printf("\n u = toggle use waypoints/test curve");
+	printf("\n c = draw morphing curves for vertices");
+	printf("\n 1-4 = go to morph keyframe");
 
 	printf("\n-------------------------------------------------------");
 }
@@ -822,44 +852,49 @@ void handleInputState()
 	if (egpKeyboardIsKeyPressed(keybd, 'x'))
 		testDrawAxes = 1 - testDrawAxes;
 
+	
+	// morphing curves
+	if (egpKeyboardIsKeyPressed(keybd, 'c'))
+		testDrawCurves = 1 - testDrawCurves;
 
-	// curve mode
+	// hard-set morphing frame and pause
 	if (egpKeyboardIsKeyPressed(keybd, '1'))
 	{
-		curveMode = CURVE_LINES;
-		pathFollowerSegment = 0;
-		pathFollowerParam = 0.0f;
+		playing = 0;
+		morphInterpolationParam = 0.0f;
+		morphKeyframeIndex[0] = 0;
+		morphKeyframeIndex[1] = 1;
+		morphKeyframeIndex[2] = 2;
+		morphKeyframeIndex[3] = 3;
 	}
 	else if (egpKeyboardIsKeyPressed(keybd, '2'))
 	{
-		curveMode = CURVE_BEZIER;
-		pathFollowerSegment = 0;
-		pathFollowerParam = 0.0f;
+		playing = 0;
+		morphInterpolationParam = 0.0f;
+		morphKeyframeIndex[0] = 1;
+		morphKeyframeIndex[1] = 2;
+		morphKeyframeIndex[2] = 3;
+		morphKeyframeIndex[3] = 0;
 	}
 	else if (egpKeyboardIsKeyPressed(keybd, '3'))
 	{
-		curveMode = CURVE_CATMULLROM;
-		pathFollowerSegment = 0;
-		pathFollowerParam = 0.0f;
+		playing = 0;
+		morphInterpolationParam = 0.0f;
+		morphKeyframeIndex[0] = 2;
+		morphKeyframeIndex[1] = 3;
+		morphKeyframeIndex[2] = 0;
+		morphKeyframeIndex[3] = 1;
 	}
 	else if (egpKeyboardIsKeyPressed(keybd, '4'))
 	{
-		curveMode = CURVE_HERMITE;
-		pathFollowerSegment = 0;
-		pathFollowerParam = 0.0f;
+		playing = 0;
+		morphInterpolationParam = 0.0f;
+		morphKeyframeIndex[0] = 3;
+		morphKeyframeIndex[1] = 0;
+		morphKeyframeIndex[2] = 1;
+		morphKeyframeIndex[3] = 2;
 	}
 
-	// reset waypoints
-	if (egpKeyboardIsKeyPressed(keybd, 'y'))
-	{
-		waypointCount = 0;
-		pathFollowerSegment = 0;
-		pathFollowerParam = 0.0f;
-	}
-
-	// toggle waypoints/test
-	if (egpKeyboardIsKeyPressed(keybd, 'u'))
-		useWaypoints = 1 - useWaypoints;
 
 /*
 	// toggle pipeline stage
@@ -876,19 +911,6 @@ void handleInputState()
 		fboFinalDisplay = fbo + sceneFBO;
 	}
 */
-
-
-	// place waypoints
-	if (waypointCount < waypoint_max && 
-		egpMouseIsButtonPressed(mouse, 0))
-	{
-		waypoint[waypointCount].set(
-			(float)(egpMouseX(mouse)), 
-			(float)(win_h - egpMouseY(mouse)), 
-			0.0f, 
-			1.0f);
-		++waypointCount;
-	}
 
 
 	// finish by updating input state
@@ -933,93 +955,18 @@ void updateGameState(float dt)
 			boxModelViewProjectionMatrix = viewProjectionMatrix[controlCamera] * modelMatrix[skyboxObject];
 		}
 
-		// path following object
+		// morphing object
 		{
-			int i0, i1, di, n;
-			cbmath::vec4 p0, p1, p2, p3, pPrev, pNext, m0, m1;
-
-			switch (curveMode)
+			// update interpolation parameter
+			morphInterpolationParam += morphInterpolationParamRate*dt;
+			if (morphInterpolationParam > 1.0f)
 			{
-			case CURVE_LINES:
-				// follow the current path segment
-				di = 1;
-				i0 = pathFollowerSegment - pathFollowerSegment%di;
-				i1 = i0 + di;
-				n = waypointCount - di;
-				p0 = waypoint[i0];
-				p1 = waypoint[i1];
-				pathFollowerPosition.x = egpfwLerp(p0.x, p1.x, pathFollowerParam);
-				pathFollowerPosition.y = egpfwLerp(p0.y, p1.y, pathFollowerParam);
-				break;
-			case CURVE_BEZIER:
-				// every 3 waypoints used for a single Bezier curve of degree 3
-				di = 3;
-				i0 = pathFollowerSegment - pathFollowerSegment%di;
-				i1 = i0 + di;
-				n = waypointCount - di;
-				p0 = waypoint[i0];
-				p1 = waypoint[i0+1];
-				p2 = waypoint[i0+2];
-				p3 = waypoint[i1];
-				if (n > 0)
-				{
-					pathFollowerPosition.x = egpfwBezier3(p0.x, p1.x, p2.x, p3.x, pathFollowerParam);
-					pathFollowerPosition.y = egpfwBezier3(p0.y, p1.y, p2.y, p3.y, pathFollowerParam);
-				}
-				break;
-			case CURVE_CATMULLROM:
-				di = 1;
-				i0 = pathFollowerSegment - pathFollowerSegment%di;
-				i1 = i0 + di;
-				n = waypointCount - di;
-				p0 = waypoint[i0];
-				p1 = waypoint[i1];
-				if (i0 > 0 && i0 < n - 1)
-				{
-					pPrev = waypoint[i0 - 1];
-					pNext = waypoint[i1 + 1];
-					pathFollowerPosition.x = egpfwCatmullRom(pPrev.x, p0.x, p1.x, pNext.x, pathFollowerParam);
-					pathFollowerPosition.y = egpfwCatmullRom(pPrev.y, p0.y, p1.y, pNext.y, pathFollowerParam);
-				}
-				else
-				{
-					pathFollowerPosition.x = egpfwLerp(p0.x, p1.x, pathFollowerParam);
-					pathFollowerPosition.y = egpfwLerp(p0.y, p1.y, pathFollowerParam);
-				}
-				break;
-			case CURVE_HERMITE:
-				di = 2;
-				i0 = pathFollowerSegment - pathFollowerSegment%di;
-				i1 = i0 + di;
-				n = waypointCount - di;
-				p0 = waypoint[i0];
-				m0 = waypoint[i0 + 1] - p0;	// bi-directional tangents
-			//	m0 = p0 - waypoint[i0 + 1];	// single-direction tangents
-				p1 = waypoint[i1];
-				m1 = waypoint[i1 + 1] - p1;
-				if (n > 1)
-				{
-					pathFollowerPosition.x = egpfwCubicHermite(p0.x, m0.x, p1.x, m1.x, pathFollowerParam);
-					pathFollowerPosition.y = egpfwCubicHermite(p0.y, m0.y, p1.y, m1.y, pathFollowerParam);
-				}
-				break;
-			};
+				// next segment
+				morphInterpolationParam -= 1.0f;
 
-
-			if (waypointCount > di)
-			{
-				// update interpolation parameter
-				pathFollowerParam += pathFollowerParamRate*dt;
-				if (pathFollowerParam > 1.0f)
-				{
-					// next segment
-					pathFollowerParam -= 1.0f;
-					pathFollowerSegment = i1 % n;
-				}
-
-				// update model matrix for object
-				modelMatrix[pathFollowingObject] = cbmath::makeScale4(10.0f);
-				modelMatrix[pathFollowingObject].c3 = pathFollowerPosition;
+				// update keyframe indices (looping)
+				for (int i = 0; i < morphKeyframeCount; ++i)
+					morphKeyframeIndex[i] = (morphKeyframeIndex[i] + 1) % morphKeyframeCount;
 			}
 		}
 	}
@@ -1049,65 +996,33 @@ void renderSkybox()
 
 
 // draw curves
-void renderCurve()
+void renderMorphObject()
 {
-	const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
-	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
+	cbmath::mat4 mvp = viewProjectionMatrix[cameraObjects + activeCamera] * modelMatrix[morphTargetObject];
+	egpActivateVAO(vao + morphModel);
 
-	int i;
-	cbmath::vec4 *waypointPtr;
-	cbmath::mat4 waypointMVP;
-
-	// clear
-	glClear(GL_COLOR_BUFFER_BIT);
-
-
-	// draw curve
-	currentProgramIndex = drawCurveProgram;
+	// draw morphing object
+	currentProgramIndex = morphTargetsProgram;
 	currentProgram = glslPrograms + currentProgramIndex;
 	currentUniformSet = glslCommonUniforms[currentProgramIndex];
 	egpActivateProgram(currentProgram);
-	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, curveDrawingProjectionMatrix.m);
 
-	// ship waypoint data to program, where it will be received by GS
-	egpSendUniformFloat(currentUniformSet[unif_waypoint], UNIF_VEC4, waypointCount, waypoint->v);
-	egpSendUniformInt(currentUniformSet[unif_waypointCount], UNIF_INT, 1, &waypointCount);
-	egpSendUniformInt(currentUniformSet[unif_curveMode], UNIF_INT, 1, &curveMode);
-	egpSendUniformInt(currentUniformSet[unif_useWaypoints], UNIF_INT, 1, &useWaypoints);
-
-	egpActivateVAO(vao + pointModel);
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mvp.m);
+	egpSendUniformFloat(currentUniformSet[unif_param], UNIF_FLOAT, 1, &morphInterpolationParam);
+	egpSendUniformInt(currentUniformSet[unif_index], UNIF_INT, morphKeyframeCount, morphKeyframeIndex);
 	egpDrawActiveVAO();
 
-
-	// draw waypoints using solid color program and sphere model
-	currentProgramIndex = testSolidColorProgramIndex;
-	currentProgram = glslPrograms + currentProgramIndex;
-	currentUniformSet = glslCommonUniforms[currentProgramIndex];
-	egpActivateProgram(currentProgram);
-	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, waypointColor.v);
-
-	egpActivateVAO(vao + sphere8x6Model);
-
-	// draw waypoints
-	for (i = 0, waypointPtr = waypoint; i < waypointCount; ++i, ++waypointPtr)
+	// draw morphing object again with curve program
+	if (testDrawCurves)
 	{
-		// set position, update MVP for this waypoint and draw
-		waypointModelMatrix.c3 = *waypointPtr;
-		waypointMVP = curveDrawingProjectionMatrix * waypointModelMatrix;
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
+		currentProgramIndex = morphTargetsDrawCurveProgram;
+		currentProgram = glslPrograms + currentProgramIndex;
+		currentUniformSet = glslCommonUniforms[currentProgramIndex];
+		egpActivateProgram(currentProgram);
+
+		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mvp.m);
 		egpDrawActiveVAO();
 	}
-
-
-	// draw path follower
-	waypointMVP = curveDrawingProjectionMatrix * modelMatrix[pathFollowingObject];
-	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
-	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, objectColor.v);
-	egpDrawActiveVAO();
-
-
-	// reset model matrix position
-	waypointModelMatrix.c3 = cbmath::v4w;
 }
 
 
@@ -1121,11 +1036,7 @@ void renderGameState()
 	// draw skybox
 	egpfwActivateFBO(fbo + sceneFBO);
 	renderSkybox();
-
-
-	// draw curve stuff
-	egpfwActivateFBO(fbo + curvesFBO);
-	renderCurve();
+	renderMorphObject();
 
 
 //-----------------------------------------------------------------------------
@@ -1146,12 +1057,9 @@ void renderGameState()
 
 	//	// bind scene texture
 	//	if (displayColor)
-	//		egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
+			egpfwBindColorTargetTexture(fboFinalDisplay, 0, 0);
 	//	else
 	//		egpfwBindDepthTargetTexture(fboFinalDisplay, 0);
-
-		// display curves FBO
-		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
 
 		// draw fsq
 		egpDrawActiveVAO();
@@ -1170,13 +1078,7 @@ void renderGameState()
 
 			// center of world
 			// (this is useful to see where the origin is and how big one unit is)
-		//	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjectionMatrix[cameraObjects + activeCamera].m);
-
-			// origin of viewport for orthographic view
-			{
-				cbmath::mat4 orthoMVP = curveDrawingProjectionMatrix * waypointModelMatrix;
-				egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, orthoMVP.m);
-			}
+			egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, viewProjectionMatrix[cameraObjects + activeCamera].m);
 
 			// draw axes
 			egpDrawActiveVAO();
@@ -1261,20 +1163,6 @@ void onResizeWindow(int w, int h)
 	//	it's probably a good idea to tear down and remake the framebuffers...
 	deleteFramebuffers();
 	setupFramebuffers(viewport_tw, viewport_th);
-
-
-//-----------------------------------------------------------------------------
-	// setup curve drawing camera
-	// just an ortho projection matrix the same size as the window's viewport
-
-	{
-		const float tmpNF = 100.0f;
-		curveDrawingProjectionMatrix.m00 = 2.0f / (float)viewport_tw;
-		curveDrawingProjectionMatrix.m11 = 2.0f / (float)viewport_th;
-		curveDrawingProjectionMatrix.m22 = -1.0f / tmpNF;
-		curveDrawingProjectionMatrix.m30 = -(float)win_w / (float)viewport_tw;
-		curveDrawingProjectionMatrix.m31 = -(float)win_h / (float)viewport_th;
-	}
 }
 
 // window moved
