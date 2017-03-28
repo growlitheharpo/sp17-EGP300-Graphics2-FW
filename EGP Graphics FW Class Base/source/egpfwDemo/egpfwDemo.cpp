@@ -236,7 +236,7 @@ const float moonSize = 0.27f;
 RenderPath globalRenderPath;
 RenderNetgraph globalRenderNetgraph(fbo, vao + fsqModel, glslPrograms, glslCommonUniforms[testTextureProgramIndex]);
 
-KeyframeWindow keyframeWindow(vao, glslPrograms);
+KeyframeWindow keyframeWindow(vao, fbo, glslPrograms);
 
 
 //-----------------------------------------------------------------------------
@@ -1705,9 +1705,9 @@ void renderGameState()
 	// Complete our currently selected render path (draws all objects, and whatever other passes are needed).
 	globalRenderPath.render();
 
-	egpfwActivateFBO(fbo + curvesFBO);
+	//egpfwActivateFBO(fbo + curvesFBO);
 	//renderCurve();
-	keyframeWindow.render(glslCommonUniforms[drawCurveProgram], glslCommonUniforms[testSolidColorProgramIndex]);
+	keyframeWindow.renderToFBO(glslCommonUniforms[drawCurveProgram], glslCommonUniforms[testSolidColorProgramIndex]);
 
 	//-----------------------------------------------------------------------------
 	//-----------------------------------------------------------------------------
@@ -1730,11 +1730,7 @@ void renderGameState()
 		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
 		egpDrawActiveVAO();
 
-		egpActivateProgram(glslPrograms + testTextureProgramIndex);
-		egpActivateVAO(vao + fsqModel);
-		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
-		egpSendUniformFloatMatrix(glslCommonUniforms[testTextureProgramIndex][unif_mvp], UNIF_MAT4, 1, 0, keyframeWindow.getOnScreenMatrix().m);
-		egpDrawActiveVAO();
+		keyframeWindow.renderToBackbuffer(glslCommonUniforms[testTextureProgramIndex]);
 		
 		if (displayNetgraphToggle)
 			globalRenderNetgraph.render();

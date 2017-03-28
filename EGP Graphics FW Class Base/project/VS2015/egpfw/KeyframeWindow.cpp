@@ -6,9 +6,10 @@
 #include "transformMatrix.h"
 
 
-KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpProgram* programs)
+KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs)
 {
 	mVAOList = vao;
+	mFBOList = fbo;
 	mProgramList = programs;
 }
 
@@ -46,7 +47,7 @@ float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
 	return -1.0f; //Fill this in later
 }
 
-void KeyframeWindow::render(int* curveUniformSet,  int* solidColorUniformSet)
+void KeyframeWindow::renderToFBO(int* curveUniformSet,  int* solidColorUniformSet)
 {
 	const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
 	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
@@ -55,13 +56,12 @@ void KeyframeWindow::render(int* curveUniformSet,  int* solidColorUniformSet)
 	cbmath::vec4 *waypointPtr;
 	cbmath::mat4 waypointMVP;
 
+	egpfwActivateFBO(mFBOList + curvesFBO);
+
 	// clear
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// draw curve
-	/*currentProgramIndex = drawCurveProgram;
-	currentProgram = glslPrograms + currentProgramIndex;
-	currentUniformSet = glslCommonUniforms[currentProgramIndex];*/
 	egpActivateProgram(mProgramList + drawCurveProgram);
 	egpSendUniformFloatMatrix(curveUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
 
@@ -94,4 +94,14 @@ void KeyframeWindow::render(int* curveUniformSet,  int* solidColorUniformSet)
 		egpSendUniformFloatMatrix(solidColorUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
 		egpDrawActiveVAO();
 	}
+}
+
+void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
+{
+	egpActivateProgram(mProgramList + testTextureProgramIndex);
+	egpActivateVAO(mVAOList + fsqModel);
+	egpfwBindColorTargetTexture(mFBOList + curvesFBO, 0, 0);
+	egpSendUniformFloatMatrix(textureUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mOnScreenMatrix.m);
+	egpDrawActiveVAO();
+
 }

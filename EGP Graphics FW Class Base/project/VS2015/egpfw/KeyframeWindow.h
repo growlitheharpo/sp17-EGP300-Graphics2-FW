@@ -21,6 +21,7 @@ class KeyframeWindow
 
 	private:
 		egpVertexArrayObjectDescriptor* mVAOList;
+		egpFrameBufferObjectDescriptor* mFBOList;
 		egpProgram* mProgramList;
 
 		std::vector<cbmath::vec4> mWaypoints;
@@ -30,7 +31,7 @@ class KeyframeWindow
 		float mCurrentTime;
 
 	public:
-		KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpProgram* programs);
+		KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs);
 		~KeyframeWindow();
 
 		void updateInput(egpMouse* m, egpKeyboard* key);
@@ -40,6 +41,7 @@ class KeyframeWindow
 	
 		cbmath::mat4& getOnScreenMatrix() { return mOnScreenMatrix; }
 
-		void render(int* curveUniformSet, int* solidColorUniformSet);
+		void renderToFBO(int* curveUniformSet, int* solidColorUniformSet);
+		void renderToBackbuffer(int* textureUniformSet);
 };
 
