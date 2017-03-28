@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cbmath/cbtkMatrix.h>
 #include <GL/glew.h>
+#include "transformMatrix.h"
 
 
 KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpProgram* programs)
@@ -34,6 +35,10 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 	mLittleBoxWindowMatrix.m31 = -win_h / viewport_th;
 
 	mWindowSize.set(win_w, win_h);
+	mOnScreenMatrix = cbmath::makeScale4(0.45f);
+
+	if (!gluInvertMatrix(mOnScreenMatrix.m, mOnScreenMatrixInv.m))
+		throw std::invalid_argument("I have no idea how this is possible, but our on-screen transformation matrix could not be inverted!");
 }
 
 float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)

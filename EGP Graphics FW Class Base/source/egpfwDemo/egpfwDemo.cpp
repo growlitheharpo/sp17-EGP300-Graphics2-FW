@@ -1730,12 +1730,10 @@ void renderGameState()
 		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
 		egpDrawActiveVAO();
 
-
 		egpActivateProgram(glslPrograms + testTextureProgramIndex);
 		egpActivateVAO(vao + fsqModel);
-		cbmath::mat4 testMatrix = cbmath::makeScale4(0.45f);
 		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
-		egpSendUniformFloatMatrix(glslCommonUniforms[testTextureProgramIndex][unif_mvp], UNIF_MAT4, 1, 0, testMatrix.m);
+		egpSendUniformFloatMatrix(glslCommonUniforms[testTextureProgramIndex][unif_mvp], UNIF_MAT4, 1, 0, keyframeWindow.getOnScreenMatrix().m);
 		egpDrawActiveVAO();
 		
 		if (displayNetgraphToggle)

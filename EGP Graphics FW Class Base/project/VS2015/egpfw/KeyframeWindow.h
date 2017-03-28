@@ -26,6 +26,7 @@ class KeyframeWindow
 		std::vector<cbmath::vec4> mWaypoints;
 		cbmath::vec2 mWindowSize;
 		cbmath::mat4 mLittleBoxWindowMatrix;
+		cbmath::mat4 mOnScreenMatrix, mOnScreenMatrixInv;
 		float mCurrentTime;
 
 	public:
@@ -36,6 +37,8 @@ class KeyframeWindow
 		void updateWindowSize(float viewport_tw, float viewport_th, float tmpNF, float win_w, float win_h);
 
 		float getValAtCurrentTime(KeyframeChannel c);
+	
+		cbmath::mat4& getOnScreenMatrix() { return mOnScreenMatrix; }
 
 		void render(int* curveUniformSet, int* solidColorUniformSet);
 };
