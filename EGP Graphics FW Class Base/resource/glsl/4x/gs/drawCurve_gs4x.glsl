@@ -8,7 +8,7 @@
 
 #version 410
 
-#define WAYPOINTS_MAX 16
+#define WAYPOINTS_MAX 512
 #define SAMPLES_PER_SEGMENT 16
 #define SAMPLES_MAX 128
 
