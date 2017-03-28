@@ -31,6 +31,11 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 	mLittleBoxWindowMatrix.m31 = -win_h / viewport_th;
 }
 
+float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
+{
+	return -1.0f; //Fill this in later
+}
+
 void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetVBO, egpProgram* drawCurveProgram, int* uniformSet)
 {
 	egpfwActivateFBO(targetVBO);
