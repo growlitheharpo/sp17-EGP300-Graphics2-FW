@@ -57,7 +57,7 @@ public:
 };
 
 void runTransformTestSuite();
-
+bool gluInvertMatrix(const float m[16], float invOut[16]);
 
 
 #endif
