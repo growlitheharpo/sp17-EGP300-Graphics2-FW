@@ -35,6 +35,6 @@ class KeyframeWindow
 
 		float getValAtCurrentTime(KeyframeChannel c);
 
-		void render(egpFrameBufferObjectDescriptor* targetVBO, egpProgram* drawCurveProgram, int* uniformSet);
+		void render(egpFrameBufferObjectDescriptor* targetFBO, egpProgram* drawCurveProgram, int* uniformSet);
 };
 

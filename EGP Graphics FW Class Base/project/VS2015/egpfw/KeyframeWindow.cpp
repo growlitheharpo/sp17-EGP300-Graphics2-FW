@@ -40,9 +40,9 @@ float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
 	return -1.0f; //Fill this in later
 }
 
-void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetVBO, egpProgram* drawCurveProgram, int* uniformSet)
+void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetFBO, egpProgram* drawCurveProgram, int* uniformSet)
 {
-	egpfwActivateFBO(targetVBO);
+	egpfwActivateFBO(targetFBO);
 
 	const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
 	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
