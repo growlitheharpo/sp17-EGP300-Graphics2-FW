@@ -41,6 +41,7 @@
 #include "egpfw/egpfw.h"
 #include "../../project/VS2015/egpfw/RenderPath.h"
 #include "../../project/VS2015/egpfw/RenderNetgraph.h"
+#include "../../project/VS2015/egpfw/KeyframeWindow.h"
 
 
 //-----------------------------------------------------------------------------
@@ -183,7 +184,6 @@ int useWaypoints = 1;
 cbmath::vec4 waypoint[waypoint_max];
 cbmath::mat4 curveDrawingProjectionMatrix, waypointModelMatrix = cbmath::makeScale4(4.0f);
 
-
 // light positions and colors
 // for the colors, let the xyz components represent color in rgb, and 
 //	the w component represent the radius of the light volume
@@ -254,6 +254,8 @@ const float moonSize = 0.27f;
 
 RenderPath globalRenderPath;
 RenderNetgraph globalRenderNetgraph(fbo, vao + fsqModel, glslPrograms, glslCommonUniforms[testTextureProgramIndex]);
+
+KeyframeWindow keyframeWindow(vao);
 
 
 //-----------------------------------------------------------------------------
@@ -1721,7 +1723,8 @@ void renderGameState()
 	globalRenderPath.render();
 
 	egpfwActivateFBO(fbo + curvesFBO);
-	renderCurve();
+	//renderCurve();
+	keyframeWindow.render(fbo + curvesFBO, glslPrograms + drawCurveProgram, glslCommonUniforms[drawCurveProgram]);
 
 	//-----------------------------------------------------------------------------
 	//-----------------------------------------------------------------------------
@@ -1741,7 +1744,7 @@ void renderGameState()
 		// Get the fbo we want by grabbing it directly from the netgraph (whether it's visible or not).
 		FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
 		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
-		//egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
+		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
 		egpActivateVAO(vao + fsqModel);
 		egpDrawActiveVAO();
 		

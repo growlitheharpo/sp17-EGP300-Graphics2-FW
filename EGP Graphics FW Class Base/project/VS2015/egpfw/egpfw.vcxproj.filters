@@ -34,6 +34,9 @@
     <Filter Include="Source Files\week7">
       <UniqueIdentifier>{e76b735e-3058-4ad6-976c-0da040c1dd9f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\project3">
+      <UniqueIdentifier>{9dfddf59-b360-4bcc-a20a-e5975e183e2e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -86,12 +89,15 @@
     </ClInclude>
     <ClInclude Include="RenderNetgraph.h">
       <Filter>Source Files\week7</Filter>
-	</ClInclude>
+    </ClInclude>
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwInterpolation.h">
       <Filter>Header Files\egpfw</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwKeyframeController.h">
       <Filter>Header Files\egpfw</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyframeWindow.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -124,7 +130,7 @@
     </ClCompile>
     <ClCompile Include="vector3.cpp">
       <Filter>Source Files\week1</Filter>
-	</ClCompile>
+    </ClCompile>
     <ClCompile Include="..\..\..\source\egpfw\egpfwInterpolation.c">
       <Filter>Source Files\c</Filter>
     </ClCompile>
@@ -139,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="RenderNetgraph.cpp">
       <Filter>Source Files\week7</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyframeWindow.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
