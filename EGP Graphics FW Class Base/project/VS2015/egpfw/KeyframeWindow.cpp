@@ -5,9 +5,10 @@
 #include <GL/glew.h>
 
 
-KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao)
+KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpProgram* programs)
 {
 	mVAOList = vao;
+	mProgramList = programs;
 }
 
 KeyframeWindow::~KeyframeWindow()
@@ -40,10 +41,8 @@ float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
 	return -1.0f; //Fill this in later
 }
 
-void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetFBO, egpProgram* drawCurveProgram, int* uniformSet)
+void KeyframeWindow::render(int* curveUniformSet,  int* solidColorUniformSet)
 {
-	egpfwActivateFBO(targetFBO);
-
 	const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
 	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
 
@@ -58,39 +57,36 @@ void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetFBO, egpProgra
 	/*currentProgramIndex = drawCurveProgram;
 	currentProgram = glslPrograms + currentProgramIndex;
 	currentUniformSet = glslCommonUniforms[currentProgramIndex];*/
-	egpActivateProgram(drawCurveProgram);
-	egpSendUniformFloatMatrix(uniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
+	egpActivateProgram(mProgramList + drawCurveProgram);
+	egpSendUniformFloatMatrix(curveUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
 
 	int zeroTest = 0;
 	int trueTest = 1;
 	int vecSize = mWaypoints.size();
 
 	// ship waypoint data to program, where it will be received by GS
-	egpSendUniformFloat(uniformSet[unif_waypoint], UNIF_VEC4, vecSize, mWaypoints.data()->v);
-	egpSendUniformInt(uniformSet[unif_waypointCount], UNIF_INT, 1, &vecSize);
-	egpSendUniformInt(uniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
-	egpSendUniformInt(uniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
+	egpSendUniformFloat(curveUniformSet[unif_waypoint], UNIF_VEC4, vecSize, mWaypoints.data()->v);
+	egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &vecSize);
+	egpSendUniformInt(curveUniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
+	egpSendUniformInt(curveUniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
 
 	egpActivateVAO(mVAOList + pointModel);
 	egpDrawActiveVAO();
 
-	/*
 	// draw waypoints using solid color program and sphere model
-	currentProgramIndex = testSolidColorProgramIndex;
-	currentProgram = glslPrograms + currentProgramIndex;
-	currentUniformSet = glslCommonUniforms[currentProgramIndex];
-	egpActivateProgram(currentProgram);
-	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, waypointColor.v);
+	cbmath::mat4 waypointModelMatrix = cbmath::makeScale4(4.0f);
+	egpActivateProgram(mProgramList + testSolidColorProgramIndex);
+	egpSendUniformFloat(solidColorUniformSet[unif_color], UNIF_VEC4, 1, waypointColor.v);
 
-	egpActivateVAO(vao + sphere8x6Model);
+	egpActivateVAO(mVAOList + sphere8x6Model);
 
 	// draw waypoints
-	for (i = 0, waypointPtr = waypoint; i < waypointCount; ++i, ++waypointPtr)
+	for (i = 0, waypointPtr = mWaypoints.data(); i < mWaypoints.size(); ++i, ++waypointPtr)
 	{
 		// set position, update MVP for this waypoint and draw
 		waypointModelMatrix.c3 = *waypointPtr;
-		waypointMVP = curveDrawingProjectionMatrix * waypointModelMatrix;
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
+		waypointMVP = mLittleBoxWindowMatrix * waypointModelMatrix;
+		egpSendUniformFloatMatrix(solidColorUniformSet[unif_mvp], UNIF_MAT4, 1, 0, waypointMVP.m);
 		egpDrawActiveVAO();
-	}*/
+	}
 }

@@ -236,7 +236,7 @@ const float moonSize = 0.27f;
 RenderPath globalRenderPath;
 RenderNetgraph globalRenderNetgraph(fbo, vao + fsqModel, glslPrograms, glslCommonUniforms[testTextureProgramIndex]);
 
-KeyframeWindow keyframeWindow(vao);
+KeyframeWindow keyframeWindow(vao, glslPrograms);
 
 
 //-----------------------------------------------------------------------------
@@ -1707,7 +1707,7 @@ void renderGameState()
 
 	egpfwActivateFBO(fbo + curvesFBO);
 	//renderCurve();
-	keyframeWindow.render(fbo + curvesFBO, glslPrograms + drawCurveProgram, glslCommonUniforms[drawCurveProgram]);
+	keyframeWindow.render(glslCommonUniforms[drawCurveProgram], glslCommonUniforms[testSolidColorProgramIndex]);
 
 	//-----------------------------------------------------------------------------
 	//-----------------------------------------------------------------------------

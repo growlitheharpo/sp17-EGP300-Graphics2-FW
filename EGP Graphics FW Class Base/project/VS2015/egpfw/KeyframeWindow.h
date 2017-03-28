@@ -21,13 +21,15 @@ class KeyframeWindow
 
 	private:
 		egpVertexArrayObjectDescriptor* mVAOList;
+		egpProgram* mProgramList;
+
 		std::vector<cbmath::vec4> mWaypoints;
 		cbmath::vec2 mWindowSize;
 		cbmath::mat4 mLittleBoxWindowMatrix;
 		float mCurrentTime;
 
 	public:
-		KeyframeWindow(egpVertexArrayObjectDescriptor* vao);
+		KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpProgram* programs);
 		~KeyframeWindow();
 
 		void updateInput(egpMouse* m, egpKeyboard* key);
@@ -35,6 +37,6 @@ class KeyframeWindow
 
 		float getValAtCurrentTime(KeyframeChannel c);
 
-		void render(egpFrameBufferObjectDescriptor* targetFBO, egpProgram* drawCurveProgram, int* uniformSet);
+		void render(int* curveUniformSet, int* solidColorUniformSet);
 };
 
