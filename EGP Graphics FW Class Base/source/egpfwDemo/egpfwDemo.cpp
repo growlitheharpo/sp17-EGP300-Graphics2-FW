@@ -1499,7 +1499,7 @@ void handleInputState()
 
 
 	// place waypoints
-	if (waypointCount < waypoint_max &&
+	/*if (waypointCount < waypoint_max &&
 		egpMouseIsButtonPressed(mouse, 0))
 	{
 		waypoint[waypointCount].set(
@@ -1507,8 +1507,10 @@ void handleInputState()
 			(float)(win_h - egpMouseY(mouse)),
 			0.0f,
 			1.0f);
+		
 		++waypointCount;
-	}
+	}*/
+	keyframeWindow.updateInput(mouse, keybd);
 
 	// finish by updating input state
 	egpMouseUpdate(mouse);
@@ -1862,7 +1864,10 @@ void onResizeWindow(int w, int h)
 		curveDrawingProjectionMatrix.m22 = -1.0f / tmpNF;
 		curveDrawingProjectionMatrix.m30 = -(float)win_w / (float)viewport_tw;
 		curveDrawingProjectionMatrix.m31 = -(float)win_h / (float)viewport_th;
+		
+		keyframeWindow.updateWindowSize(viewport_tw, viewport_th, tmpNF, win_w, win_h);
 	}
+
 }
 
 // window moved

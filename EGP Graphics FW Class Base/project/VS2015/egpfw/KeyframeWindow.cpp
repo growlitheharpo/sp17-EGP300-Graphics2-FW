@@ -18,7 +18,9 @@ KeyframeWindow::~KeyframeWindow()
 void KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 {
 	if (egpMouseIsButtonPressed(m, 0))
-		std::cout << "left click!" << std::endl;
+	{
+		mWaypoints.push_back(cbmath::vec4((float)egpMouseX(m), mWindowSize.y - (float)egpMouseY(m), 0.0f, 1.0f));
+	}
 }
 
 void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, float tmpNF, float win_w, float win_h)
@@ -29,6 +31,8 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 	mLittleBoxWindowMatrix.m22 = -1.0f / tmpNF;
 	mLittleBoxWindowMatrix.m30 = -win_w / viewport_tw;
 	mLittleBoxWindowMatrix.m31 = -win_h / viewport_th;
+
+	mWindowSize.set(win_w, win_h);
 }
 
 float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
@@ -57,12 +61,12 @@ void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetVBO, egpProgra
 	egpActivateProgram(drawCurveProgram);
 	egpSendUniformFloatMatrix(uniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
 
-	static int zeroTest = 0;
-	static int trueTest = 1;
-	static int vecSize = waypoint.size();
+	int zeroTest = 0;
+	int trueTest = 1;
+	int vecSize = mWaypoints.size();
 
 	// ship waypoint data to program, where it will be received by GS
-	egpSendUniformFloat(uniformSet[unif_waypoint], UNIF_VEC4, vecSize, waypoint.data()->v);
+	egpSendUniformFloat(uniformSet[unif_waypoint], UNIF_VEC4, vecSize, mWaypoints.data()->v);
 	egpSendUniformInt(uniformSet[unif_waypointCount], UNIF_INT, 1, &vecSize);
 	egpSendUniformInt(uniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
 	egpSendUniformInt(uniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
