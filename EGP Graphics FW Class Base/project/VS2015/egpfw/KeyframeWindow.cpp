@@ -7,7 +7,7 @@
 
 KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao)
 {
-	mTargetVAO = vao;
+	mVAOList = vao;
 }
 
 KeyframeWindow::~KeyframeWindow()
@@ -71,7 +71,7 @@ void KeyframeWindow::render(egpFrameBufferObjectDescriptor* targetFBO, egpProgra
 	egpSendUniformInt(uniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
 	egpSendUniformInt(uniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
 
-	egpActivateVAO(mTargetVAO);
+	egpActivateVAO(mVAOList + pointModel);
 	egpDrawActiveVAO();
 
 	/*

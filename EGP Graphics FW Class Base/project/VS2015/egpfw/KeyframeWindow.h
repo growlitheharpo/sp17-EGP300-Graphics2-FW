@@ -20,7 +20,7 @@ class KeyframeWindow
 		};
 
 	private:
-		egpVertexArrayObjectDescriptor* mTargetVAO;
+		egpVertexArrayObjectDescriptor* mVAOList;
 		std::vector<cbmath::vec4> mWaypoints;
 		cbmath::vec2 mWindowSize;
 		cbmath::mat4 mLittleBoxWindowMatrix;
