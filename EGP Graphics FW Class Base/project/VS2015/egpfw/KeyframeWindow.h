@@ -34,7 +34,10 @@ class KeyframeWindow
 		KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs);
 		~KeyframeWindow();
 
-		void updateInput(egpMouse* m, egpKeyboard* key);
+		/**
+		 * \brief 
+		 * \return True if the mouse is currently inside of the bounds of the window. False otherwise. */
+		bool updateInput(egpMouse* m, egpKeyboard* key);
 		void updateWindowSize(float viewport_tw, float viewport_th, float tmpNF, float win_w, float win_h);
 
 		float getValAtCurrentTime(KeyframeChannel c);

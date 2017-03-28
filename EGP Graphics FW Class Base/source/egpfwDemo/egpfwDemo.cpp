@@ -1316,7 +1316,7 @@ void drawToBackBuffer(int x, int y, unsigned int w, unsigned int h)
 //-----------------------------------------------------------------------------
 
 // update camera
-void updateCameraControlled(float dt, egpMouse *mouse)
+void updateCameraControlled(float dt, egpMouse *mouse, bool allowInput)
 {
 	// TRACK MOUSE AND KEYS TO CONTROL CAMERA: 
 	// remember, the view transform is the INVERSE of the camera's model transform, 
@@ -1324,7 +1324,7 @@ void updateCameraControlled(float dt, egpMouse *mouse)
 	// 1. compute deltas (velocities)
 	// 2. integrate!
 	// 3. update view matrix (camera's transformation)
-	if (egpMouseIsButtonDown(mouse, 0))
+	if (allowInput && egpMouseIsButtonDown(mouse, 0))
 	{
 		cameraElevation -= (float)egpMouseDeltaY(mouse) * dt * cameraRotateSpeed;
 		cameraAzimuth -= (float)egpMouseDeltaX(mouse) * dt * cameraRotateSpeed;
@@ -1427,7 +1427,7 @@ void displayControls()
 
 
 // process input each frame
-void handleInputState()
+void handleInputState(float dt)
 {
 	// display controls
 	if (egpKeyboardIsKeyPressed(keybd, '`') ||
@@ -1480,18 +1480,9 @@ void handleInputState()
 
 
 	// place waypoints
-	/*if (waypointCount < waypoint_max &&
-		egpMouseIsButtonPressed(mouse, 0))
-	{
-		waypoint[waypointCount].set(
-			(float)(egpMouseX(mouse)),
-			(float)(win_h - egpMouseY(mouse)),
-			0.0f,
-			1.0f);
-		
-		++waypointCount;
-	}*/
-	keyframeWindow.updateInput(mouse, keybd);
+	bool mouseInKeyframeWindow = keyframeWindow.updateInput(mouse, keybd);
+	
+	updateCameraControlled(dt, mouse, !mouseInKeyframeWindow);
 
 	// finish by updating input state
 	egpMouseUpdate(mouse);
@@ -1503,7 +1494,6 @@ void handleInputState()
 void updateGameState(float dt)
 {
 	// update camera
-	updateCameraControlled(dt, mouse);
 //	updateCameraOrbit(dt);
 
 	// update view matrix
@@ -1782,7 +1772,7 @@ int idle()
 	{
 		///////////////////////////////////////////////////////////////////////
 		updateGameState(renderTimer->dt);
-		handleInputState();
+		handleInputState(renderTimer->dt);
 		renderGameState();
 		///////////////////////////////////////////////////////////////////////
 		ret = 1;

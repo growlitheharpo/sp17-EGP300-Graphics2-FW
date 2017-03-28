@@ -18,12 +18,21 @@ KeyframeWindow::~KeyframeWindow()
 
 }
 
-void KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
+bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 {
+	if (egpKeyboardIsKeyPressed(key, 'y'))
+		mWaypoints.clear();
+
+	cbmath::vec4 mousePos(egpMouseX(m), mWindowSize.y - egpMouseY(m), 0.0f, 1.0f);
+	mousePos = mOnScreenMatrixInv * mousePos;
+
+	if (mousePos.x / mWindowSize.x > 1.0f || mousePos.y / mWindowSize.y > 1.0f)
+		return false;
+
 	if (egpMouseIsButtonPressed(m, 0))
-	{
-		mWaypoints.push_back(cbmath::vec4((float)egpMouseX(m), mWindowSize.y - (float)egpMouseY(m), 0.0f, 1.0f));
-	}
+		mWaypoints.push_back(mousePos);
+
+	return true;
 }
 
 void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, float tmpNF, float win_w, float win_h)
@@ -36,7 +45,7 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 	mLittleBoxWindowMatrix.m31 = -win_h / viewport_th;
 
 	mWindowSize.set(win_w, win_h);
-	mOnScreenMatrix = cbmath::makeScale4(0.45f);
+	mOnScreenMatrix = cbmath::makeTranslation4(-0.6f, -0.6f, 0.0f) * cbmath::makeScale4(0.4f);
 
 	if (!gluInvertMatrix(mOnScreenMatrix.m, mOnScreenMatrixInv.m))
 		throw std::invalid_argument("I have no idea how this is possible, but our on-screen transformation matrix could not be inverted!");
@@ -103,5 +112,4 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	egpfwBindColorTargetTexture(mFBOList + curvesFBO, 0, 0);
 	egpSendUniformFloatMatrix(textureUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mOnScreenMatrix.m);
 	egpDrawActiveVAO();
-
 }
