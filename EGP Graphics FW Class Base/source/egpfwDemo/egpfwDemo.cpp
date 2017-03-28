@@ -1723,12 +1723,19 @@ void renderGameState()
 		currentProgramIndex = testTexturePassthruProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 		egpActivateProgram(currentProgram);
+		egpActivateVAO(vao + fsqModel);
 
 		// Get the fbo we want by grabbing it directly from the netgraph (whether it's visible or not).
 		FBOTargetColorTexture bg = globalRenderNetgraph.getFBOAtIndex(displayMode);
 		egpfwBindColorTargetTexture(fbo + bg.fboIndex, 0, bg.targetIndex);
-		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
+		egpDrawActiveVAO();
+
+
+		egpActivateProgram(glslPrograms + testTextureProgramIndex);
 		egpActivateVAO(vao + fsqModel);
+		cbmath::mat4 testMatrix = cbmath::makeScale4(0.45f);
+		egpfwBindColorTargetTexture(fbo + curvesFBO, 0, 0);
+		egpSendUniformFloatMatrix(glslCommonUniforms[testTextureProgramIndex][unif_mvp], UNIF_MAT4, 1, 0, testMatrix.m);
 		egpDrawActiveVAO();
 		
 		if (displayNetgraphToggle)
