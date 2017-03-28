@@ -113,25 +113,6 @@ bool displayNetgraphToggle = true;
 // graphics-related data and handles
 // good practice: default values for everything
 
-// test vertex buffers for built-in and loaded primitive data
-// use same model index for VAO and VBO (since VAOs only work 
-//	if the respective VBO has been created and associated)
-enum ModelIndex
-{
-	// built-in models
-	axesModel, 
-	fsqModel, 
-	skyboxModel, sphere8x6Model, sphere32x24Model,
-
-	// loaded models
-	sphereLowResObjModel,
-	sphereHiResObjModel,
-
-	pointModel,
-
-//-----------------------------
-	modelCount
-};
 egpVertexArrayObjectDescriptor vao[modelCount] = { 0 };
 egpVertexBufferObjectDescriptor vbo[modelCount] = { 0 };
 

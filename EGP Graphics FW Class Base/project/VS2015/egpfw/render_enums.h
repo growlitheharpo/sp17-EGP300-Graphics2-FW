@@ -123,3 +123,23 @@ enum DrawCurveMode
 	CURVE_CATMULLROM,
 	CURVE_HERMITE,
 };
+
+// test vertex buffers for built-in and loaded primitive data
+// use same model index for VAO and VBO (since VAOs only work 
+//	if the respective VBO has been created and associated)
+enum ModelIndex
+{
+	// built-in models
+	axesModel,
+	fsqModel,
+	skyboxModel, sphere8x6Model, sphere32x24Model,
+
+	// loaded models
+	sphereLowResObjModel,
+	sphereHiResObjModel,
+
+	pointModel,
+
+	//-----------------------------
+	modelCount
+};
