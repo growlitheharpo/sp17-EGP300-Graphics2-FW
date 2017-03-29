@@ -1,5 +1,5 @@
 /*
-	Cel (VS)
+	Cel Lighting (VS) implemented in JLSL (James Keats Shader Language)
 */
 
 // ****
@@ -7,12 +7,12 @@
 shadertype vertex
 
 // ****
-// attributes
+// attributes 
 in attribute
 {
 	vec4 @lane(0) position;
 	vec4 @lane(2) normal;
-	vec4 @lane(8) texcoord;
+	vec4 @lane(8)/* why would anyone ever make a comment like this*/texcoord;
 }
 
 // ****

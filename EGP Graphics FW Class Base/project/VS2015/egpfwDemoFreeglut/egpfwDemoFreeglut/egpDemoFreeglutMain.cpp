@@ -92,6 +92,8 @@ int main()
 	FileTokenizer tokenizer;
 	tokenizer.tokenize("../../../../resource/glsl/4x/vs/celshade_vs4x.jksl");
 	tokenizer.printTokens();
+
+	return 0;
 }
 
 // entry function
