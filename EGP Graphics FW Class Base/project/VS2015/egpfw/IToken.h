@@ -44,6 +44,8 @@ class SymbolToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		static bool characterMatches(char c);
 };
 
 class WhitespaceToken : public IToken
@@ -57,6 +59,8 @@ class WhitespaceToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		static bool characterMatches(char c);
 };
 
 class PunctuationToken : public IToken
@@ -70,6 +74,8 @@ class PunctuationToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		static bool characterMatches(char c);
 };
 
 class NumberLiteralToken : public IToken
@@ -83,6 +89,8 @@ class NumberLiteralToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		static bool characterMatches(char c);
 };
 
 class EOLToken : public IToken
@@ -93,6 +101,8 @@ class EOLToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		static bool characterMatches(char c);
 };
 
 class EOFToken : public IToken
@@ -103,4 +113,6 @@ class EOFToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		static bool characterMatches(char c);
 };
