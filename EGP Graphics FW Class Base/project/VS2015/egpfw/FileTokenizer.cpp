@@ -39,7 +39,7 @@ IToken* FileTokenizer::handleComment(std::fstream& fin)
 
 			if (EOLToken::characterMatches(peekNext))
 			{ 
-				newToken = new EOFToken();
+				newToken = new EOLToken();
 				newToken->parseToken(fin); //let the token consume whatever combination of \n and \r we have.
 				mTokens.push_back(newToken);
 				
@@ -52,10 +52,7 @@ IToken* FileTokenizer::handleComment(std::fstream& fin)
 				peekNext = fin.peek();
 
 				if (peekNext == '/') //we found a */, that means we reached the end!
-				{
-					fin.get(); //consume the /
-					return new WhitespaceToken();
-				}
+					return new WhitespaceToken(); //leave the / in the buffer for the whitespace to consume
 			}
 		}
 	}

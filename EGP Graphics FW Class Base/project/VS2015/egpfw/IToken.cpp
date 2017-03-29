@@ -47,7 +47,7 @@ void WhitespaceToken::debugPrint() const
 
 bool WhitespaceToken::characterMatches(char c)
 {
-	return isspace(c);
+	return isspace(c) && c != '\n' && c != '\r';
 }
 
 void PunctuationToken::parseToken(std::fstream& fin)
@@ -133,10 +133,15 @@ bool NumberLiteralToken::characterMatches(char c)
 void EOLToken::parseToken(std::fstream& fin)
 {
 	char c = fin.peek();
+	char cOriginal = c;
+
 	while (characterMatches(c))
 	{
 		fin.get();
 		c = fin.peek();
+
+		if (c == cOriginal) //only consume one pair of \n\r
+			break;
 	}
 }
 
