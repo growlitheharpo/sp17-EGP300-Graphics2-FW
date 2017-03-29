@@ -46,6 +46,9 @@
     <Filter Include="Resource Files\glsl\4x\fs_shadow">
       <UniqueIdentifier>{aee0df81-846e-455e-91a8-23848438fa71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\jksl">
+      <UniqueIdentifier>{d1dde08d-9be9-4f7e-a67c-5a710921a108}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfwDemo\egpfwDemo.cpp">
@@ -145,6 +148,12 @@
     </None>
     <None Include="..\..\..\resource\glsl\4x\fs_shadow\phong_projtex_fs4x.glsl">
       <Filter>Resource Files\glsl\4x\fs_shadow</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\celshade_fs4x.jksl">
+      <Filter>Resource Files\jksl</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\celshade_vs4x.jksl">
+      <Filter>Resource Files\jksl</Filter>
     </None>
   </ItemGroup>
 </Project>

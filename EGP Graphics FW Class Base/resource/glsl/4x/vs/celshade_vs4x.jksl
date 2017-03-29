@@ -1,0 +1,51 @@
+/*
+	Cel (VS)
+*/
+
+// ****
+// type
+shadertype vertex
+
+// ****
+// attributes
+in attribute
+{
+	vec4 @lane(0) position;
+	vec4 @lane(2) normal;
+	vec4 @lane(8) texcoord;
+}
+
+// ****
+// uniforms
+uniform
+{
+	mat4 mvp;
+	vec4 lightPos;
+	vec4 eyePos;
+}
+
+// ****
+// varyings
+out varying
+{
+	vec4 normal;
+	vec4 lightVec;
+	vec4 eyeVec;
+	vec4 texcoord;
+} pass;
+
+
+// shader function
+void main()
+{
+	// ****
+	// set clip position
+	gl_Position = mvp * position;
+
+	// ****
+	// pass data
+	pass.normal = vec4(normal.xyz, 0.0);
+	pass.lightVec = lightPos - position;
+	pass.eyeVec = eyePos - position;
+	pass.texcoord = texcoord;
+}
