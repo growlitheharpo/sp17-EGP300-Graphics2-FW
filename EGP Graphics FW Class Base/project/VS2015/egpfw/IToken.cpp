@@ -42,7 +42,7 @@ void WhitespaceToken::parseToken(std::fstream& fin)
 
 void WhitespaceToken::debugPrint() const
 {
-	cout << "Token: [whitespace, \"" << mWhitespace << "\"]";
+	cout << "Token: [whitespace]";
 }
 
 bool WhitespaceToken::characterMatches(char c)
@@ -147,7 +147,7 @@ void EOLToken::parseToken(std::fstream& fin)
 
 void EOLToken::debugPrint() const
 {
-	cout << "Token: [end_of_line, \"" << "" << "\"]";
+	cout << "Token: [end_of_line]";
 }
 
 bool EOLToken::characterMatches(char c)
@@ -161,7 +161,7 @@ void EOFToken::parseToken(std::fstream& fin)
 
 void EOFToken::debugPrint() const
 {
-	cout << "Token: [end_of_file, \"" << "" << "\"]";
+	cout << "Token: [end_of_file]";
 }
 
 bool EOFToken::characterMatches(char c)
