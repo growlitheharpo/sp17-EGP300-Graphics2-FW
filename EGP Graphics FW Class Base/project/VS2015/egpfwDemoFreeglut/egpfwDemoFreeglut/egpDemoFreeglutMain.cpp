@@ -3,6 +3,7 @@
 
 #include "../../egpfw/TStack.h"
 #include "../../egpfw/transformMatrix.h"
+#include "../../egpfw/FileTokenizer.h"
 #ifdef _WIN32
 //-----------------------------------------------------------------------------
 
@@ -86,8 +87,15 @@ void winClosePressed()
 	glutLeaveMainLoop();
 }
 
+int main()
+{
+	FileTokenizer tokenizer;
+	tokenizer.tokenize("../../../../resource/glsl/4x/vs/celshade_vs4x.jksl");
+	tokenizer.printTokens();
+}
+
 // entry function
-int main(int argc, char **argv)
+int foo(int argc, char **argv)
 {
 
 	// initialize graphics library

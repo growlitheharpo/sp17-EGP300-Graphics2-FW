@@ -8,11 +8,12 @@ class FileTokenizer
 {
 	private:
 		std::vector<IToken*> mTokens;
+		IToken* handleComment(std::fstream& fin);
 
 	public:
 		FileTokenizer();
 		FileTokenizer(const std::string& filename, bool tokenizeImmediately = true);
-		~FileTokenizer() = default;
+		~FileTokenizer();
 
 		void tokenize(const std::string& filename);
 		void tokenize(std::fstream& fin);
