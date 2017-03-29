@@ -34,6 +34,12 @@
     <Filter Include="Source Files\week7">
       <UniqueIdentifier>{e76b735e-3058-4ad6-976c-0da040c1dd9f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\jksl_parser">
+      <UniqueIdentifier>{d7a320db-375e-4b4b-bf14-13512bec1f77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\jksl_parser\tokens">
+      <UniqueIdentifier>{035fb58b-87e2-4f63-81a6-e5c83f6e02e0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -87,6 +93,9 @@
     <ClInclude Include="RenderNetgraph.h">
       <Filter>Source Files\week7</Filter>
     </ClInclude>
+    <ClInclude Include="IToken.h">
+      <Filter>Source Files\jksl_parser\tokens</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -127,6 +136,9 @@
     </ClCompile>
     <ClCompile Include="RenderNetgraph.cpp">
       <Filter>Source Files\week7</Filter>
+    </ClCompile>
+    <ClCompile Include="IToken.cpp">
+      <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

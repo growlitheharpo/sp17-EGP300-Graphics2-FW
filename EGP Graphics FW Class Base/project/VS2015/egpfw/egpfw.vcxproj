@@ -25,6 +25,7 @@
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwPrimitiveDataSimple.h" />
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwShaderProgram.h" />
     <ClInclude Include="..\..\..\include\egpfw\egpfw\egpfwVertexBuffer.h" />
+    <ClInclude Include="IToken.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="QuaternionTest.h" />
     <ClInclude Include="RenderNetgraph.h" />
@@ -43,6 +44,7 @@
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c" />
     <ClCompile Include="..\..\..\source\egpfw\egpfwShaderProgram.c" />
     <ClCompile Include="..\..\..\source\egpfw\egpfwVertexBuffer.c" />
+    <ClCompile Include="IToken.cpp" />
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="QuaternionTest.cpp" />
     <ClCompile Include="RenderNetgraph.cpp" />
