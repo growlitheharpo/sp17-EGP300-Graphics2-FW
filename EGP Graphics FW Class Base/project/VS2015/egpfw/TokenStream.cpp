@@ -6,12 +6,6 @@ TokenStream::TokenStream(std::vector<IToken*> const& tokens)
 	mOffset = 0;
 }
 
-TokenStream::TokenStream(std::vector<IToken>&& tokens)
-{
-	std::move(tokens.begin(), tokens.end(), mTokens);
-	mOffset = 0;
-}
-
 IToken* TokenStream::get()
 {
 	if (++mOffset > mTokens.size())

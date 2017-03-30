@@ -47,6 +47,8 @@ class SymbolToken : public IToken
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
 
+		std::string getValue() const { return mSymbol; }
+
 		static bool characterMatches(char c);
 };
 
@@ -77,6 +79,8 @@ class PunctuationToken : public IToken
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
 
+		std::string getValue() const { return mPunctuation; }
+
 		static bool characterMatches(char c);
 };
 
@@ -91,6 +95,8 @@ class NumberLiteralToken : public IToken
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
+
+		std::string getValue() const { return mNumber; }
 
 		static bool characterMatches(char c);
 };

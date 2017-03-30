@@ -12,7 +12,6 @@ class TokenStream
 
 	public:
 		TokenStream(std::vector<IToken*> const& tokens);
-		explicit TokenStream(std::vector<IToken>&& tokens);
 
 		IToken* get();
 		IToken* peek();

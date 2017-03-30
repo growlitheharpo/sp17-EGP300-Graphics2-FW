@@ -129,6 +129,4 @@ void FileTokenizer::printTokens() const
 			cout << "\n";
 		}
 	}
-
-	system("pause");
 }
