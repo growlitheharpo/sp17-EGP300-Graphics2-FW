@@ -4,6 +4,8 @@
 #include "../../egpfw/TStack.h"
 #include "../../egpfw/transformMatrix.h"
 #include "../../egpfw/FileTokenizer.h"
+#include "../../egpfw/TokenStream.h"
+#include "../../egpfw/TokenParser.h"
 #ifdef _WIN32
 //-----------------------------------------------------------------------------
 
@@ -92,6 +94,17 @@ int main()
 	FileTokenizer tokenizer;
 	tokenizer.tokenize("../../../../resource/glsl/4x/vs/celshade_vs4x.jksl");
 	tokenizer.printTokens();
+
+	TokenStream ts(tokenizer.getTokens());
+	TokenParser parser;
+	parser.parseTokens(ts, 410);
+
+	std::fstream fout;
+	fout.open("../../../../resource/glsl/4x/vs/celshade_vs4x_PARSED.glsl", std::ios_base::out | std::ios_base::trunc);
+	fout << parser.getValue();
+
+	printf("\n\n%s\n", parser.getValue().c_str());
+	system("pause");
 
 	return 0;
 }

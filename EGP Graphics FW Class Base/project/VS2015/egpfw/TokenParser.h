@@ -7,10 +7,36 @@ class IToken;
 
 class TokenParser
 {
-	private:
-		std::string mOutput;
+	public:
+		struct unexpected_token
+		{
+			explicit unexpected_token(IToken* t);
+		};
+		struct parse_error
+		{
+			explicit parse_error(std::string s);
+		};
 
-		void emit(const std::string& addition);
+	private:
+		enum ShaderType
+		{
+			UNKNOWN,
+			VERTEX,
+			FRAGMENT,
+			GEOMETRY,
+		};
+
+		ShaderType mShaderType;
+		std::string mOutput, mCurrentLine;
+		size_t mLineCount;
+		int mGLVersion;
+
+		void emit(std::string addition);
+
+		void consumeWhitespace(TokenStream& stream);
+		
+		static bool checkForSymbol(IToken* token, std::string value);
+		static bool checkForPunctuation(IToken* token, std::string value);
 		
 	public:
 		TokenParser();
