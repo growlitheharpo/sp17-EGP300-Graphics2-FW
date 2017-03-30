@@ -35,19 +35,28 @@ class IToken
 		Type getType() const { return mType; }
 };
 
-class SymbolToken : public IToken
+class EmitableToken : public IToken
+{
+	public:
+		EmitableToken(Type t) : IToken(t) {}
+		virtual ~EmitableToken() = default;
+
+		virtual std::string getValue() const = 0;
+};
+
+class SymbolToken : public EmitableToken
 {
 	private:
 		std::string mSymbol;
 
 	public:
-		SymbolToken() : IToken(SYMBOL) {}
+		SymbolToken() : EmitableToken(SYMBOL) {}
 		~SymbolToken() = default;
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
 
-		std::string getValue() const { return mSymbol; }
+		std::string getValue() const override { return mSymbol; }
 
 		static bool characterMatches(char c);
 };
@@ -67,36 +76,36 @@ class WhitespaceToken : public IToken
 		static bool characterMatches(char c);
 };
 
-class PunctuationToken : public IToken
+class PunctuationToken : public EmitableToken
 {
 	private:
 		std::string mPunctuation;
 
 	public:
-		PunctuationToken() : IToken(PUNCTUATION) {}
+		PunctuationToken() : EmitableToken(PUNCTUATION) {}
 		~PunctuationToken() = default;
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
 
-		std::string getValue() const { return mPunctuation; }
+		std::string getValue() const override { return mPunctuation; }
 
 		static bool characterMatches(char c);
 };
 
-class NumberLiteralToken : public IToken
+class NumberLiteralToken : public EmitableToken
 {
 	private:
 		std::string mNumber;
 
 	public:
-		NumberLiteralToken() : IToken(NUMBER_LITERAL) {}
+		NumberLiteralToken() : EmitableToken(NUMBER_LITERAL) {}
 		~NumberLiteralToken() = default;
 
 		void parseToken(std::fstream& fin) override;
 		void debugPrint() const override;
 
-		std::string getValue() const { return mNumber; }
+		std::string getValue() const override { return mNumber; }
 
 		static bool characterMatches(char c);
 };
