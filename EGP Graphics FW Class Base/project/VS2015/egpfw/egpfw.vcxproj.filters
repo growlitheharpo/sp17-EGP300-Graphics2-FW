@@ -40,6 +40,9 @@
     <Filter Include="Source Files\jksl_parser\tokens">
       <UniqueIdentifier>{035fb58b-87e2-4f63-81a6-e5c83f6e02e0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\jksl_parser\parsing">
+      <UniqueIdentifier>{7c44e69c-48c2-46b5-8148-703ceaaf4f45}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -96,14 +99,14 @@
     <ClInclude Include="IToken.h">
       <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClInclude>
-    <ClInclude Include="FileTokenizer.h">
-      <Filter>Source Files\jksl_parser</Filter>
-    </ClInclude>
     <ClInclude Include="TokenParser.h">
-      <Filter>Source Files\jksl_parser</Filter>
+      <Filter>Source Files\jksl_parser\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="FileTokenizer.h">
+      <Filter>Source Files\jksl_parser\parsing</Filter>
     </ClInclude>
     <ClInclude Include="TokenStream.h">
-      <Filter>Source Files\jksl_parser</Filter>
+      <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -149,14 +152,14 @@
     <ClCompile Include="IToken.cpp">
       <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClCompile>
-    <ClCompile Include="FileTokenizer.cpp">
-      <Filter>Source Files\jksl_parser</Filter>
-    </ClCompile>
     <ClCompile Include="TokenParser.cpp">
-      <Filter>Source Files\jksl_parser</Filter>
+      <Filter>Source Files\jksl_parser\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="FileTokenizer.cpp">
+      <Filter>Source Files\jksl_parser\parsing</Filter>
     </ClCompile>
     <ClCompile Include="TokenStream.cpp">
-      <Filter>Source Files\jksl_parser</Filter>
+      <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

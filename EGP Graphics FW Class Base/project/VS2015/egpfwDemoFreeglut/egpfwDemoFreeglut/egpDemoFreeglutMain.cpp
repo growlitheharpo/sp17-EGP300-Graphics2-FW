@@ -102,6 +102,7 @@ int main()
 	std::fstream fout;
 	fout.open("../../../../resource/glsl/4x/vs/celshade_vs4x_PARSED.glsl", std::ios_base::out | std::ios_base::trunc);
 	fout << parser.getValue();
+	fout.close();
 
 	printf("\n\n%s\n", parser.getValue().c_str());
 	system("pause");
