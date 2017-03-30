@@ -31,6 +31,8 @@ class IToken
 
 		virtual void parseToken(std::fstream& fin) = 0;
 		virtual void debugPrint() const = 0;
+
+		Type getType() const { return mType; }
 };
 
 class SymbolToken : public IToken

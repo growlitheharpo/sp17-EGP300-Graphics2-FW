@@ -123,8 +123,11 @@ void FileTokenizer::printTokens() const
 {
 	for (auto& iter : mTokens)
 	{
-		iter->debugPrint();
-		cout << "\n";
+		if (iter->getType() != IToken::WHITESPACE)
+		{
+			iter->debugPrint();
+			cout << "\n";
+		}
 	}
 
 	system("pause");
