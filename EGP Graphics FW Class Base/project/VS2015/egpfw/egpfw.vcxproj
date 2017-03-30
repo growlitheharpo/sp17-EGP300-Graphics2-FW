@@ -34,6 +34,7 @@
     <ClInclude Include="RenderPassData.h" />
     <ClInclude Include="RenderPath.h" />
     <ClInclude Include="render_enums.h" />
+    <ClInclude Include="TokenParser.h" />
     <ClInclude Include="TokenStream.h" />
     <ClInclude Include="TStack.h" />
     <ClInclude Include="transformMatrix.h" />
@@ -54,6 +55,7 @@
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="RenderPath.cpp" />
     <ClCompile Include="stackTest.cpp" />
+    <ClCompile Include="TokenParser.cpp" />
     <ClCompile Include="TokenStream.cpp" />
     <ClCompile Include="transformMatrix.cpp" />
     <ClCompile Include="vector3.cpp" />

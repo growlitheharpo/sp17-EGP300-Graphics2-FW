@@ -99,6 +99,9 @@
     <ClInclude Include="FileTokenizer.h">
       <Filter>Source Files\jksl_parser</Filter>
     </ClInclude>
+    <ClInclude Include="TokenParser.h">
+      <Filter>Source Files\jksl_parser</Filter>
+    </ClInclude>
     <ClInclude Include="TokenStream.h">
       <Filter>Source Files\jksl_parser</Filter>
     </ClInclude>
@@ -147,6 +150,9 @@
       <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClCompile>
     <ClCompile Include="FileTokenizer.cpp">
+      <Filter>Source Files\jksl_parser</Filter>
+    </ClCompile>
+    <ClCompile Include="TokenParser.cpp">
       <Filter>Source Files\jksl_parser</Filter>
     </ClCompile>
     <ClCompile Include="TokenStream.cpp">
