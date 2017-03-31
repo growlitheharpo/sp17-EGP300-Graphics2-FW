@@ -108,6 +108,9 @@
     <ClInclude Include="TokenStream.h">
       <Filter>Source Files\jksl_parser\tokens</Filter>
     </ClInclude>
+    <ClInclude Include="TokenParseDelegates.h">
+      <Filter>Source Files\jksl_parser\parsing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -160,6 +163,9 @@
     </ClCompile>
     <ClCompile Include="TokenStream.cpp">
       <Filter>Source Files\jksl_parser\tokens</Filter>
+    </ClCompile>
+    <ClCompile Include="TokenParseDelegates.cpp">
+      <Filter>Source Files\jksl_parser\parsing</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
