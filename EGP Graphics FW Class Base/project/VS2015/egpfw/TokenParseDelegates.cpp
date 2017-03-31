@@ -18,7 +18,7 @@ std::string getEmissionString(IToken* t)
 	return "";
 }
 
-unsigned getLaneToken(TokenStream& in)
+unsigned getLaneToken(TokenStream& in, const emitter_delegate& d)
 {
 	IToken* laneToken;
 	IToken* t = in.peek();
@@ -52,8 +52,8 @@ unsigned getLaneToken(TokenStream& in)
 	
 	if (TokenParser::checkForSymbol(laneToken, "default"))
 	{
-		//eventually do some stuff here to calculate a default layout location.
-		return 0;
+		d.incrementDefaultLane();
+		return d.getCurrentDefaultLane() - 1;
 	}
 	else
 		throw TokenParser::unexpected_token(laneToken);
@@ -80,6 +80,8 @@ void emitUntilPunctuation(const emitter_delegate& out, TokenStream& in, std::str
 
 	} while (!in.eof());
 }
+
+
 
 void parse_VertexIn100(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
@@ -111,7 +113,7 @@ void parse_VertexIn100(const emitter_delegate& out, TokenStream& in, EmitableTok
 				out.emit("attribute ");
 				out.emit(getEmissionString(t)); //should output the typename.
 				out.consumeWhitespace(in);		//clear space between typename and lane.
-				getLaneToken(in);				//will clear the "@lane(x)" portion.
+				getLaneToken(in, out);			//will clear the "@lane(x)" portion.
 				emitUntilPunctuation(out, in, ";", true);	//emit the variable name and the ;
 				break;
 
@@ -153,7 +155,7 @@ void parse_VertexIn130(const emitter_delegate& out, TokenStream& in, EmitableTok
 			out.emit("in ");
 			out.emit(getEmissionString(t)); //should output the typename.
 			out.consumeWhitespace(in);		//clear space between typename and lane.
-			getLaneToken(in);				//will clear the "@lane(x)" portion.
+			getLaneToken(in, out);			//will clear the "@lane(x)" portion.
 			emitUntilPunctuation(out, in, ";", true);	//emit the variable name and the ;
 			break;
 
@@ -196,7 +198,7 @@ void parse_VertexIn330(const emitter_delegate& out, TokenStream& in, EmitableTok
 				//Get the data we need first.
 				std::string type = getEmissionString(t);
 				out.consumeWhitespace(in);
-				unsigned location = getLaneToken(in);
+				unsigned location = getLaneToken(in, out);
 
 				//Emit the layout location and type, then emit till the end to get the variable names.
 				out.emit("layout (location = " + std::to_string(location) + ") in ");
@@ -366,6 +368,8 @@ void parse_VertexOut330(const emitter_delegate& out, TokenStream& in, EmitableTo
 	out.emit(getEmissionString(t) + " " + out.getVaryingPrefix() + ";"); //emit the close brace
 }
 
+
+
 void parse_FragmentIn100(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
 {
 }
@@ -390,6 +394,8 @@ void parse_FragmentOut330(const emitter_delegate& out, TokenStream& in, Emitable
 {
 }
 
+
+
 void parse_GeometryIn320(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
 {
 }
@@ -405,6 +411,8 @@ void parse_GeometryOut320(const emitter_delegate& out, TokenStream& in, Emitable
 void parse_GeometryOut330(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
 {
 }
+
+
 
 void parse_Uniform(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {

@@ -12,7 +12,7 @@ typedef void(token_delegate_t)(const emitter_delegate&, TokenStream&, EmitableTo
 
 std::string getEmissionString(IToken* t);
 
-unsigned getLaneToken(TokenStream& in);
+unsigned getLaneToken(TokenStream& in, const emitter_delegate& d);
 void emitUntilPunctuation(const emitter_delegate& out, TokenStream& in, std::string punc, bool emitPunc);
 
 void parse_VertexIn100(const emitter_delegate& out, TokenStream& in, EmitableToken* t);

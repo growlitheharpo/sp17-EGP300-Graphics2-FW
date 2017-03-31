@@ -32,6 +32,7 @@ class TokenParser
 		};
 
 		std::string mOutput, mCurrentLine, mVaryingPrefix;
+		unsigned mCurrentDefaultLane;
 		ShaderType mShaderType;
 		size_t mLineCount;
 		int mGLVersion;
@@ -61,6 +62,9 @@ class TokenParser
 
 		void setVaryingPrefix(const std::string& s) { mVaryingPrefix = s; }
 		std::string getVaryingPrefix() const { return mVaryingPrefix; }
+
+		void incrementDefaultLane() { ++mCurrentDefaultLane; }
+		unsigned getDefaultLane() const { return mCurrentDefaultLane; }
 };
 
 typedef void (TokenParser::*emiter_function)(std::string);
@@ -94,5 +98,15 @@ struct emitter_delegate
 		std::string getVaryingPrefix() const
 		{
 			return p.getVaryingPrefix();
+		}
+
+		void incrementDefaultLane() const
+		{
+			p.incrementDefaultLane();
+		}
+
+		unsigned getCurrentDefaultLane() const
+		{
+			return p.getDefaultLane();
 		}
 };

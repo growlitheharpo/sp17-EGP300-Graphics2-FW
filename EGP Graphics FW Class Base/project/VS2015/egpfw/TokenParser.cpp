@@ -245,6 +245,8 @@ TokenParser::~TokenParser()
 
 void TokenParser::parseTokens(TokenStream& tokens, int glVersion)
 {
+	mCurrentDefaultLane = 0;
+	mVaryingPrefix = "";
 	mGLVersion = glVersion;
 	IToken* peekToken;
 
