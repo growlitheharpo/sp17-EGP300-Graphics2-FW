@@ -155,5 +155,11 @@
     <None Include="..\..\..\resource\glsl\4x\vs\celshade_vs4x.jksl">
       <Filter>Resource Files\jksl</Filter>
     </None>
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_gs4x.glsl">
+      <Filter>Resource Files\glsl\4x\gs</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_morphing_gs4x.glsl">
+      <Filter>Resource Files\glsl\4x\gs</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -331,6 +331,8 @@
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\blend_screen_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\blur_gaussian_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_bloom\brightpass_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_gs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_morphing_gs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\celshade_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_deferred\deferredComposite_fs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\fs_deferred\deferredShading_fs4x.glsl" />
