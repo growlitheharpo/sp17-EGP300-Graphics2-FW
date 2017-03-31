@@ -8,13 +8,13 @@ shadertype fragment
 
 // ****
 // varyings
-in varying
+in varying pass
 {
 	vec4 normal;
 	vec4 lightVec;
 	vec4 eyeVec;
 	vec4 texcoord;
-} pass;
+}
 
 // ****
 // uniforms

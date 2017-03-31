@@ -26,13 +26,13 @@ uniform
 
 // ****
 // varyings
-out varying
+out varying pass
 {
 	vec4 normal;
 	vec4 lightVec;
 	vec4 eyeVec;
 	vec4 texcoord;
-} pass;
+}
 
 
 // shader function
