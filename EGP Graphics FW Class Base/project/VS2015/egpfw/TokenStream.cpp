@@ -14,7 +14,7 @@ IToken* TokenStream::get()
 	return mTokens[mOffset - 1];
 }
 
-IToken* TokenStream::peek()
+IToken* TokenStream::peek() const
 {
 	return mTokens[mOffset];
 }

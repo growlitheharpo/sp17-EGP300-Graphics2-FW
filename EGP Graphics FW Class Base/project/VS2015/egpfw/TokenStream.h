@@ -14,7 +14,7 @@ class TokenStream
 		TokenStream(std::vector<IToken*> const& tokens);
 
 		IToken* get();
-		IToken* peek();
+		IToken* peek() const;
 
 		void seek(std::streampos pos, std::ios_base::seek_dir dir);
 
