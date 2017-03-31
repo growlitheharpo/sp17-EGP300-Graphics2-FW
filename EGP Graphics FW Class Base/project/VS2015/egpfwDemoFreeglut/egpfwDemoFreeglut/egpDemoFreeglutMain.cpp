@@ -93,7 +93,6 @@ int main()
 {
 	FileTokenizer tokenizer;
 	tokenizer.tokenize("../../../../resource/glsl/4x/vs/celshade_vs4x.jksl");
-	tokenizer.printTokens();
 
 	TokenStream ts(tokenizer.getTokens());
 	TokenParser parser;
@@ -104,7 +103,6 @@ int main()
 	fout << parser.getValue();
 	fout.close();
 
-	printf("\n\n%s\n", parser.getValue().c_str());
 	system("pause");
 
 	return 0;
