@@ -132,6 +132,15 @@ void TokenParser::handleRootSymbolToken(SymbolToken* t, TokenStream& stream, con
 
 void TokenParser::handleVaryingPrefixInProgram(SymbolToken* token, TokenStream& tokens)
 {
+	IToken* next = tokens.peek();
+
+	if (next->getType() == IToken::PUNCTUATION && static_cast<PunctuationToken*>(next)->getValue() == ".")
+	{
+		tokens.get(); //consume the "."
+		emit(mVaryingPrefix + "__");
+	}
+	else
+		emit(token->getValue());
 }
 
 token_delegate_t* TokenParser::getInTokenParser() const
@@ -277,8 +286,10 @@ void TokenParser::parseTokens(TokenStream& tokens, int glVersion)
 
 				if (find(ROOT_LEVEL_SYMBOLS.begin(), ROOT_LEVEL_SYMBOLS.end(), peekValue) != ROOT_LEVEL_SYMBOLS.end())
 					handleRootSymbolToken(static_cast<SymbolToken*>(peekToken), tokens, peekValue);
+				else if (peekValue == mVaryingPrefix && mGLVersion < 330)
+					handleVaryingPrefixInProgram(static_cast<SymbolToken*>(peekToken), tokens);
 				else
-					emit(static_cast<PunctuationToken*>(peekToken)->getValue());
+					emit(static_cast<SymbolToken*>(peekToken)->getValue());
 
 				break;
 			case IToken::WHITESPACE:
