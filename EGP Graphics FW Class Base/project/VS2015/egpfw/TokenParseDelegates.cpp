@@ -313,10 +313,57 @@ void parse_VertexOut130(const emitter_delegate& out, TokenStream& in, EmitableTo
 
 		t = in.get();
 	}
+
 }
 
-void parse_VertexOut330(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_VertexOut330(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	IToken* t;
+
+	//We got the "in" already. Clear until we hit the "varying" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "varying"))
+		throw TokenParser::unexpected_token(t);
+
+	out.emit(" out VertexData ");
+
+	//Consumed the "varying". Let's find our pass struct name.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!t->getType() == IToken::SYMBOL)
+		throw TokenParser::unexpected_token(t);
+	out.setVaryingPrefix(static_cast<SymbolToken*>(t)->getValue());
+
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+			case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+				out.emit(getEmissionString(t)); //should output the typename.
+				out.consumeWhitespace(in);		//move up to the variable name.
+				out.emit(getEmissionString(in.get()));
+				emitUntilPunctuation(out, in, ";", true);	//emit any whitespace and the ;
+				break;
+
+			default:
+				out.emit(getEmissionString(t));
+				break;
+		}
+
+		t = in.get();
+	}
+
+	out.emit(getEmissionString(t) + " " + out.getVaryingPrefix() + ";"); //emit the close brace
 }
 
 void parse_FragmentIn100(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
