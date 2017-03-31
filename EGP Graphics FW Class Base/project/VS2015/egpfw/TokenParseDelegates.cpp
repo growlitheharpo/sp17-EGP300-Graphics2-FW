@@ -406,6 +406,37 @@ void parse_GeometryOut330(const emitter_delegate& out, TokenStream& in, Emitable
 {
 }
 
-void parse_Uniform(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_Uniform(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	//As simple as it gets. We'll get "in attributes { ... }" and just need to emit everything in the braces with "in" before it.
+	IToken* t;
+
+	//We got the "uniform" already. Clear until we hit the open bracket.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	t = in.get();
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+			out.emit("uniform ");
+			out.emit(getEmissionString(t)); //should output the typename.
+			out.consumeWhitespace(in);		//clear space between typename and lane.
+			emitUntilPunctuation(out, in, ";", true);	//emit the variable name and the ;
+			break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
 }
