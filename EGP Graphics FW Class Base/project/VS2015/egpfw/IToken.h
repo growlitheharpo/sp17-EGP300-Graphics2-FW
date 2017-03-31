@@ -107,7 +107,7 @@ class NumberLiteralToken : public EmitableToken
 
 		std::string getValue() const override { return mNumber; }
 
-		static bool characterMatches(char c);
+		static bool characterMatches(char c, std::fstream& fin);
 };
 
 class EOLToken : public IToken

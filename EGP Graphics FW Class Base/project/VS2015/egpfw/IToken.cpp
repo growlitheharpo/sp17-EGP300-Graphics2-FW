@@ -117,7 +117,7 @@ void NumberLiteralToken::parseToken(std::fstream& fin)
 		mNumber += currentChar;
 
 		currentChar = fin.peek();
-	} while (characterMatches(currentChar));
+	} while (characterMatches(currentChar, fin));
 }
 
 void NumberLiteralToken::debugPrint() const
@@ -125,9 +125,10 @@ void NumberLiteralToken::debugPrint() const
 	cout << "Token: [number_literal, \"" << mNumber << "\"]";
 }
 
-bool NumberLiteralToken::characterMatches(char c)
+bool NumberLiteralToken::characterMatches(char c, std::fstream& fin)
 {
-	return isxdigit(c) || c == '.' || c == 'f' || c == 'F';
+	//Weeee!! we need to check for decimals and for hex eventually.
+	return isdigit(c);
 }
 
 void EOLToken::parseToken(std::fstream& fin)

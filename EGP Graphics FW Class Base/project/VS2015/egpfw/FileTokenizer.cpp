@@ -98,16 +98,16 @@ void FileTokenizer::tokenize(fstream& fin)
 
 		if (peekNext == '/') //Shit. Check for a comment before we do anything else.
 			newToken = handleComment(fin);
-		else if (SymbolToken::characterMatches(peekNext))
-			newToken = new SymbolToken();
 		else if (EOLToken::characterMatches(peekNext))
 			newToken = new EOLToken();
-		else if (WhitespaceToken::characterMatches(peekNext))
-			newToken = new WhitespaceToken();
-		else if (NumberLiteralToken::characterMatches(peekNext))
+		else if (NumberLiteralToken::characterMatches(peekNext, fin))
 			newToken = new NumberLiteralToken();
+		else if (SymbolToken::characterMatches(peekNext))
+			newToken = new SymbolToken();
 		else if (PunctuationToken::characterMatches(peekNext))
 			newToken = new PunctuationToken();
+		else if (WhitespaceToken::characterMatches(peekNext))
+			newToken = new WhitespaceToken();
 
 		if (newToken == nullptr)
 			std::cout << "ERROR: Could not parse symbol: " << peekNext << endl;
