@@ -2,6 +2,7 @@
 #include "TokenStream.h"
 #include "TokenParser.h"
 #include "IToken.h"
+#include <iostream>
 
 std::string getEmissionString(IToken* t)
 {
@@ -370,28 +371,293 @@ void parse_VertexOut330(const emitter_delegate& out, TokenStream& in, EmitableTo
 
 
 
-void parse_FragmentIn100(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_FragmentIn100(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	IToken* t;
+
+	//We got the "in" already. Clear until we hit the "varying" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "varying"))
+		throw TokenParser::unexpected_token(t);
+
+	//Consumed the "varying". Let's find our pass struct name.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!t->getType() == IToken::SYMBOL)
+		throw TokenParser::unexpected_token(t);
+	out.setVaryingPrefix(static_cast<SymbolToken*>(t)->getValue());
+
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	t = in.get();
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+			out.emit("varying ");
+			out.emit(getEmissionString(t)); //should output the typename.
+			out.consumeWhitespace(in);		//move up to the variable name.
+			t = in.get();
+			out.emit(out.getVaryingPrefix() + "__" + getEmissionString(t));
+			emitUntilPunctuation(out, in, ";", true);	//emit any whitespace and the ;
+			break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
 }
 
-void parse_FragmentIn130(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_FragmentIn130(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	IToken* t;
+
+	//We got the "in" already. Clear until we hit the "varying" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "varying"))
+		throw TokenParser::unexpected_token(t);
+
+	//Consumed the "varying". Let's find our pass struct name.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!t->getType() == IToken::SYMBOL)
+		throw TokenParser::unexpected_token(t);
+	out.setVaryingPrefix(static_cast<SymbolToken*>(t)->getValue());
+
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	t = in.get();
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+			out.emit("in ");
+			out.emit(getEmissionString(t)); //should output the typename.
+			out.consumeWhitespace(in);		//move up to the variable name.
+			t = in.get();
+			out.emit(out.getVaryingPrefix() + "__" + getEmissionString(t));
+			emitUntilPunctuation(out, in, ";", true);	//emit any whitespace and the ;
+			break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
 }
 
-void parse_FragmentIn330(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_FragmentIn330(const emitter_delegate& out, TokenStream& in, EmitableToken* startTokent)
 {
+	IToken* t;
+
+	//We got the "in" already. Clear until we hit the "varying" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "varying"))
+		throw TokenParser::unexpected_token(t);
+
+	out.emit(" in VertexData ");
+
+	//Consumed the "varying". Let's find our pass struct name.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!t->getType() == IToken::SYMBOL)
+		throw TokenParser::unexpected_token(t);
+	out.setVaryingPrefix(static_cast<SymbolToken*>(t)->getValue());
+
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+			out.emit(getEmissionString(t)); //should output the typename.
+			out.consumeWhitespace(in);		//move up to the variable name.
+			out.emit(getEmissionString(in.get()));
+			emitUntilPunctuation(out, in, ";", true);	//emit any whitespace and the ;
+			break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
+
+	out.emit(getEmissionString(t) + " " + out.getVaryingPrefix() + ";"); //emit the close brace
 }
 
-void parse_FragmentOut100(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_FragmentOut100(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	//Alright, we're cheating a bit here. Technically GLSL didn't have fragment outputs until 130. 
+	//If the user has anything in the "target" struct, we'll emit a global variable
+	//as well as a warning that their fragment shader might not function properly.
+
+	IToken* t;
+
+	//We got the "out" already. Clear until we hit the "target" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "target"))
+		throw TokenParser::unexpected_token(t);
+
+	//Consumed the "target". Let's find the open bracket.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	t = in.get();
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+			out.emit(getEmissionString(t)); //output the typename.
+			out.consumeWhitespace(in);		//clear space between typename and lane.
+			getLaneToken(in, out);			//will clear the "@lane(x)" portion.
+			emitUntilPunctuation(out, in, ";", true);	//emit the variable name and the ;
+
+			std::cout << "WARNING: GLSL < 130 did not support Fragment shader outputs. Consider using gl_FragColor.\n";
+
+			break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
 }
 
-void parse_FragmentOut130(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_FragmentOut130(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	IToken* t;
+
+	//We got the "out" already. Clear until we hit the "target" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "target"))
+		throw TokenParser::unexpected_token(t);
+
+	//Consumed the "target". Let's find the open bracket.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	t = in.get();
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:				//we hit a symbol. It SHOULD be a typename.
+			out.emit("out ");
+			out.emit(getEmissionString(t)); //should output the typename.
+			out.consumeWhitespace(in);		//clear space between typename and lane.
+			getLaneToken(in, out);			//will clear the "@lane(x)" portion.
+			emitUntilPunctuation(out, in, ";", true);	//emit the variable name and the ;
+			break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
 }
 
-void parse_FragmentOut330(const emitter_delegate& out, TokenStream& in, EmitableToken* t)
+void parse_FragmentOut330(const emitter_delegate& out, TokenStream& in, EmitableToken* startToken)
 {
+	IToken* t;
+
+	//We got the "in" already. Clear until we hit the "target" symbol.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForSymbol(t, "target"))
+		throw TokenParser::unexpected_token(t);
+
+	//Consumed the "target". Let's find the open bracket.
+	out.consumeWhitespace(in);
+	t = in.get();
+
+	if (!TokenParser::checkForPunctuation(t, "{"))
+		throw TokenParser::unexpected_token(t);
+
+	t = in.get();
+
+	//Great, we're inside the struct. Time to start emitting.
+	while (!TokenParser::checkForPunctuation(t, "}"))
+	{
+		switch (t->getType())
+		{
+		case IToken::SYMBOL:	//we hit a symbol. It SHOULD be a typename.
+		{
+			//Get the data we need first.
+			std::string type = getEmissionString(t);
+			out.consumeWhitespace(in);
+			unsigned location = getLaneToken(in, out);
+
+			//Emit the layout location and type, then emit till the end to get the variable names.
+			out.emit("layout (location = " + std::to_string(location) + ") out ");
+			out.emit(type + " ");
+
+			emitUntilPunctuation(out, in, ";", true);	//emit the variable name and the ;
+		}
+		break;
+
+		default:
+			out.emit(getEmissionString(t));
+			break;
+		}
+
+		t = in.get();
+	}
 }
 
 
