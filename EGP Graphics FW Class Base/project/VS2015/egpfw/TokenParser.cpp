@@ -122,12 +122,16 @@ void TokenParser::handleRootSymbolToken(SymbolToken* t, TokenStream& stream, con
 
 	try
 	{
-		parser(emitter_delegate(*this, &emit, &consumeWhitespace), stream, t);
+		parser((emitter_delegate(*this, &TokenParser::emit, &TokenParser::consumeWhitespace)), stream, t);
 	}
 	catch (unexpected_token e)
 	{
 		throw unexpected_token(e._t, mLineCount);
 	}
+}
+
+void TokenParser::handleVaryingPrefixInProgram(SymbolToken* token, TokenStream& tokens)
+{
 }
 
 token_delegate_t* TokenParser::getInTokenParser() const
@@ -270,10 +274,12 @@ void TokenParser::parseTokens(TokenStream& tokens, int glVersion)
 		{
 			case IToken::SYMBOL:
 				peekValue = static_cast<SymbolToken*>(peekToken)->getValue();
+
 				if (find(ROOT_LEVEL_SYMBOLS.begin(), ROOT_LEVEL_SYMBOLS.end(), peekValue) != ROOT_LEVEL_SYMBOLS.end())
 					handleRootSymbolToken(static_cast<SymbolToken*>(peekToken), tokens, peekValue);
 				else
 					emit(static_cast<PunctuationToken*>(peekToken)->getValue());
+
 				break;
 			case IToken::WHITESPACE:
 				emit(" ");
