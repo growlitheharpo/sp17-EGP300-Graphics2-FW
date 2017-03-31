@@ -51,7 +51,7 @@ void TokenParser::emit(std::string addition)
 
 	if (addition == "\n" || addition == "\r\n" || addition == "\r")
 	{
-		std::string::size_type numTabs = 7 - mCurrentLine.size() / 10;
+		std::string::size_type numTabs = std::max(7 - (int)mCurrentLine.size() / 10, 7);
 		mOutput += std::string(numTabs, '\t') + "//LINE " + std::to_string(++mLineCount);
 
 		addition = "\n";
@@ -106,6 +106,12 @@ void TokenParser::consumeWhitespace(TokenStream& stream)
 
 void TokenParser::handleRootSymbolToken(SymbolToken* t, TokenStream& stream, const std::string& val)
 {
+	if (mShaderType == GEOMETRY) //not putting up with this shit right now
+	{
+		emit(t->getValue());
+		return;
+	}
+
 	token_delegate_t* parser;
 
 	if (val == "in")
