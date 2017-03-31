@@ -92,14 +92,14 @@ void winClosePressed()
 int main()
 {
 	FileTokenizer tokenizer;
-	tokenizer.tokenize("../../../../resource/glsl/4x/vs/celshade_vs4x.jksl");
+	tokenizer.tokenize("../../../../resource/glsl/4x/gs/drawCurve_gs4x.jksl");
 
 	TokenStream ts(tokenizer.getTokens());
 	TokenParser parser;
 	parser.parseTokens(ts, 410);
 
 	std::fstream fout;
-	fout.open("../../../../resource/glsl/4x/vs/celshade_vs4x_PARSED.glsl", std::ios_base::out | std::ios_base::trunc);
+	fout.open("../../../../resource/glsl/4x/gs/drawCurve_gs4x_PARSED.glsl", std::ios_base::out | std::ios_base::trunc);
 	fout << parser.getValue();
 	fout.close();
 
