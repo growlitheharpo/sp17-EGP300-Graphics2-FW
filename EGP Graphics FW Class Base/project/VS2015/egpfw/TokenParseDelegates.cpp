@@ -221,7 +221,7 @@ void parse_VertexOut100(const emitter_delegate& out, TokenStream& in, EmitableTo
 {
 	IToken* t;
 
-	//We got the "in" already. Clear until we hit the "varying" symbol.
+	//We got the "out" already. Clear until we hit the "varying" symbol.
 	out.consumeWhitespace(in);
 	t = in.get();
 
@@ -271,7 +271,7 @@ void parse_VertexOut130(const emitter_delegate& out, TokenStream& in, EmitableTo
 {
 	IToken* t;
 
-	//We got the "in" already. Clear until we hit the "varying" symbol.
+	//We got the "out" already. Clear until we hit the "varying" symbol.
 	out.consumeWhitespace(in);
 	t = in.get();
 
@@ -322,7 +322,7 @@ void parse_VertexOut330(const emitter_delegate& out, TokenStream& in, EmitableTo
 {
 	IToken* t;
 
-	//We got the "in" already. Clear until we hit the "varying" symbol.
+	//We got the "out" already. Clear until we hit the "varying" symbol.
 	out.consumeWhitespace(in);
 	t = in.get();
 
