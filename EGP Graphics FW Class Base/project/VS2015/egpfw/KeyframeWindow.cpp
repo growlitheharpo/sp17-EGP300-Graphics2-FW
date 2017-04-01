@@ -8,6 +8,7 @@
 
 KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs)
 {
+	mCurrentTime = 0.0f;
 	mVAOList = vao;
 	mFBOList = fbo;
 	mProgramList = programs;
@@ -45,7 +46,7 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 	mLittleBoxWindowMatrix.m31 = -win_h / viewport_th;
 
 	mWindowSize.set(win_w, win_h);
-	mOnScreenMatrix = cbmath::makeTranslation4(-0.6f, -0.6f, 0.0f) * cbmath::makeScale4(0.4f);
+	mOnScreenMatrix = cbmath::makeTranslation4(-0.595f, -0.59f, 0.0f) * cbmath::makeScale4(0.4f);
 
 	if (!gluInvertMatrix(mOnScreenMatrix.m, mOnScreenMatrixInv.m))
 		throw std::invalid_argument("I have no idea how this is possible, but our on-screen transformation matrix could not be inverted!");
