@@ -1471,11 +1471,13 @@ void handleInputState(float dt)
 	}
 	else
 	{
+		/*
 		for (unsigned char c = '1', i = 0; c <= '9'; ++c, ++i)
 			if (egpKeyboardIsKeyPressed(keybd, c))
 			{
 				displayMode = i;
 			}
+		*/
 	}
 
 

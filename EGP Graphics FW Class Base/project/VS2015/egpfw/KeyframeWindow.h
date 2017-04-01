@@ -1,8 +1,11 @@
 #pragma once
 #include "egpfw/egpfw.h"
+
 #include <vector>
+#include <array>
 #include <cbmath/cbtkVector.h>
 #include <cbmath/cbtkMatrix.h>
+
 struct egpMouse;
 struct egpKeyboard;
 
@@ -11,12 +14,13 @@ class KeyframeWindow
 	public:
 		enum KeyframeChannel
 		{
-			CHANNEL_POS_X,
+			CHANNEL_POS_X = 0,
 			CHANNEL_POS_Y,
 			CHANNEL_POS_Z,
 			CHANNEL_ROT_X,
 			CHANNEL_ROT_Y,
 			CHANNEL_ROT_Z,
+			NUM_OF_CHANNELS,
 		};
 
 	private:
@@ -24,7 +28,8 @@ class KeyframeWindow
 		egpFrameBufferObjectDescriptor* mFBOList;
 		egpProgram* mProgramList;
 
-		std::vector<cbmath::vec4> mWaypoints;
+		std::array<std::vector<cbmath::vec4>, NUM_OF_CHANNELS> mWaypointChannels;
+		KeyframeChannel mCurrentChannel;
 		cbmath::vec2 mWindowSize;
 		cbmath::mat4 mLittleBoxWindowMatrix;
 		cbmath::mat4 mOnScreenMatrix, mOnScreenMatrixInv;
