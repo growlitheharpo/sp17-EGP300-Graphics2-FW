@@ -152,5 +152,14 @@
     <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_morphing_gs4x.glsl">
       <Filter>Resource Files\glsl\4x\gs</Filter>
     </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_animation\skinning_passNormalAsColor_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_animation</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs_animation\drawBone_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs_animation</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\passThru_vs4x.glsl">
+      <Filter>Resource Files\glsl\4x\vs</Filter>
+    </None>
   </ItemGroup>
 </Project>

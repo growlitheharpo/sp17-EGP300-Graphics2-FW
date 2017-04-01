@@ -340,10 +340,13 @@
     <None Include="..\..\..\resource\glsl\4x\vs\passColor_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_passthruPosition_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\passTexcoord_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\passThru_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\phong_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs\transform_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs_animation\drawBone_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_animation\morphing_passKeyframes_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_animation\morphing_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs_animation\skinning_passNormalAsColor_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_deferred\passAttribs_world_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_deferred\passPosition_clip_vs4x.glsl" />
     <None Include="..\..\..\resource\glsl\4x\vs_shadow\phong_passAltClip_vs4x.glsl" />
