@@ -1722,8 +1722,8 @@ void renderGameState()
 
 		keyframeWindow.renderToBackbuffer(glslCommonUniforms[testTextureProgramIndex]);
 		
-		if (displayNetgraphToggle)
-			globalRenderNetgraph.render();
+		/*if (displayNetgraphToggle)
+			globalRenderNetgraph.render();*/
 
 		// done with textures
 		glBindTexture(GL_TEXTURE_2D, 0);
