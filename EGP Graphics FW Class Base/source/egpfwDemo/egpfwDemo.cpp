@@ -41,6 +41,7 @@
 #include "egpfw/egpfw.h"
 #include "../../project/VS2015/egpfw/RenderPath.h"
 #include "../../project/VS2015/egpfw/RenderNetgraph.h"
+#include "../../project/VS2015/egpfw/ShaderConverter.h"
 
 
 //-----------------------------------------------------------------------------
@@ -557,12 +558,13 @@ void setupShaders()
 	// activate a VAO for validation
 	egpActivateVAO(vao + sphere8x6Model);
 
+	ShaderConverter::initGLVersion();
 
 	// test color program
 	{
 		// load files
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passColor_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
+		files[0] = ShaderConverter::load("../../../../resource/glsl/4x/vs/passColor_vs4x.glsl");
+		files[1] = ShaderConverter::load("../../../../resource/glsl/4x/fs/drawColor_fs4x.glsl");
 
 		// create shaders
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
@@ -589,12 +591,12 @@ void setupShaders()
 	// example of shared shader
 	{
 		// load shared shader
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawTexture_fs4x.glsl");
+		files[1] = ShaderConverter::load("../../../../resource/glsl/4x/fs/drawTexture_fs4x.glsl");
 		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
 		// pass texcoord
 		{
-			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_vs4x.glsl");
+			files[0] = ShaderConverter::load("../../../../resource/glsl/4x/vs/passTexcoord_vs4x.glsl");
 			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 
 			// same as previous
@@ -614,7 +616,7 @@ void setupShaders()
 
 		// pass texcoord, passthru position
 		{
-			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/passTexcoord_passthruPosition_vs4x.glsl");
+			files[0] = ShaderConverter::load("../../../../resource/glsl/4x/vs/passTexcoord_passthruPosition_vs4x.glsl");
 			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 
 			currentProgramIndex = testTexturePassthruProgramIndex;
@@ -629,7 +631,7 @@ void setupShaders()
 			// bloom should use this vertex shader, so let's keep nesting!
 			{
 				{
-					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/brightpass_fs4x.glsl");
+					files[2] = ShaderConverter::load("../../../../resource/glsl/4x/fs_bloom/brightpass_fs4x.glsl");
 					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
 					currentProgramIndex = bloomBrightProgramIndex;
@@ -645,7 +647,7 @@ void setupShaders()
 					egpReleaseFileContents(files + 2);
 				}
 				{
-					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/blur_gaussian_fs4x.glsl");
+					files[2] = ShaderConverter::load("../../../../resource/glsl/4x/fs_bloom/blur_gaussian_fs4x.glsl");
 					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
 					currentProgramIndex = bloomBlurProgramIndex;
@@ -661,7 +663,7 @@ void setupShaders()
 					egpReleaseFileContents(files + 2);
 				}
 				{
-					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_bloom/blend_screen_fs4x.glsl");
+					files[2] = ShaderConverter::load("../../../../resource/glsl/4x/fs_bloom/blend_screen_fs4x.glsl");
 					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
 					currentProgramIndex = bloomBlendProgramIndex;
@@ -680,7 +682,7 @@ void setupShaders()
 			// some deferred parts should use this vertex shader!
 			{
 				{
-					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/deferredShading_fs4x.glsl");
+					files[2] = ShaderConverter::load("../../../../resource/glsl/4x/fs_deferred/deferredShading_fs4x.glsl");
 					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
 					currentProgramIndex = deferredShadingProgramIndex;
@@ -696,7 +698,7 @@ void setupShaders()
 					egpReleaseFileContents(files + 2);
 				}
 				{
-					files[2] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/deferredComposite_fs4x.glsl");
+					files[2] = ShaderConverter::load("../../../../resource/glsl/4x/fs_deferred/deferredComposite_fs4x.glsl");
 					shaders[2] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[2].contents);
 
 					currentProgramIndex = deferredCompositeProgramIndex;
@@ -728,8 +730,8 @@ void setupShaders()
 		currentProgramIndex = phongProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/phong_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/phong_fs4x.glsl");
+		files[0] = ShaderConverter::load("../../../../resource/glsl/4x/vs/phong_vs4x.jksl");
+		files[1] = ShaderConverter::load("../../../../resource/glsl/4x/fs/phong_fs4x.jksl");
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
@@ -750,8 +752,8 @@ void setupShaders()
 		currentProgramIndex = gbufferProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_deferred/passAttribs_world_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/drawGBuffers_fs4x.glsl");
+		files[0] = ShaderConverter::load("../../../../resource/glsl/4x/vs_deferred/passAttribs_world_vs4x.glsl");
+		files[1] = ShaderConverter::load("../../../../resource/glsl/4x/fs_deferred/drawGBuffers_fs4x.glsl");
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
@@ -770,8 +772,8 @@ void setupShaders()
 		currentProgramIndex = deferredLightPassProgramIndex;
 		currentProgram = glslPrograms + currentProgramIndex;
 
-		files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_deferred/passPosition_clip_vs4x.glsl");
-		files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs_deferred/phong_deferred_pointLight_fs4x.glsl");
+		files[0] = ShaderConverter::load("../../../../resource/glsl/4x/vs_deferred/passPosition_clip_vs4x.glsl");
+		files[1] = ShaderConverter::load("../../../../resource/glsl/4x/fs_deferred/phong_deferred_pointLight_fs4x.glsl");
 		shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 		shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 

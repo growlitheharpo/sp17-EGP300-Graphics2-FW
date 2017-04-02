@@ -89,7 +89,7 @@ void winClosePressed()
 	glutLeaveMainLoop();
 }
 
-int main()
+int foo()
 {
 	FileTokenizer tokenizer;
 	tokenizer.tokenize("../../../../resource/glsl/4x/gs/drawCurve_gs4x.jksl");
@@ -109,7 +109,7 @@ int main()
 }
 
 // entry function
-int foo(int argc, char **argv)
+int main(int argc, char **argv)
 {
 
 	// initialize graphics library
