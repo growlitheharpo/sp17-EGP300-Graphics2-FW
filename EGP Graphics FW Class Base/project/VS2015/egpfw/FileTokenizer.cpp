@@ -96,6 +96,9 @@ void FileTokenizer::tokenize(fstream& fin)
 		newToken = nullptr;
 		char peekNext = fin.peek();
 
+		if (peekNext == EOF)
+			break;
+
 		if (peekNext == '/') //Shit. Check for a comment before we do anything else.
 			newToken = handleComment(fin);
 		else if (EOLToken::characterMatches(peekNext))
