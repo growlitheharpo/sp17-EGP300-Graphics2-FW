@@ -34,6 +34,7 @@
     <ClInclude Include="RenderPassData.h" />
     <ClInclude Include="RenderPath.h" />
     <ClInclude Include="render_enums.h" />
+    <ClInclude Include="ShaderConverter.h" />
     <ClInclude Include="TokenParseDelegates.h" />
     <ClInclude Include="TokenParser.h" />
     <ClInclude Include="TokenStream.h" />
@@ -55,6 +56,7 @@
     <ClCompile Include="RenderNetgraph.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="RenderPath.cpp" />
+    <ClCompile Include="ShaderConverter.cpp" />
     <ClCompile Include="stackTest.cpp" />
     <ClCompile Include="TokenParseDelegates.cpp" />
     <ClCompile Include="TokenParser.cpp" />

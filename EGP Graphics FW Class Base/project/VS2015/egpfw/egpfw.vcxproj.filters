@@ -43,6 +43,9 @@
     <Filter Include="Source Files\jksl_parser\parsing">
       <UniqueIdentifier>{7c44e69c-48c2-46b5-8148-703ceaaf4f45}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\jksl_parser\shader-setup">
+      <UniqueIdentifier>{5cfd54a3-4cf6-4f5e-af1f-90225f8d12af}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\egpfw\egpfw.h">
@@ -111,6 +114,9 @@
     <ClInclude Include="TokenParseDelegates.h">
       <Filter>Source Files\jksl_parser\parsing</Filter>
     </ClInclude>
+    <ClInclude Include="ShaderConverter.h">
+      <Filter>Source Files\jksl_parser\shader-setup</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\egpfw\egpfwPrimitiveDataSimple.c">
@@ -166,6 +172,9 @@
     </ClCompile>
     <ClCompile Include="TokenParseDelegates.cpp">
       <Filter>Source Files\jksl_parser\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderConverter.cpp">
+      <Filter>Source Files\jksl_parser\shader-setup</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -161,5 +161,11 @@
     <None Include="..\..\..\resource\glsl\4x\gs\drawCurve_morphing_gs4x.glsl">
       <Filter>Resource Files\glsl\4x\gs</Filter>
     </None>
+    <None Include="..\..\..\resource\glsl\4x\vs\phong_vs4x.jksl">
+      <Filter>Resource Files\jksl</Filter>
+    </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\phong_fs4x.jksl">
+      <Filter>Resource Files\jksl</Filter>
+    </None>
   </ItemGroup>
 </Project>
