@@ -66,14 +66,14 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 	if (mousePos.x / mWindowSize.x > 1.0f || mousePos.y / mWindowSize.y > 1.0f)
 		return false;
 
-	if (egpMouseIsButtonPressed(m, 0))
+	if (egpMouseIsButtonDown(m, 0) && mCurrentChannel == NUM_OF_CHANNELS)
 	{
-		if (mCurrentChannel == NUM_OF_CHANNELS)
-		{
-			mCurrentTime = (mousePos.x / mWindowSize.x) * 2.0f;
-			return true;
-		}
+		mCurrentTime = (mousePos.x / mWindowSize.x) * 2.0f;
+		return true;
+	}
 
+	if (egpMouseIsButtonPressed(m, 0) && mCurrentChannel != NUM_OF_CHANNELS)
+	{
 		size_t insertIndex;
 		for (insertIndex = 0; insertIndex < mWaypointChannels[mCurrentChannel].size(); insertIndex++)
 		{
