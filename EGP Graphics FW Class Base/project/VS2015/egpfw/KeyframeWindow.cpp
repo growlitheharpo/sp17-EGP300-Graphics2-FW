@@ -15,6 +15,20 @@ const std::array<cbmath::vec4, KeyframeWindow::NUM_OF_CHANNELS> COLORS =
 	cbmath::vec4(0.0f, 0.0f, 1.0f, 1.0f),
 };
 
+void KeyframeWindow::resetKeyframes()
+{
+	cbmath::vec4 zeroVec = cbmath::vec4(0.0f, mWindowSize.y / 2.0f, 0.0f, 1.0f);
+	cbmath::vec4 oneVec = cbmath::vec4(mWindowSize.x, mWindowSize.y / 2.0f, 0.0f, 1.0f);
+
+	for (auto& list : mWaypointChannels)
+	{
+		list.clear();
+
+		list.push_back(zeroVec);
+		list.push_back(oneVec);
+	}
+}
+
 KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs)
 {
 	mCurrentTime = 0.0f;
@@ -40,9 +54,11 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 
 	if (egpKeyboardIsKeyPressed(key, 'y'))
 	{
-		for (auto& waypointList : mWaypointChannels)
-			waypointList.clear();
+		resetKeyframes();
 	}
+
+	if (egpKeyboardIsKeyPressed(key, ' '))
+		mIsPaused = !mIsPaused;
 
 	cbmath::vec4 mousePos(egpMouseX(m), mWindowSize.y - egpMouseY(m), 0.0f, 1.0f);
 	mousePos = mOnScreenMatrixInv * mousePos;
@@ -94,16 +110,7 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 	if (!gluInvertMatrix(mOnScreenMatrix.m, mOnScreenMatrixInv.m))
 		throw std::invalid_argument("I have no idea how this is possible, but our on-screen transformation matrix could not be inverted!");
 
-	cbmath::vec4 zeroVec = cbmath::vec4(0.0f, mWindowSize.y / 2.0f, 0.0f, 1.0f);
-	cbmath::vec4 oneVec = cbmath::vec4(mWindowSize.x, mWindowSize.y / 2.0f, 0.0f, 1.0f);
-
-	for (auto& list : mWaypointChannels)
-	{
-		list.clear();
-
-		list.push_back(zeroVec);
-		list.push_back(oneVec);
-	}
+	resetKeyframes();
 }
 
 float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)

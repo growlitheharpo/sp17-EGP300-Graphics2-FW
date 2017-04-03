@@ -36,6 +36,8 @@ class KeyframeWindow
 		float mCurrentTime;
 		bool mIsPaused;
 
+		void resetKeyframes();
+
 	public:
 		KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs);
 		~KeyframeWindow();

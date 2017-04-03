@@ -1543,9 +1543,9 @@ void updateGameState(float dt)
 
 		// calculate model matrix
 		//earthModelMatrix = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
-		earthModelMatrix = cbmath::makeRotationEuler4XYZ(keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_X) * 3.14f,
-			keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_Y) * 3.14f,
-			keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_Z) * 3.14f);
+		earthModelMatrix = cbmath::makeRotationEuler4XYZ(keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_X) * 3.14f * 2.0f,
+			keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_Y) * 3.14f * 2.0f,
+			keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_Z) * 3.14f * 2.0f);
 
 		earthModelMatrix.c3.x = keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_POS_X) * 5.0f;
 		earthModelMatrix.c3.y = keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_POS_Y) * 5.0f;
