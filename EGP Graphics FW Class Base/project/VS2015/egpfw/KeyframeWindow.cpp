@@ -50,7 +50,16 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 		return false;
 
 	if (egpMouseIsButtonPressed(m, 0))
-		mWaypointChannels[mCurrentChannel].push_back(mousePos);
+	{
+		size_t insertIndex = 0;
+		for (insertIndex = 0; insertIndex < mWaypointChannels[mCurrentChannel].size(); insertIndex++)
+		{
+			if (mWaypointChannels[mCurrentChannel][insertIndex].x > mousePos.x)
+				break;
+		}
+
+		mWaypointChannels[mCurrentChannel].insert(mWaypointChannels[mCurrentChannel].begin() + insertIndex, mousePos);
+	}
 
 	return true;
 }

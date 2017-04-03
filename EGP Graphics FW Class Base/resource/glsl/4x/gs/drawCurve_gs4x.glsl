@@ -8,9 +8,9 @@
 
 #version 410
 
-#define WAYPOINTS_MAX 32
+#define WAYPOINTS_MAX 256
 #define SAMPLES_PER_SEGMENT 16
-#define SAMPLES_MAX 32
+#define SAMPLES_MAX 128
 
 #define CURVE_LINES 0
 #define CURVE_BEZIER 1
