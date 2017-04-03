@@ -46,7 +46,7 @@ KeyframeWindow::~KeyframeWindow()
 
 bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 {
-	for (unsigned char c = '1', i = 0; i < NUM_OF_CHANNELS; ++c, ++i)
+	for (unsigned char c = '1', i = 0; i <= NUM_OF_CHANNELS; ++c, ++i)
 	{
 		if (egpKeyboardIsKeyPressed(key, c))
 			mCurrentChannel = static_cast<KeyframeChannel>(i);
@@ -68,6 +68,12 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 
 	if (egpMouseIsButtonPressed(m, 0))
 	{
+		if (mCurrentChannel == NUM_OF_CHANNELS)
+		{
+			mCurrentTime = (mousePos.x / mWindowSize.x) * 2.0f;
+			return true;
+		}
+
 		size_t insertIndex;
 		for (insertIndex = 0; insertIndex < mWaypointChannels[mCurrentChannel].size(); insertIndex++)
 		{
@@ -196,6 +202,19 @@ void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet
 			egpDrawActiveVAO();
 		}
 	}
+
+	cbmath::vec4 points[2] = { cbmath::vec4(mCurrentTime / 2.0f * mWindowSize.x, 0.0f, 0.0f, 1.0f), cbmath::vec4(mCurrentTime / 2.0f * mWindowSize.x, mWindowSize.y, 0.0f, 1.0f) };
+	int loltwo = 2;
+	egpActivateProgram(mProgramList + drawCurveProgram);
+	egpSendUniformFloatMatrix(curveUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
+
+	egpSendUniformFloat(curveUniformSet[unif_waypoint], UNIF_VEC4, vecSize, points[0].v);
+	egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &loltwo);
+	egpSendUniformInt(curveUniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
+	egpSendUniformInt(curveUniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
+
+	egpActivateVAO(mVAOList + pointModel);
+	egpDrawActiveVAO();
 }
 
 void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
