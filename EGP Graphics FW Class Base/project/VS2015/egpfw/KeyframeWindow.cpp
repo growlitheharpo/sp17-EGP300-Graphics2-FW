@@ -4,6 +4,7 @@
 #include <cbmath/cbtkMatrix.h>
 #include <GL/glew.h>
 #include "transformMatrix.h"
+#include <GL/freeglut.h>
 
 const std::array<cbmath::vec4, KeyframeWindow::NUM_OF_CHANNELS + 1> COLORS = 
 {
@@ -152,7 +153,7 @@ float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
 }
 
 void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet)
-{
+{	
 	//const cbmath::vec4 waypointColor(1.0, 0.5f, 0.0f, 1.0f);
 	const cbmath::vec4 objectColor(1.0f, 1.0f, 0.5f, 1.0f);
 
@@ -218,6 +219,7 @@ void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet
 
 	egpActivateVAO(mVAOList + pointModel);
 	egpDrawActiveVAO();
+	
 }
 
 void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
@@ -227,4 +229,48 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	egpfwBindColorTargetTexture(mFBOList + curvesFBO, 0, 0);
 	egpSendUniformFloatMatrix(textureUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mOnScreenMatrix.m);
 	egpDrawActiveVAO();
+
+	glWindowPos2i(5, mWindowSize.y * 0.41f);
+	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '0');
+
+	glWindowPos2i(mWindowSize.x * 0.4f * 0.5f, mWindowSize.y * 0.41f);
+	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '1');
+
+	glWindowPos2i(mWindowSize.x * 0.4f - 5, mWindowSize.y * 0.41f);
+	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '2');
+
+	std::string watToRite[3];
+
+	if ((int)mCurrentChannel < (int)CHANNEL_ROT_X)
+	{
+		watToRite[0] = "-5";
+		watToRite[1] = "0";
+		watToRite[2] = "5";
+	}
+	else if ((int)mCurrentChannel < (int)NUM_OF_CHANNELS)
+	{
+		watToRite[0] = "-360";
+		watToRite[1] = "0";
+		watToRite[2] = "360";
+	}
+	else
+	{
+		return;
+	}
+
+	glWindowPos2i(mWindowSize.x * 0.4f + 5, 5);
+	for (auto i = 0; i < watToRite[0].size(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[0][i]);
+
+	glWindowPos2i(mWindowSize.x * 0.4f + 5, mWindowSize.y * 0.4f * 0.5f);
+	for (auto i = 0; i < watToRite[1].size(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[1][i]);
+
+	glWindowPos2i(mWindowSize.x * 0.4f + 5, mWindowSize.y * 0.4f - 15);
+	for (auto i = 0; i < watToRite[2].size(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[2][i]);
+
+	//glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'Z');
+	/*glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'W');
+	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'R');*/
 }

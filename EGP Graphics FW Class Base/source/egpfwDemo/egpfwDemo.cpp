@@ -42,6 +42,7 @@
 #include "../../project/VS2015/egpfw/RenderPath.h"
 #include "../../project/VS2015/egpfw/RenderNetgraph.h"
 #include "../../project/VS2015/egpfw/KeyframeWindow.h"
+#include <GL/freeglut.h>
 
 
 //-----------------------------------------------------------------------------
@@ -520,6 +521,7 @@ void deleteTextures()
 {
 	// delete all textures at once
 	glDeleteTextures(textureCount, tex);
+
 }
 
 // array of common uniform names
