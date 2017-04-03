@@ -52,7 +52,7 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 
 	if (egpMouseIsButtonPressed(m, 0))
 	{
-		size_t insertIndex = 0;
+		size_t insertIndex;
 		for (insertIndex = 0; insertIndex < mWaypointChannels[mCurrentChannel].size(); insertIndex++)
 		{
 			if (mWaypointChannels[mCurrentChannel][insertIndex].x > mousePos.x)
@@ -134,8 +134,7 @@ float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
 	}
 
 	float t = (mCurrentTime - leftXTime) / (rightXTime - leftXTime);
-	
-	return egpfwLerp(posToLeft.y, posToRight.y, t);
+	return egpfwLerp(posToLeft.y, posToRight.y, t) * 2.0f / mWindowSize.y - 1.0f;
 }
 
 void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet)

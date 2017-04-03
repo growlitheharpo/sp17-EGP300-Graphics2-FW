@@ -1509,6 +1509,8 @@ void updateGameState(float dt)
 	// scale time first
 	dt *= (float)(playrate * playing) * 0.01f;
 
+	keyframeWindow.update(dt);
+
 	// update objects here
 
 	// SKYBOX TRANSFORM: 
@@ -1540,9 +1542,14 @@ void updateGameState(float dt)
 		earthOrbit += dt * earthOrbitPeriod;
 
 		// calculate model matrix
-		earthModelMatrix = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
-		earthModelMatrix.c3.x = cosf(earthOrbit) * earthDistance;
-		earthModelMatrix.c3.z = -sinf(earthOrbit) * earthDistance;
+		//earthModelMatrix = cbmath::makeRotationZ4(earthTilt) * cbmath::makeRotationY4(earthDaytime);
+		earthModelMatrix = cbmath::makeRotationEuler4XYZ(keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_X) * 3.14f,
+			keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_Y) * 3.14f,
+			keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_ROT_Z) * 3.14f);
+
+		earthModelMatrix.c3.x = keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_POS_X) * 5.0f;
+		earthModelMatrix.c3.y = keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_POS_Y) * 5.0f;
+		earthModelMatrix.c3.z = keyframeWindow.getValAtCurrentTime(KeyframeWindow::CHANNEL_POS_Z) * 5.0f;
 
 		// update mvp
 		earthModelViewProjectionMatrix = viewProjMat * earthModelMatrix;
@@ -1561,6 +1568,7 @@ void updateGameState(float dt)
 
 		moonModelMatrix = cbmath::makeRotationZ4(moonTilt) * cbmath::makeRotationY4(moonOrbit) * cbmath::makeScale4(moonSize);
 		moonModelMatrix.c3.x = earthModelMatrix.c3.x + cosf(moonOrbit) * moonDistance;
+		moonModelMatrix.c3.y = earthModelMatrix.c3.y;
 		moonModelMatrix.c3.z = earthModelMatrix.c3.z - sinf(moonOrbit) * moonDistance;
 
 		moonModelViewProjectionMatrix = viewProjMat * moonModelMatrix;
