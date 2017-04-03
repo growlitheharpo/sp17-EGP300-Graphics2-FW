@@ -34,15 +34,19 @@ class KeyframeWindow
 		cbmath::mat4 mLittleBoxWindowMatrix;
 		cbmath::mat4 mOnScreenMatrix, mOnScreenMatrixInv;
 		float mCurrentTime;
+		bool mIsPaused;
 
 	public:
 		KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBufferObjectDescriptor* fbo, egpProgram* programs);
 		~KeyframeWindow();
 
+		//
+
 		/**
 		 * \brief 
 		 * \return True if the mouse is currently inside of the bounds of the window. False otherwise. */
 		bool updateInput(egpMouse* m, egpKeyboard* key);
+		void update(float deltaT);
 		void updateWindowSize(float viewport_tw, float viewport_th, float tmpNF, float win_w, float win_h);
 
 		float getValAtCurrentTime(KeyframeChannel c);

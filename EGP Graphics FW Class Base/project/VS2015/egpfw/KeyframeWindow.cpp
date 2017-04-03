@@ -22,6 +22,7 @@ KeyframeWindow::KeyframeWindow(egpVertexArrayObjectDescriptor* vao, egpFrameBuff
 	mFBOList = fbo;
 	mProgramList = programs;
 	mCurrentChannel = CHANNEL_POS_X;
+	mIsPaused = false;
 }
 
 KeyframeWindow::~KeyframeWindow()
@@ -59,9 +60,23 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 		}
 
 		mWaypointChannels[mCurrentChannel].insert(mWaypointChannels[mCurrentChannel].begin() + insertIndex, mousePos);
+
+		printf("X: %f, Y: %f\n", mousePos.x, mousePos.y);
 	}
 
 	return true;
+}
+
+void KeyframeWindow::update(float deltaT)
+{
+	if (mIsPaused)
+		return;
+
+	mCurrentTime += deltaT;
+
+	//Wrap around because we want our whole time frame to be 2 seconds.
+	if (mCurrentTime > 2.0f)
+		mCurrentTime -= 2.0f;
 }
 
 void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, float tmpNF, float win_w, float win_h)
@@ -78,16 +93,49 @@ void KeyframeWindow::updateWindowSize(float viewport_tw, float viewport_th, floa
 
 	if (!gluInvertMatrix(mOnScreenMatrix.m, mOnScreenMatrixInv.m))
 		throw std::invalid_argument("I have no idea how this is possible, but our on-screen transformation matrix could not be inverted!");
+
+	cbmath::vec4 zeroVec = cbmath::vec4(0.0f, mWindowSize.y / 2.0f, 0.0f, 1.0f);
+	cbmath::vec4 oneVec = cbmath::vec4(mWindowSize.x, mWindowSize.y / 2.0f, 0.0f, 1.0f);
+
+	for (auto& list : mWaypointChannels)
+	{
+		list.clear();
+
+		list.push_back(zeroVec);
+		list.push_back(oneVec);
+	}
 }
 
 float KeyframeWindow::getValAtCurrentTime(KeyframeChannel c)
 {
+	using namespace cbmath;
+
 	auto& list = mWaypointChannels[c];
 
 	if (list.size() == 0)
 		return 0.0f;
+	else if (list.size() == 1)
+		return list[0].y;
 
-	return list[0].y;
+	float leftXTime, rightXTime;
+	vec4 posToLeft, posToRight;
+
+	for (size_t i = 0; i < list.size() - 1; i++)
+	{
+		leftXTime = (list[i].x / mWindowSize.x) * 2.0f;
+		rightXTime = (list[i + 1].x / mWindowSize.x) * 2.0f;
+
+		if (leftXTime <= mCurrentTime && rightXTime >= mCurrentTime)
+		{
+			posToLeft = list[i];
+			posToRight = list[i + 1];
+			break;
+		}
+	}
+
+	float t = (mCurrentTime - leftXTime) / (rightXTime - leftXTime);
+	
+	return egpfwLerp(posToLeft.y, posToRight.y, t);
 }
 
 void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet)
