@@ -5,7 +5,7 @@
 #include <GL/glew.h>
 #include "transformMatrix.h"
 
-const std::array<cbmath::vec4, KeyframeWindow::NUM_OF_CHANNELS> COLORS = 
+const std::array<cbmath::vec4, KeyframeWindow::NUM_OF_CHANNELS + 1> COLORS = 
 {
 	cbmath::vec4(1.0f, 0.0f, 0.0f, 1.0f),
 	cbmath::vec4(0.0f, 1.0f, 0.0f, 1.0f),
@@ -13,6 +13,7 @@ const std::array<cbmath::vec4, KeyframeWindow::NUM_OF_CHANNELS> COLORS =
 	cbmath::vec4(1.0f, 0.0f, 0.0f, 1.0f),
 	cbmath::vec4(0.0f, 1.0f, 0.0f, 1.0f),
 	cbmath::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+	cbmath::vec4(1.0f, 1.0f, 1.0f, 1.0f),
 };
 
 void KeyframeWindow::resetKeyframes()
@@ -178,6 +179,7 @@ void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet
 
 		// ship waypoint data to program, where it will be received by GS
 		egpSendUniformFloat(curveUniformSet[unif_waypoint], UNIF_VEC4, vecSize, mWaypointChannels[i].data()->v);
+		egpSendUniformFloat(solidColorUniformSet[unif_color], UNIF_VEC4, 1, COLORS[i].v);
 		egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &vecSize);
 		egpSendUniformInt(curveUniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
 		egpSendUniformInt(curveUniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
@@ -209,6 +211,7 @@ void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet
 	egpSendUniformFloatMatrix(curveUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
 
 	egpSendUniformFloat(curveUniformSet[unif_waypoint], UNIF_VEC4, vecSize, points[0].v);
+	egpSendUniformFloat(solidColorUniformSet[unif_color], UNIF_VEC4, 1, COLORS[NUM_OF_CHANNELS].v);
 	egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &loltwo);
 	egpSendUniformInt(curveUniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
 	egpSendUniformInt(curveUniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);

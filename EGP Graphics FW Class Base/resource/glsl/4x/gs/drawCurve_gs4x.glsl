@@ -29,6 +29,7 @@ layout (line_strip, max_vertices = SAMPLES_MAX) out;
 // uniforms
 uniform mat4 mvp;
 
+uniform vec4 color;
 uniform vec4 waypoint[WAYPOINTS_MAX];
 uniform int waypointCount = 0;
 uniform int curveMode = 0;
@@ -256,7 +257,7 @@ void drawCurve(const int samples, const float dt)
 	int i0, i1, n;
 	vec4 p0, p1, p2, p3, pPrev, pNext, m0, m1;
 
-	passColor = BLUE;
+	passColor = color;
 
 	switch(curveMode)
 	{
@@ -270,7 +271,7 @@ void drawCurve(const int samples, const float dt)
 			p3 = waypoint[i1];
 			drawBezierCurve3(p0, p1, p2, p3, samples, dt);
 		}
-		passColor = GREEN;
+		passColor = color;
 	//	break;	// no break to draw the lines that are used to form the curve
 	case CURVE_LINES:
 		// draw line segments between each waypoint
@@ -294,7 +295,7 @@ void drawCurve(const int samples, const float dt)
 		if (waypointCount > 2)
 		{
 			// draw lines on first and last segment separately to avoid loop
-			passColor = GREEN;
+			passColor = color;
 			pPrev = waypoint[0];
 			p0 = waypoint[1];
 			p1 = waypoint[n-1];
@@ -307,7 +308,7 @@ void drawCurve(const int samples, const float dt)
 		// let every pair of points be a waypoint and its tangent handle
 		for (i0 = 0, i1 = i0 + 2, n = waypointCount - 1; i1 < n; i0 = i1, i1 += 2)
 		{
-			passColor = BLUE;
+			passColor = color;
 			p0 = waypoint[i0];
 			m0 = waypoint[i0+1] - p0;	// bi-directional tangents
 		//	m0 = p0 - waypoint[i0+1];	// single-direction tangents (split curve)
@@ -315,14 +316,14 @@ void drawCurve(const int samples, const float dt)
 			m1 = waypoint[i1+1] - p1;
 			drawCubicHermiteSplineSegment(p0, m0, p1, m1, samples, dt);
 
-			passColor = GREEN;
+			passColor = color;
 			drawLineFull(p1, p1 + m1);
 			drawLineFull(p1, p1 - m1);
 		}
 		if (waypointCount > 1)
 		{
 			// draw bi-directional tangent for first point
-			passColor = GREEN;
+			passColor = color;
 			p0 = waypoint[0];
 			m0 = waypoint[1] - p0;
 			drawLineFull(p0, p0 + m0);
@@ -344,14 +345,14 @@ void testCurve(const int samples, const float dt)
 	
 	vec4 p0, p1, p2, p3, pPrev, pNext, m0, m1;
 
-	passColor = BLUE;
+	passColor = color;
 
 	switch(curveMode)
 	{
 	case CURVE_BEZIER: 
 		// full curve
 		drawBezierCurve3(testP0, testP1, testP2, testP3, samples, dt);
-		passColor = GREEN;
+		passColor = color;
 	//	break;	// no break to draw the lines that are used to form the curve
 	case CURVE_LINES: 
 		// multiple segments
@@ -375,7 +376,7 @@ void testCurve(const int samples, const float dt)
 		m1 = testP3 - p1;
 		drawCubicHermiteSplineSegment(p0, m0, p1, m1, samples, dt);
 		// tangents
-		passColor = GREEN;
+		passColor = color;
 		drawLineFull(p0, p0 + m0);
 		drawLineFull(p1, p1 + m1);
 		break;
