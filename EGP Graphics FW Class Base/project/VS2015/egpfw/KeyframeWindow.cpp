@@ -167,7 +167,8 @@ void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	int zeroTest = 0;
-	int trueTest = 1;
+	int trueTest = 1; 
+	int twoTest = 2;
 	int vecSize;
 
 	for (size_t i = 0; i < mWaypointChannels.size(); ++i)
@@ -207,13 +208,28 @@ void KeyframeWindow::renderToFBO(int* curveUniformSet, int* solidColorUniformSet
 	}
 
 	cbmath::vec4 points[2] = { cbmath::vec4(mCurrentTime / 2.0f * mWindowSize.x, 0.0f, 0.0f, 1.0f), cbmath::vec4(mCurrentTime / 2.0f * mWindowSize.x, mWindowSize.y, 0.0f, 1.0f) };
-	int loltwo = 2;
+	
 	egpActivateProgram(mProgramList + drawCurveProgram);
 	egpSendUniformFloatMatrix(curveUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
 
 	egpSendUniformFloat(curveUniformSet[unif_waypoint], UNIF_VEC4, vecSize, points[0].v);
 	egpSendUniformFloat(solidColorUniformSet[unif_color], UNIF_VEC4, 1, COLORS[NUM_OF_CHANNELS].v);
-	egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &loltwo);
+	egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &twoTest);
+	egpSendUniformInt(curveUniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
+	egpSendUniformInt(curveUniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
+
+	egpActivateVAO(mVAOList + pointModel);
+	egpDrawActiveVAO();
+
+	points[0] = cbmath::vec4(0.0f, mWindowSize.y / 2.0f, 0.0f, 1.0f);
+	points[1] = cbmath::vec4(mWindowSize.x, mWindowSize.y / 2.0f, 0.0f, 1.0f);
+
+	egpActivateProgram(mProgramList + drawCurveProgram);
+	egpSendUniformFloatMatrix(curveUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mLittleBoxWindowMatrix.m);
+
+	egpSendUniformFloat(curveUniformSet[unif_waypoint], UNIF_VEC4, vecSize, points[0].v);
+	egpSendUniformFloat(solidColorUniformSet[unif_color], UNIF_VEC4, 1, COLORS[NUM_OF_CHANNELS].v);
+	egpSendUniformInt(curveUniformSet[unif_waypointCount], UNIF_INT, 1, &twoTest);
 	egpSendUniformInt(curveUniformSet[unif_curveMode], UNIF_INT, 1, &zeroTest);
 	egpSendUniformInt(curveUniformSet[unif_useWaypoints], UNIF_INT, 1, &trueTest);
 
