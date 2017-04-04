@@ -230,6 +230,18 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	egpSendUniformFloatMatrix(textureUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mOnScreenMatrix.m);
 	egpDrawActiveVAO();
 
+	glBegin(GL_BITMAP);
+	egpActivateProgram(0);
+	glDisable(GL_TEXTURE_2D);
+
+	auto color = COLORS[mCurrentChannel];
+	if (mCurrentChannel == NUM_OF_CHANNELS)
+		color = cbmath::vec4(0, 0, 0, 0);
+
+	glColor3f(color.r, color.g, color.b);
+
+	glDisable(GL_LIGHTING);
+
 	glWindowPos2i(5, mWindowSize.y * 0.41f);
 	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '0');
 
@@ -270,7 +282,5 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	for (auto i = 0; i < watToRite[2].size(); i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[2][i]);
 
-	//glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'Z');
-	/*glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'W');
-	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'R');*/
+	glEnd();
 }
