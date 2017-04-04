@@ -84,8 +84,6 @@ bool KeyframeWindow::updateInput(egpMouse* m, egpKeyboard* key)
 		}
 
 		mWaypointChannels[mCurrentChannel].insert(mWaypointChannels[mCurrentChannel].begin() + insertIndex, mousePos);
-
-		printf("X: %f, Y: %f\n", mousePos.x, mousePos.y);
 	}
 
 	return true;
@@ -246,7 +244,7 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	egpSendUniformFloatMatrix(textureUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mOnScreenMatrix.m);
 	egpDrawActiveVAO();
 
-	glBegin(GL_BITMAP);
+	glBegin(GL_BITMAP); //more like GL_BUTTMAP hahahaha
 	egpActivateProgram(0);
 	glDisable(GL_TEXTURE_2D);
 
@@ -267,19 +265,19 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	glWindowPos2i(mWindowSize.x * 0.4f - 5, mWindowSize.y * 0.41f);
 	glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '2');
 
-	std::string watToRite[3];
+	std::string stringToWrite[3];
 
 	if ((int)mCurrentChannel < (int)CHANNEL_ROT_X)
 	{
-		watToRite[0] = "-5";
-		watToRite[1] = "0";
-		watToRite[2] = "5";
+		stringToWrite[0] = "-5";
+		stringToWrite[1] = "0";
+		stringToWrite[2] = "5";
 	}
 	else if ((int)mCurrentChannel < (int)NUM_OF_CHANNELS)
 	{
-		watToRite[0] = "-360";
-		watToRite[1] = "0";
-		watToRite[2] = "360";
+		stringToWrite[0] = "-360";
+		stringToWrite[1] = "0";
+		stringToWrite[2] = "360";
 	}
 	else
 	{
@@ -287,16 +285,16 @@ void KeyframeWindow::renderToBackbuffer(int* textureUniformSet)
 	}
 
 	glWindowPos2i(mWindowSize.x * 0.4f + 5, 5);
-	for (auto i = 0; i < watToRite[0].size(); i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[0][i]);
+	for (auto i = 0; i < stringToWrite[0].size(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, stringToWrite[0][i]);
 
 	glWindowPos2i(mWindowSize.x * 0.4f + 5, mWindowSize.y * 0.4f * 0.5f);
-	for (auto i = 0; i < watToRite[1].size(); i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[1][i]);
+	for (auto i = 0; i < stringToWrite[1].size(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, stringToWrite[1][i]);
 
 	glWindowPos2i(mWindowSize.x * 0.4f + 5, mWindowSize.y * 0.4f - 15);
-	for (auto i = 0; i < watToRite[2].size(); i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, watToRite[2][i]);
+	for (auto i = 0; i < stringToWrite[2].size(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, stringToWrite[2][i]);
 
 	glEnd();
 }

@@ -1422,7 +1422,11 @@ void displayControls()
 	printf("\n l = real-time reload all shaders");
 	printf("\n x = toggle coordinate axes post-draw");
 
-	printf("\n 0-9 = toggle pipeline stage to be displayed");
+	//printf("\n 0-9 = toggle pipeline stage to be displayed");
+	printf("\n 1-6 = change the keyframe control channel");
+	printf("\n 7 = switch to keyframe scrub mode");
+	printf("\n space = toggle whether the keyframe window is paused");
+	printf("\n y = clear all keyframes");
 
 	printf("\n-------------------------------------------------------");
 }
