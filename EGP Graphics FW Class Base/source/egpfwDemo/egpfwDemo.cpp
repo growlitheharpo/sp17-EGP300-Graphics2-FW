@@ -89,14 +89,24 @@ enum ModelIndex
 	fsqModel,
 	boxModel, sphere8x6Model, sphere32x24Model,
 
-	// morph targets
-	morphModel, 
+	// skinning mesh & skeleton drawing bone model
+	skinningModel, 
+	boneModel, 
 
 //-----------------------------
 	modelCount
 };
+enum IndexedModelIndex
+{
+	skinningIndexedModel, 
+	boneIndexedModel, 
+	
+//-----------------------------
+	indexedModelCount
+};
 egpVertexArrayObjectDescriptor vao[modelCount] = { 0 };
 egpVertexBufferObjectDescriptor vbo[modelCount] = { 0 };
+egpIndexBufferObjectDescriptor ibo[indexedModelCount] = { 0 };
 
 
 // loaded textures
@@ -119,9 +129,9 @@ enum GLSLProgramIndex
 	testTextureProgramIndex,
 	testTexturePassthruProgramIndex,
 
-	// morph targets programs
-	morphTargetsProgram, 
-	morphTargetsDrawCurveProgram, 
+	// skinning program
+	skinningProgram, 
+	drawBoneProgram, 
 
 //-----------------------------
 	GLSLProgramCount
@@ -132,9 +142,10 @@ enum GLSLCommonUniformIndex
 	unif_color, 
 	unif_dm,
 
-	// morph target uniforms
-	unif_param, 
-	unif_index, 
+	// skinning & skeletal uniforms
+	unif_bones_skinning, 
+	unif_bones_world, 
+	unif_boneLengths, 
 
 //-----------------------------
 	GLSLCommonUniformCount
@@ -144,9 +155,10 @@ const char *commonUniformName[] = {
 	(const char *)("color"),
 	(const char *)("tex_dm"),
 
-	// morph targets
-	(const char *)("param"),
-	(const char *)("index"),
+	// skeletal
+	(const char *)("bones_skinning"),
+	(const char *)("bones_world"),
+	(const char *)("boneLengths"),
 };
 egpProgram glslPrograms[GLSLProgramCount] = { 0 }, *currentProgram = 0;
 int glslCommonUniforms[GLSLProgramCount][GLSLCommonUniformCount] = { -1 }, *currentUniformSet = 0;
@@ -193,7 +205,7 @@ cbmath::vec4 cameraPos_world[numCameras] = {
 enum SceneObjects
 {
 	skyboxObject,
-	morphTargetObject, 
+	skinningObject, 
 //-----------------------------
 	sceneObjectCount,
 //-----------------------------
@@ -211,11 +223,71 @@ cbmath::mat4 boxModelViewProjectionMatrix;
 
 
 
-// morph targets
-const int morphKeyframeCount = 4;
-int morphKeyframeIndex[morphKeyframeCount] = { 0, 1, 2, 3 };
-float morphInterpolationParam = 0.0f;
-float morphInterpolationParamRate = 1.0f;
+// simple skeletal animation
+#define BONES_MAX 64
+struct SimpleBone
+{
+	int parentBoneIndex;			// -1 for root
+	cbmath::mat4 transform_local;	// transformation relative to parent
+};
+struct SimpleSkeleton
+{
+	// assumes first bone is root
+	unsigned int boneCount;
+	SimpleBone bones[BONES_MAX];
+	float boneLength[BONES_MAX];
+	cbmath::mat4 transform_root[BONES_MAX];					// transformation relative to root/model
+	cbmath::mat4 transform_root_bind[BONES_MAX];			// root transform at bind time (base pose)
+	cbmath::mat4 transform_root_bind_inverse[BONES_MAX];	// bind pose inverse
+	cbmath::mat4 transform_bindToCurr[BONES_MAX];			// skinning matrix: transform from bind pose to current pose
+};
+
+SimpleSkeleton testSkeleton[1];
+float testSkeletonTime = 0.0f;
+
+
+// ****
+// forward kinematics update for all bones
+void updateSkeletonForwardKinematics(SimpleSkeleton *skel)
+{
+	unsigned int i;
+
+	// update root joint: no parent, so copy local transform to root transform
+
+
+	// local to root = parent's local to root * local to parent
+	for (i = 1; i < skel->boneCount; ++i)
+	{
+
+	}
+}
+
+// ****
+// update skinning matrix for all bones
+void updateSkeletonSkinningMatrices(SimpleSkeleton *skel)
+{
+	unsigned int i;
+
+	// skinning matrix = local to root * inverse local to root bind
+	for (i = 0; i < skel->boneCount; ++i)
+	{
+
+	}
+}
+
+// calculate bind pose
+void calculateSkeletonBindPose(SimpleSkeleton *skel)
+{
+	unsigned int i;
+
+	// do FK update, use resulting state as bind pose
+	updateSkeletonForwardKinematics(skel);
+	for (i = 0; i < skel->boneCount; ++i)
+	{
+		skel->transform_root_bind[i] = skel->transform_root[i];
+		skel->transform_root_bind_inverse[i] = cbmath::transformInverseNoScale(skel->transform_root_bind[i]);
+	}
+}
 
 
 
@@ -356,54 +428,207 @@ void setupGeometry()
 	vao[fsqModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, attribs, 2, 4, (vbo + fsqModel), 0);
 
 
-	// morphing: test shape will just be a quad with 4 built-in keyframe poses
+	// ****
+	// skeletal: skinning object is just a tessellated tube
+	// skeleton will be drawn using a geometry shader again, single point converted into lines
 	{
-		// we will have 4 positions; if you want normals you need to add more
-		const unsigned int totalAttribs = morphKeyframeCount;
-		const unsigned int numVertices = 4;
+		// skinning mesh: just make a flat thingimagig for simplicity's sake
+		{
+			// raw mesh positions - unskinned ("bind pose")
+			const unsigned int numSkinningVertices = 16;
+			const float skinningVertices[numSkinningVertices * 3] = {
+				// right pillar
+				+0.5f,  0.0f,  0.0f, 
+				+0.5f, +1.0f,  0.0f,
+				+0.5f, +2.0f,  0.0f,
+				+0.5f, +3.0f,  0.0f,
 
-		// ****
-		// positions for pose 0: default quad
-		const float testMorphShapePosition0[numVertices * 3] = {
-			-1.0f, -1.0f,  0.0f, 
-			+2.0f, -1.0f,  0.0f, 
-			-1.0f, +1.0f,  4.0f, 
-			+1.0f, +1.0f,  0.0f, 
-		};
-		// positions for pose 1: move the bottom-left corner forward
-		const float testMorphShapePosition1[numVertices * 3] = {
-			-1.0f, -1.0f, +1.0f,
-			+0.0f, -1.0f,  0.0f,
-			-1.0f, +1.0f,  0.0f,
-			+1.0f, +1.0f,  0.0f,
-		};
-		// positions for pose 2: move the top-right corner backward
-		const float testMorphShapePosition2[numVertices * 3] = {
-			-1.0f, -1.0f,  0.0f,
-			+1.0f, -1.0f,  0.0f,
-			-1.0f, +1.0f,  0.0f,
-			+1.0f, +1.0f, -1.0f,
-		};
-		// positions for pose 3: stretch the bottom-right and top-left corners
-		const float testMorphShapePosition3[numVertices * 3] = {
-			-1.0f, -3.0f,  0.0f,
-			+2.0f, -2.0f,  0.0f,
-			-2.0f, +2.0f,  0.0f,
-			+1.0f, +1.0f,  0.0f,
-		};
+				// back pillar
+				 0.0f,  0.0f, -0.5f,
+				 0.0f, +1.0f, -0.5f,
+				 0.0f, +2.0f, -0.5f,
+				 0.0f, +3.0f, -0.5f,
 
-		// create morph target object: 
-		//	-> stuff all poses for position and other 
-		//		morphable attributes into a single VBO!
-		// demo case: let's just use the positions for now...
-		const egpAttributeDescriptor morphTargetModelAttribs[] = {
-			egpCreateAttributeDescriptor((egpAttributeName)0, ATTRIB_VEC3, testMorphShapePosition0),
-			egpCreateAttributeDescriptor((egpAttributeName)1, ATTRIB_VEC3, testMorphShapePosition1),
-			egpCreateAttributeDescriptor((egpAttributeName)2, ATTRIB_VEC3, testMorphShapePosition2),
-			egpCreateAttributeDescriptor((egpAttributeName)3, ATTRIB_VEC3, testMorphShapePosition3),
-		};
-		vao[morphModel] = egpCreateVAOInterleaved(PRIM_TRIANGLE_STRIP, 
-			morphTargetModelAttribs, totalAttribs, numVertices, (vbo + morphModel), 0);
+				// left pillar
+				-0.5f,  0.0f,  0.0f,
+				-0.5f, +1.0f,  0.0f,
+				-0.5f, +2.0f,  0.0f,
+				-0.5f, +3.0f,  0.0f,
+
+				// front pillar
+				 0.0f,  0.0f, +0.5f,
+				 0.0f, +1.0f, +0.5f,
+				 0.0f, +2.0f, +0.5f,
+				 0.0f, +3.0f, +0.5f,
+			};
+
+			// raw mesh normals - unskinned
+			const float skinningNormals[numSkinningVertices * 3] = {
+				+1.0f,  0.0f,  0.0f,
+				+1.0f,  0.0f,  0.0f,
+				+1.0f,  0.0f,  0.0f,
+				+1.0f,  0.0f,  0.0f,
+
+				 0.0f,  0.0f, -1.0f,
+				 0.0f,  0.0f, -1.0f,
+				 0.0f,  0.0f, -1.0f,
+				 0.0f,  0.0f, -1.0f,
+				 
+				-1.0f,  0.0f,  0.0f,
+				-1.0f,  0.0f,  0.0f,
+				-1.0f,  0.0f,  0.0f,
+				-1.0f,  0.0f,  0.0f,
+
+				 0.0f,  0.0f, +1.0f,
+				 0.0f,  0.0f, +1.0f,
+				 0.0f,  0.0f, +1.0f,
+				 0.0f,  0.0f, +1.0f,
+			};
+
+			// skinning weights (w): max 4 per vertex - each set adds up to 1
+			const float skinningBlendWeights[numSkinningVertices * 4] = {
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+				1.00f, 0.00f, 0.00f, 0.00f,
+			};
+
+			// skinning INFLUENCE indices (i): max 4 per vertex
+			// corresponds to the bone that influences the vertex 
+			//	by a factor of w (weight)
+			// NOTE: they are only "floats" because that is the supported 
+			//	GLSL attribute data type, but they will be used as integers!
+			const float skinningBlendIndices[numSkinningVertices * 4] = {
+				0, 0, 0, 0, 
+				1, 0, 0, 0,
+				2, 0, 0, 0,
+				3, 0, 0, 0,
+
+				0, 0, 0, 0,
+				1, 0, 0, 0,
+				2, 0, 0, 0,
+				3, 0, 0, 0,
+
+				0, 0, 0, 0,
+				1, 0, 0, 0,
+				2, 0, 0, 0,
+				3, 0, 0, 0,
+
+				0, 0, 0, 0,
+				1, 0, 0, 0,
+				2, 0, 0, 0,
+				3, 0, 0, 0,
+			};
+
+			// indices for DRAWING a layered "tower-like" object: 
+			// these are for the IBO, nothing to do with skinning
+			// 3 verts per tri, 6 tris per facet * 4 facets, + 4 cap tris
+			const unsigned int numSkinningIndices = 3 * (6 * 4 + 4);
+			const unsigned int skinningIndices[numSkinningIndices] = {
+				0, 4, 5, 5, 1, 0, 
+				1, 5, 6, 6, 2, 1, 
+				2, 6, 7, 7, 3, 2,
+
+				4, 8, 9, 9, 5, 4,
+				5, 9, 10, 10, 6, 5,
+				6, 10, 11, 11, 7, 6,
+
+				8, 12, 13, 13, 9, 8,
+				9, 13, 14, 14, 10, 9,
+				10, 14, 15, 15, 11, 10,
+
+				12, 0, 1, 1, 13, 12,
+				13, 1, 2, 2, 14, 13,
+				14, 2, 3, 3, 15, 14,
+
+				0, 12, 8, 8, 4, 0, 
+				3, 7, 11, 11, 15, 3, 
+			};
+
+
+			// build object VAO & VBO
+			egpAttributeDescriptor attribs_skinning[] = {
+				egpCreateAttributeDescriptor(ATTRIB_POSITION, ATTRIB_VEC3, skinningVertices),
+				egpCreateAttributeDescriptor(ATTRIB_NORMAL, ATTRIB_VEC3, skinningNormals),
+				egpCreateAttributeDescriptor(ATTRIB_BLEND_WEIGHTS, ATTRIB_VEC4, skinningBlendWeights),
+				egpCreateAttributeDescriptor(ATTRIB_BLEND_INDICES, ATTRIB_VEC4, skinningBlendIndices),
+			};
+			vao[skinningModel] = egpCreateVAOInterleavedIndexed(PRIM_TRIANGLES, 
+				attribs_skinning, 4, numSkinningVertices, (vbo + skinningModel), 
+				INDEX_UINT, numSkinningIndices, skinningIndices, (ibo + skinningIndexedModel));
+		}
+
+		// bone
+		{
+			// custom bone primitive: pyramid shape pointing along Z
+			const float boneSz = 0.05f;
+			const unsigned int numBoneVertices = 5;
+			const float boneVertices[numBoneVertices * 3] = {
+				+boneSz, 0.0f, 0.0f, 
+				0.0f, +boneSz, 0.0f, 
+				-boneSz, 0.0f, 0.0f, 
+				0.0f, -boneSz, 0.0f, 
+				0.0f, 0.0f, 1.0f, 
+			};
+
+			// indexed rendering vertices
+			const unsigned int numBoneIndices = 10;
+			const unsigned int boneIndices[numBoneIndices] = {
+				0, 1, 2, 3, // base
+				0, 4, 1, 2, 4, 3, // point
+			};
+
+			// create bone object
+			egpAttributeDescriptor attribs_bone[] = {
+				egpCreateAttributeDescriptor(ATTRIB_POSITION, ATTRIB_VEC3, boneVertices),
+			};
+			vao[boneModel] = egpCreateVAOInterleavedIndexed(PRIM_LINE_STRIP,
+				attribs_bone, 1, numBoneVertices, (vbo + boneModel), 
+				INDEX_UINT, numBoneIndices, boneIndices, (ibo + boneIndexedModel));
+		}
+
+		// setup skeleton bone poses
+		{
+			unsigned int parentIndex;
+			testSkeleton->boneCount = 4;
+
+			// root: rotate -90 on X so that Z points upwards
+			testSkeleton->bones[0].parentBoneIndex = -1;
+			testSkeleton->bones[0].transform_local = cbmath::makeRotationX4(Deg2Rad(-90.0f));
+			testSkeleton->boneLength[0] = 1.0f;
+
+			// subsequent bones: just translate on Z by parent's bone length
+			//	and set new bone's length
+			testSkeleton->bones[1].parentBoneIndex = parentIndex = 0;	// child of root node
+			testSkeleton->bones[1].transform_local.m32 = testSkeleton->boneLength[parentIndex];
+			testSkeleton->boneLength[1] = 1.0f;
+
+			testSkeleton->bones[2].parentBoneIndex = parentIndex = 1;
+			testSkeleton->bones[2].transform_local.m32 = testSkeleton->boneLength[parentIndex];
+			testSkeleton->boneLength[2] = 1.0f;
+
+			testSkeleton->bones[3].parentBoneIndex = parentIndex = 2;
+			testSkeleton->bones[3].transform_local.m32 = testSkeleton->boneLength[parentIndex];
+			testSkeleton->boneLength[3] = 0.0f;	// end of chain
+
+			// set bind pose matrices
+			calculateSkeletonBindPose(testSkeleton);
+		}
 	}
 }
 
@@ -415,6 +640,8 @@ void deleteGeometry()
 		egpReleaseVAO(vao + i);
 		egpReleaseVBO(vbo + i);
 	}
+	for (i = 0; i < indexedModelCount; ++i)
+		egpReleaseIBO(ibo + i);
 }
 
 
@@ -515,12 +742,12 @@ void setupShaders()
 			egpReleaseFileContents(files + 0);
 		}
 
-		// draw morphing object
+		// draw skinning object
 		{
-			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_animation/morphing_vs4x.glsl");
+			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_animation/skinning_passNormalAsColor_vs4x.glsl");
 			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 
-			currentProgramIndex = morphTargetsProgram;
+			currentProgramIndex = skinningProgram;
 			currentProgram = glslPrograms + currentProgramIndex;
 			*currentProgram = egpCreateProgram();
 			egpAttachShaderToProgram(currentProgram, shaders + 0);
@@ -530,28 +757,6 @@ void setupShaders()
 
 			egpReleaseShader(shaders + 0);
 			egpReleaseFileContents(files + 0);
-		}
-
-		// draw morphing object curves
-		{
-			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_animation/morphing_passKeyframes_vs4x.glsl");
-			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
-			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/gs/drawCurve_morphing_gs4x.glsl");
-			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_GEOMETRY, files[1].contents);
-
-			currentProgramIndex = morphTargetsDrawCurveProgram;
-			currentProgram = glslPrograms + currentProgramIndex;
-			*currentProgram = egpCreateProgram();
-			egpAttachShaderToProgram(currentProgram, shaders + 0);
-			egpAttachShaderToProgram(currentProgram, shaders + 1);
-			egpAttachShaderToProgram(currentProgram, shaders + 2);
-			egpLinkProgram(currentProgram);
-			egpValidateProgram(currentProgram);
-
-			egpReleaseShader(shaders + 0);
-			egpReleaseFileContents(files + 0);
-			egpReleaseShader(shaders + 1);
-			egpReleaseFileContents(files + 1);
 		}
 
 		// done with varying color fs
@@ -561,21 +766,43 @@ void setupShaders()
 
 		// draw solid color (uniform)
 		{
-			files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
-			shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 			files[1] = egpLoadFileContents("../../../../resource/glsl/4x/fs/drawSolid_fs4x.glsl");
 			shaders[1] = egpCreateShaderFromSource(EGP_SHADER_FRAGMENT, files[1].contents);
 
-			currentProgramIndex = testSolidColorProgramIndex;
-			currentProgram = glslPrograms + currentProgramIndex;
-			*currentProgram = egpCreateProgram();
-			egpAttachShaderToProgram(currentProgram, shaders + 0);
-			egpAttachShaderToProgram(currentProgram, shaders + 1);
-			egpLinkProgram(currentProgram);
-			egpValidateProgram(currentProgram);
+			// basic draw solid color
+			{
+				files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs/transform_vs4x.glsl");
+				shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
 
-			egpReleaseShader(shaders + 0);
-			egpReleaseFileContents(files + 0);
+				currentProgramIndex = testSolidColorProgramIndex;
+				currentProgram = glslPrograms + currentProgramIndex;
+				*currentProgram = egpCreateProgram();
+				egpAttachShaderToProgram(currentProgram, shaders + 0);
+				egpAttachShaderToProgram(currentProgram, shaders + 1);
+				egpLinkProgram(currentProgram);
+				egpValidateProgram(currentProgram);
+
+				egpReleaseShader(shaders + 0);
+				egpReleaseFileContents(files + 0);
+			}
+
+			// bone with solid color
+			{
+				files[0] = egpLoadFileContents("../../../../resource/glsl/4x/vs_animation/drawBone_vs4x.glsl");
+				shaders[0] = egpCreateShaderFromSource(EGP_SHADER_VERTEX, files[0].contents);
+
+				currentProgramIndex = drawBoneProgram;
+				currentProgram = glslPrograms + currentProgramIndex;
+				*currentProgram = egpCreateProgram();
+				egpAttachShaderToProgram(currentProgram, shaders + 0);
+				egpAttachShaderToProgram(currentProgram, shaders + 1);
+				egpLinkProgram(currentProgram);
+				egpValidateProgram(currentProgram);
+
+				egpReleaseShader(shaders + 0);
+				egpReleaseFileContents(files + 0);
+			}
+
 			egpReleaseShader(shaders + 1);
 			egpReleaseFileContents(files + 1);
 		}
@@ -817,9 +1044,6 @@ void displayControls()
 	printf("\n l = real-time reload all shaders");
 	printf("\n x = toggle coordinate axes post-draw");
 
-	printf("\n c = draw morphing curves for vertices");
-	printf("\n 1-4 = go to morph keyframe");
-
 	printf("\n-------------------------------------------------------");
 }
 
@@ -851,49 +1075,6 @@ void handleInputState()
 	// toggle axes
 	if (egpKeyboardIsKeyPressed(keybd, 'x'))
 		testDrawAxes = 1 - testDrawAxes;
-
-	
-	// morphing curves
-	if (egpKeyboardIsKeyPressed(keybd, 'c'))
-		testDrawCurves = 1 - testDrawCurves;
-
-	// hard-set morphing frame and pause
-	if (egpKeyboardIsKeyPressed(keybd, '1'))
-	{
-		playing = 0;
-		morphInterpolationParam = 0.0f;
-		morphKeyframeIndex[0] = 0;
-		morphKeyframeIndex[1] = 1;
-		morphKeyframeIndex[2] = 2;
-		morphKeyframeIndex[3] = 3;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '2'))
-	{
-		playing = 0;
-		morphInterpolationParam = 0.0f;
-		morphKeyframeIndex[0] = 1;
-		morphKeyframeIndex[1] = 2;
-		morphKeyframeIndex[2] = 3;
-		morphKeyframeIndex[3] = 0;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '3'))
-	{
-		playing = 0;
-		morphInterpolationParam = 0.0f;
-		morphKeyframeIndex[0] = 2;
-		morphKeyframeIndex[1] = 3;
-		morphKeyframeIndex[2] = 0;
-		morphKeyframeIndex[3] = 1;
-	}
-	else if (egpKeyboardIsKeyPressed(keybd, '4'))
-	{
-		playing = 0;
-		morphInterpolationParam = 0.0f;
-		morphKeyframeIndex[0] = 3;
-		morphKeyframeIndex[1] = 0;
-		morphKeyframeIndex[2] = 1;
-		morphKeyframeIndex[3] = 2;
-	}
 
 
 /*
@@ -955,19 +1136,40 @@ void updateGameState(float dt)
 			boxModelViewProjectionMatrix = viewProjectionMatrix[controlCamera] * modelMatrix[skyboxObject];
 		}
 
-		// morphing object
-		{
-			// update interpolation parameter
-			morphInterpolationParam += morphInterpolationParamRate*dt;
-			if (morphInterpolationParam > 1.0f)
-			{
-				// next segment
-				morphInterpolationParam -= 1.0f;
 
-				// update keyframe indices (looping)
-				for (int i = 0; i < morphKeyframeCount; ++i)
-					morphKeyframeIndex[i] = (morphKeyframeIndex[i] + 1) % morphKeyframeCount;
-			}
+		// skeletal animation
+		{
+			// procedural animation for debugging purposes: 
+			// just make the bones do some snake-like movement
+			unsigned int parentIndex;
+
+			// time step and value used for animation
+			float s;
+			testSkeletonTime += dt;
+			s = sinf(testSkeletonTime);
+
+			// root: make it sway about X
+			testSkeleton->bones[0].transform_local = cbmath::makeRotationX4(Deg2Rad(-90.0f) + s);
+
+			// make each bone sway about some local axis/axes
+			s *= 0.5f;
+			parentIndex = testSkeleton->bones[1].parentBoneIndex;
+			testSkeleton->bones[1].transform_local = cbmath::makeRotationEuler4XYZ(s, s, s);
+			testSkeleton->bones[1].transform_local.m32 = testSkeleton->boneLength[parentIndex];
+
+			s *= 0.5f;
+			parentIndex = testSkeleton->bones[2].parentBoneIndex;
+			testSkeleton->bones[2].transform_local = cbmath::makeRotationEuler4XYZ(s, s, s);
+			testSkeleton->bones[2].transform_local.m32 = testSkeleton->boneLength[parentIndex];
+
+			s *= 0.5f;
+			parentIndex = testSkeleton->bones[3].parentBoneIndex;
+			testSkeleton->bones[3].transform_local = cbmath::makeRotationEuler4XYZ(s, s, s);
+			testSkeleton->bones[3].transform_local.m32 = testSkeleton->boneLength[parentIndex];
+
+			// do forward kin and update skinning
+			updateSkeletonForwardKinematics(testSkeleton);
+			updateSkeletonSkinningMatrices(testSkeleton);
 		}
 	}
 }
@@ -996,33 +1198,57 @@ void renderSkybox()
 
 
 // draw curves
-void renderMorphObject()
+void renderSkinningObject()
 {
-	cbmath::mat4 mvp = viewProjectionMatrix[cameraObjects + activeCamera] * modelMatrix[morphTargetObject];
-	egpActivateVAO(vao + morphModel);
+	const cbmath::vec4 BLUE(0.0f, 0.5f, 1.0f, 1.0f), ORANGE(1.0f, 0.5f, 0.0f, 1.0f);
+	cbmath::mat4 mvp = viewProjectionMatrix[cameraObjects + activeCamera] * modelMatrix[skinningObject];
 
-	// draw morphing object
-	currentProgramIndex = morphTargetsProgram;
+	// draw skinning object
+	currentProgramIndex = skinningProgram;
 	currentProgram = glslPrograms + currentProgramIndex;
 	currentUniformSet = glslCommonUniforms[currentProgramIndex];
 	egpActivateProgram(currentProgram);
 
+	// send MVP and bone matrices
 	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mvp.m);
-	egpSendUniformFloat(currentUniformSet[unif_param], UNIF_FLOAT, 1, &morphInterpolationParam);
-	egpSendUniformInt(currentUniformSet[unif_index], UNIF_INT, morphKeyframeCount, morphKeyframeIndex);
+	egpSendUniformFloatMatrix(currentUniformSet[unif_bones_skinning], UNIF_MAT4,
+		testSkeleton->boneCount, 0, testSkeleton->transform_bindToCurr->m);
+
+	// draw skinned object
+	egpActivateVAO(vao + skinningModel);
 	egpDrawActiveVAO();
 
-	// draw morphing object again with curve program
-	if (testDrawCurves)
-	{
-		currentProgramIndex = morphTargetsDrawCurveProgram;
-		currentProgram = glslPrograms + currentProgramIndex;
-		currentUniformSet = glslCommonUniforms[currentProgramIndex];
-		egpActivateProgram(currentProgram);
 
-		egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mvp.m);
-		egpDrawActiveVAO();
+	// draw skeleton as a series of bones
+	currentProgramIndex = drawBoneProgram;
+	currentProgram = glslPrograms + currentProgramIndex;
+	currentUniformSet = glslCommonUniforms[currentProgramIndex];
+	egpActivateProgram(currentProgram);
+
+	// send MVP and bone info
+	egpSendUniformFloatMatrix(currentUniformSet[unif_mvp], UNIF_MAT4, 1, 0, mvp.m);
+	egpSendUniformFloatMatrix(currentUniformSet[unif_bones_world], UNIF_MAT4, 
+		testSkeleton->boneCount, 0, testSkeleton->transform_root->m);
+	egpSendUniformFloat(currentUniformSet[unif_boneLengths], UNIF_FLOAT,
+		testSkeleton->boneCount, testSkeleton->boneLength);
+
+
+	glDisable(GL_DEPTH_TEST);
+
+	// draw bone model in blue
+	egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, BLUE.v);
+	egpActivateVAO(vao + boneModel);
+	egpDrawActiveVAOInstanced(testSkeleton->boneCount);
+
+	// draw coordinate axis for each bone in orange
+	if (testDrawAxes)
+	{
+		egpSendUniformFloat(currentUniformSet[unif_color], UNIF_VEC4, 1, ORANGE.v);
+		egpActivateVAO(vao + axesModel);
+		egpDrawActiveVAOInstanced(testSkeleton->boneCount);
 	}
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -1036,7 +1262,7 @@ void renderGameState()
 	// draw skybox
 	egpfwActivateFBO(fbo + sceneFBO);
 	renderSkybox();
-	renderMorphObject();
+	renderSkinningObject();
 
 
 //-----------------------------------------------------------------------------
