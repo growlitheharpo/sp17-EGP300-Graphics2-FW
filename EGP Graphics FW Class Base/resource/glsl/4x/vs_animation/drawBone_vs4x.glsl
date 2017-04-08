@@ -8,7 +8,6 @@
 
 #version 410
 
-
 layout (location = 0) in vec4 position;
 
 uniform mat4 mvp;
@@ -17,14 +16,18 @@ uniform mat4 mvp;
 
 // ****
 // other uniform data
+uniform mat4 bones_world[BONES_MAX];
+uniform float boneLengths[BONES_MAX];
 
 
 void main()
 {
 	// ****
 	// calculate final bone transform
+	mat4 bone = bones_world[gl_InstanceID];
+	bone[2] *= boneLengths[gl_InstanceID];
 	
 	// ****
 	// transform by bone transform before MVP
-	gl_Position = mvp * position;
+	gl_Position = mvp * bone * position;
 }
