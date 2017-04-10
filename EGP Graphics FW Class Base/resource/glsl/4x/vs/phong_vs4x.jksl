@@ -6,12 +6,9 @@
 	Modified by: ______________________________________________________________
 */
 
-// version
 shadertype vertex
 
 
-// ****
-// attributes
 in attribute
 {
 	vec4 @lane(0) position;
@@ -19,8 +16,6 @@ in attribute
 	vec4 @lane(8) texcoord;
 }
 
-// ****
-// uniforms
 uniform
 {
 	mat4 mvp;
@@ -29,8 +24,6 @@ uniform
 }
 
 
-// ****
-// varyings
 out varying pass
 {
 	vec4 normal;

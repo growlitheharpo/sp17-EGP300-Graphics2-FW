@@ -6,12 +6,9 @@
 	Modified by: ______________________________________________________________
 */
 
-// version
 shadertype fragment
 
 
-// ****
-// varyings
 in varying pass
 {
 	vec4 normal;
@@ -21,8 +18,6 @@ in varying pass
 }
 
 
-// ****
-// uniforms
 uniform
 {
 	sampler2D tex_dm;
@@ -30,8 +25,6 @@ uniform
 }
 
 
-// ****
-// target
 out target
 {
 	vec4 @lane(0) fragColor;
