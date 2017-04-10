@@ -65,6 +65,8 @@ class TokenParser
 
 		void incrementDefaultLane() { ++mCurrentDefaultLane; }
 		unsigned getDefaultLane() const { return mCurrentDefaultLane; }
+
+		void saveOutputFile(const std::string& file) const;
 };
 
 typedef void (TokenParser::*emiter_function)(std::string);

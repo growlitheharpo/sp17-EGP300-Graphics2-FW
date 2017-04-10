@@ -320,3 +320,11 @@ void TokenParser::parseTokens(TokenStream& tokens, int glVersion)
 
 	}
 }
+
+void TokenParser::saveOutputFile(const std::string& file) const
+{
+	std::fstream fout;
+	fout.open(file, std::ios_base::out | std::ios_base::trunc);
+	fout << mOutput;
+	fout.close();
+}

@@ -53,6 +53,8 @@ egpFileInfo ShaderConverter::load(const std::string& filename)
 		result.length = convertedText.size() + 1;
 		result.contents = static_cast<const char *>(malloc(sizeof(char) * result.length));
 		strcpy(const_cast<char*>(result.contents), convertedText.c_str());
+
+		parser.saveOutputFile(filename + "_PARSED.glsl");
 	}
 
 
